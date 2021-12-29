@@ -7,17 +7,44 @@ HoloTrust is a Rust library, intended to allow for [Hololchain](https://www.holo
 ```rs
 use trust_graph::prelude::*;
 
-let target: EntryHashB64 = ... // TODO
-let content: String = "sushi".into()
-let value: f32 = 0.9
-let attributes: BTreeMap<String, String> = ... // TODO
+let target: EntryHashB64 = "...".into(); // TODO
+let content: String = "sushi".into();
+let value: f32 = 0.8;
+let attributes: BTreeMap<String, String> = BTreeMap::from([
+  ("original_rating_type".into(), "stars".into()),
+  ("original_rating_min".into(), "1".into()),
+  ("original_rating_max".into(), "5".into()),
+  ("original_rating_value".into(), "4".into()),
+])
 
 let trust_atom = TrustAtom.create(
   target: target,
   content: content,
   value: value,
   attributes: attributes,
+);
+
+let trust_graph_atoms: Vector<TrustAtom> = vec![
+  // TrustAtom where target = Alice's TrustGraph
+  // TrustAtom where target = Bo's TrustGraph
+  // TrustAtom where target = New York Times' TrustGraph
+]
+
+let trust_graph = TrustGraph.create(
+  private: true,
+  trust_atoms: trust_graph_atoms
 )
+
+let trust_atoms: Vector<TrustAtom> = trust_graph.highest(
+  content_starts_with: "Category~Pop~80s".into(),
+  exclude: vec![
+    // TA's which client has already seen, ie previous "pages" (or screens in infinite scroll)
+  ]
+)
+
+let trust_graph_2 = trust_graph.copy(with: [vec TAs], without:[vec TAs])
+
+trust_graph.rollup() // <-- do useful work of synthesizing TG to top level; maybe should be paid, in trust, tokens, or both
 
 ```
 
@@ -31,7 +58,7 @@ It encodes TrustAtoms as links, with the following components:
 1. Holochain Link `target` == TrustAtom `target` - entity being rated/reviewed/etc - one of:
     - `EntryHashB64`
     - `AgentPubKeyB64` (?)
-1. Holochain Link `tag` - one or more of:
+1. Holochain Link `tag` - formatted as UTF-8 string: one or more of:
   - TrustAtom `content` - semantic info (eg sushi) - max 100 chars
   - TrustAtom `value` - rating ( `"-0.999999999"` to `"0.999999999"`) - max 12 chars
   - additional attributes - `EntryHashB64`, where the entry contains attributes formatted in: `BTreeMap<String, String>`
