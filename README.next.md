@@ -2,10 +2,26 @@
 
 HoloTrust is a Rust library, intended to allow for [Hololchain](https://www.holochain.org) developers to easily use the [Trust Graph](https://github.com/trustgraph/trustgraph) protocol in their Happs.
 
+A TrustGraph is
+
+- initiated from a collection of TAs - generally to people or orgs in order to follow their webs of trust
+- [someone] rolls up the network into top level TAs for that TG (ongoing)
+
+TG
+
+- public viewable or private viewable
+- private viewing is by invite code/cap tokent
+- has an underlying DHT
+
+Rollups
+
+- an agent could only roll up what is visible to them
+- trust atoms that are an amalgam _value_ for each _target_ / _content_ combination
+
 ## Usage
 
 ```rs
-use trust_graph::prelude::*;
+use holo_trust::prelude::*;
 
 let target: EntryHashB64 = "...".into(); // TODO
 let content: String = "sushi".into();
@@ -16,6 +32,11 @@ let attributes: BTreeMap<String, String> = BTreeMap::from([
   ("original_rating_max".into(), "5".into()),
   ("original_rating_value".into(), "4".into()),
 ])
+
+// todo TrustAtom.create_5_star(...)
+// todo TrustAtom.create_like(...)
+// todo TrustAtom.create_clap(...)
+// ...
 
 let trust_atom = TrustAtom.create(
   target: target,
@@ -41,8 +62,17 @@ let trust_atoms: Vector<TrustAtom> = trust_graph.highest(
     // TA's which client has already seen, ie previous "pages" (or screens in infinite scroll)
   ]
 )
+// TODO ask HC core team about pagination support <-- and/or max # results for link queries
+// what if a million links?  a billion?
 
-let trust_graph_2 = trust_graph.copy(with: [vec TAs], without:[vec TAs])
+let trust_graph_2 = trust_graph.copy(
+    with: vec![
+      // TrustAtoms to add to new TrustGraph
+      ],
+    without: vec![
+      // TrustAtoms to exclude from new TrustGraph
+      ],
+  )
 
 trust_graph.rollup() // <-- do useful work of synthesizing TG to top level; maybe should be paid, in trust, tokens, or both
 
@@ -81,3 +111,39 @@ Example of only semantic content: `"Category~Pop~80s~Boy Band[x00][x00]"`
 Example of only value: `"[x00]0.8[x00]"`
 
 *TODO* describe searching, both of semantic content and values
+
+## Scratchpad
+
+```
+Add 9-digit random after value:
+
+"Category~Pop~80s~user_ratings[x00]0.9[x00]328425615[x00]uHEntityId"
+"Category~Pop~user_ratings[x00]0.9[x00]328425615[x00]uHEntityId"
+"user_ratings[x00]0.9[x00]328425615[x00]uHEntityId"
+
+---
+
+"Category~Pop~80s[x00]0.999999999[x00]"
+"[x00]0.999999999[x00]" // thumbs up
+"[x00]0.0[x00]" // thumbs down
+"[x00]-0.999999999[x00]" // flag/spam/abuse
+
+"drums[x00]0.999999999[x00]"
+
+// sort by sales
+// sort by artist
+// sort by album
+```
+
+---
+
+If a thumbs up is a "1" value (perfect score), what rollup score should we assign to an album with 30k thumbs ups vs another with 30 thumbs ups?  This invokes the reputon field of "how many ratings this reputon is synthesized from"...
+
+
+----
+
+Guardian has Sally's privately shared TG in their TG
+
+- protects her by only publishing rollup TAs, of her and other TGs they follow
+
+What if being invited to a DHT implies access to the next level of DHTs?
