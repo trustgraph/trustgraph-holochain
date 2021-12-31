@@ -3,9 +3,9 @@ on: [push, pull_request]
 
 jobs:
   checks:
-    runs-on: ${{ matrix.os }}
     timeout-minutes: 45
 
+    # runs-on: ${{ matrix.os }}
     # strategy:
     #   matrix:
     #     os: [ubuntu-20.04, macos-11]
