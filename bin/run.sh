@@ -52,13 +52,13 @@ checks () {
   time bin/run.sh package test clippy
 }
 
-test () {
-  in_test_env build_dna test_metal
-}
-
 test_watch () {
   # ensure_cargo_watch_installed
   shell "cargo watch -- bin/run.sh test"
+}
+
+test () {
+  in_test_env build_dna test_metal
 }
 
 test_metal () {
@@ -103,6 +103,10 @@ package_ui() {
   shell "npm run build || true"  # TODO fix and then remove `|| true`
   shell "npm run zip"
   shell "cd -"
+}
+
+build () {
+  run build_happ
 }
 
 build_happ () {
