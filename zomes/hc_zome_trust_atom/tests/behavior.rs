@@ -13,13 +13,11 @@ use holochain::sweettest::{
 };
 // use holochain::test_utils::consistency_10s;
 
-#[cfg(feature = "sweettest")]
 use hc_zome_trust_atom::{FractalNft, FractalNftInput, TransferArgs};
 
 const DNA_FILEPATH: &str = "../../workdir/dna/trust_atom.dna";
 
 #[tokio::test(flavor = "multi_thread")]
-#[cfg(feature = "sweettest")]
 pub async fn test_create() {
     let (conductor, _agent, cell1) = setup_1_conductor().await;
 

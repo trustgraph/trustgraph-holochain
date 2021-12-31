@@ -1,5 +1,6 @@
 [workspace]
 edition = "2021"
+resolver = "2"  # 2 is the default in 2021 edition
 rust-version = "1.57.0"  # require this rust version or later for users of the library
 
 members = [
@@ -16,16 +17,9 @@ opt-level = "z"
 incremental = true  # see https://nnethercote.github.io/perf-book/compile-times.html#incremental-compilation
 
 [patch.crates-io]
+
 # TODO: remove these when updating to a version of wasmer that fixes these issues
 # Link to branch: https://github.com/holochain/holochain-wasmer/compare/debug/v0.0.73-wasmer-build-error
 holochain_wasmer_host = { git = "https://github.com/holochain/holochain-wasmer.git", branch = "debug/v0.0.73-wasmer-build-error" }
 holochain_wasmer_guest = { git = "https://github.com/holochain/holochain-wasmer.git", branch = "debug/v0.0.73-wasmer-build-error" }
 holochain_wasmer_common = { git = "https://github.com/holochain/holochain-wasmer.git", branch = "debug/v0.0.73-wasmer-build-error" }
-# wasmer-compiler = "=2.0.0"
-# wasmer-compiler-cranelift = "=2.0.0"
-# wasmer-derive = "=2.0.0"
-# wasmer-engine = "=2.0.0"
-# wasmer-engine-dylib = "=2.0.0"
-# wasmer-engine-universal = "=2.0.0"
-# wasmer-types = "=2.0.0"
-# wasmer-vm = "=2.0.0"
