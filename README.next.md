@@ -12,6 +12,7 @@ TG
 - public viewable or private viewable
 - private viewing is by invite code/cap tokent
 - has an underlying DHT
+  - or two: 1 for read, one for write ?
 
 Rollups
 
@@ -123,6 +124,10 @@ Add 9-digit random after value:
 
 ---
 
+Link Tags:
+
+"2021-12-29T00:00:234"
+
 "Category~Pop~80s[x00]0.999999999[x00]"
 "[x00]0.999999999[x00]" // thumbs up
 "[x00]0.0[x00]" // thumbs down
@@ -133,12 +138,12 @@ Add 9-digit random after value:
 // sort by sales
 // sort by artist
 // sort by album
+// sort by recently rated?
 ```
 
 ---
 
-If a thumbs up is a "1" value (perfect score), what rollup score should we assign to an album with 30k thumbs ups vs another with 30 thumbs ups?  This invokes the reputon field of "how many ratings this reputon is synthesized from"...
-
+If a thumbs up is a "1" value (perfect score), what rollup score should we assign to an album with 30k thumbs ups vs another with 30 thumbs ups?  This invokes the reputon field [`sample-size`](https://datatracker.ietf.org/doc/html/rfc7071#section-6.3) -- "how many ratings this reputon is synthesized from"...
 
 ----
 
