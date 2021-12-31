@@ -1,0 +1,8 @@
+---
+manifest_version: "1"
+name: trust_atom
+uuid: ~
+properties: ~
+zomes:
+  - name: trust_atom
+    bundled: ../../target/wasm32-unknown-unknown/release/hc_zome_trust_atom.wasm

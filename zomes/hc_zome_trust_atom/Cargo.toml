@@ -1,0 +1,18 @@
+[package]
+name = "hc_zome_trust_atom"
+version = "0.0.1"
+authors = ["harlantwood", "code@harlantwood.net"]
+edition = "2021"  # todo is this needed, or just in workspace sufficient?
+
+[lib]
+name = "hc_zome_trust_atom"
+crate-type = ["cdylib", "rlib"]
+
+[dependencies]
+hdk = "0.0.116"
+serde = "1"
+
+[dev-dependencies]
+holochain = { version = "0.0.119", default-features = false, features = ["test_utils"] }
+tokio = {version = "1.3", features = ["full"]}
+futures = { version = "0.3.1", default-features = false }
