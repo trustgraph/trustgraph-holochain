@@ -1,19 +1,14 @@
 #![warn(warnings)]
 
-// stdlib:
-use std::collections::HashMap;
-
-// rust libs:
 use futures::future;
 
-// holochain:
 use hdk::prelude::*;
 use holochain::sweettest::{
     SweetAgents, SweetAppBatch, SweetCell, SweetConductor, SweetConductorBatch, SweetDnaFile,
 };
 // use holochain::test_utils::consistency_10s;
 
-use hc_zome_trust_atom::{FractalNft, FractalNftInput, TransferArgs};
+use hc_zome_trust_atom::TrustAtom;
 
 const DNA_FILEPATH: &str = "../../workdir/dna/trust_atom.dna";
 
@@ -21,22 +16,46 @@ const DNA_FILEPATH: &str = "../../workdir/dna/trust_atom.dna";
 pub async fn test_create() {
     let (conductor, _agent, cell1) = setup_1_conductor().await;
 
-    let mut agent_distributions = HashMap::new();
-    agent_distributions.insert("abc".to_string(), "0.02".to_string());
-    let trust_atom_input = FractalNftInput {
-        transferable: true,
-        agent_distributions: agent_distributions.clone(),
-        nft_distributions: HashMap::new(),
-    };
+    // let target = create_entry("target").await;
+    // let target: EntryHashB64 = "...".into(); // TODO
+    let result = TrustAtom::spike();
 
-    let trust_atom: FractalNft = conductor
-        .call(&cell1.zome("trust_atom"), "create", trust_atom_input)
-        .await;
+    assert_eq!(result, 42);
 
-    assert!(trust_atom.transferable);
-    assert_eq!(trust_atom.agent_distributions, agent_distributions);
-    // assert_eq!(trust_atom.final_distributions, agent_distributions);
-    assert_eq!(trust_atom.id.len(), 52);
+    // let target: EntryHashB64 = "...".into(); // TODO
+    // let content: String = "sushi".into();
+    // let value: f32 = 0.8;
+    // let attributes: BTreeMap<String, String> = BTreeMap::from([
+    //     ("original_rating_type".into(), "stars".into()),
+    //     ("original_rating_min".into(), "1".into()),
+    //     ("original_rating_max".into(), "5".into()),
+    //     ("original_rating_value".into(), "4".into()),
+    // ]);
+
+    // let trust_atom = TrustAtom.create(
+    //     target: target,
+    //     content: content,
+    //     value: value,
+    //     attributes: attributes,
+    // );
+}
+
+async fn setup_1_conductor() -> (SweetConductor, AgentPubKey, SweetCell) {
+    let dna = SweetDnaFile::from_bundle(std::path::Path::new(DNA_FILEPATH))
+        .await
+        .unwrap();
+
+    let mut conductor = SweetConductor::from_standard_config().await;
+
+    let agent = SweetAgents::one(conductor.keystore()).await;
+    let app1 = conductor
+        .setup_app_for_agent("app", agent.clone(), &[dna.clone()])
+        .await
+        .unwrap();
+
+    let cell1 = app1.into_cells()[0].clone();
+
+    (conductor, agent, cell1)
 }
 
 pub async fn setup_conductors(n: usize) -> (SweetConductorBatch, Vec<AgentPubKey>, SweetAppBatch) {

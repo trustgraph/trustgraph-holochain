@@ -1498,6 +1498,7 @@ version = "0.0.1"
 dependencies = [
  "futures",
  "hdk",
+ "holo_hash",
  "holochain",
  "serde",
  "tokio",

@@ -8,8 +8,8 @@
 // #![warn(clippy::cargo)]
 
 mod trust_atom;
-// pub use crate::trust_atom::{FractalNft, FractalNftInput, TransferArgs}; // public for sweettest; TODO can we fix this?
-// use crate::trust_atom::{FractalNftId, OwnershipQuery};
+pub use crate::trust_atom::TrustAtom; // public for sweettest; TODO can we fix this?
+                                      // use crate::trust_atom::{FractalNftId, OwnershipQuery};
 
 // #[hdk_extern]
 // pub fn create(input: FractalNftInput) -> ExternResult<FractalNft> {

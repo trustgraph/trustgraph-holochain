@@ -2,11 +2,8 @@
 name = "hc_zome_trust_atom"
 version = "0.0.1"
 authors = ["harlantwood", "code@harlantwood.net"]
-
-# todo are these needed, or just in workspace sufficient?
 edition = "2021"
-resolver = "2"  # 2 is the default in 2021 edition
-rust-version = "1.57.0"  # require this rust version or later for users of the library
+resolver = "2"
 
 [lib]
 name = "hc_zome_trust_atom"
@@ -14,6 +11,7 @@ crate-type = ["cdylib", "rlib"]
 
 [dependencies]
 hdk = "0.0.116"
+holo_hash = {version = "*", features = ["encoding"]}
 serde = "1"
 
 [dev-dependencies]
