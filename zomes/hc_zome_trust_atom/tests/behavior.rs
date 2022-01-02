@@ -1,43 +1,75 @@
 #![warn(warnings)]
 
+use std::collections::BTreeMap;
+
 use futures::future;
 
+// use hc_zome_trust_atom::Restaurant; // TEMP FOR TEST ONLY
+use hc_zome_trust_atom::{TrustAtom, TrustAtomInput};
+
 use hdk::prelude::*;
+use holo_hash::EntryHashB64;
 use holochain::sweettest::{
     SweetAgents, SweetAppBatch, SweetCell, SweetConductor, SweetConductorBatch, SweetDnaFile,
 };
 // use holochain::test_utils::consistency_10s;
 
-use hc_zome_trust_atom::TrustAtom;
-
 const DNA_FILEPATH: &str = "../../workdir/dna/trust_atom.dna";
 
+// #[ignore]
+// #[tokio::test(flavor = "multi_thread")]
+// pub async fn test_spike() {
+//     let (conductor, _agent, cell1) = setup_1_conductor().await;
+
+//     let result = hc_zome_trust_atom::spike();
+//     assert_eq!(result, 42);
+// }
+
+// #[ignore]
 #[tokio::test(flavor = "multi_thread")]
-pub async fn test_create() {
+pub async fn test_create_trust_atom() {
     let (conductor, _agent, cell1) = setup_1_conductor().await;
 
-    // let target = create_entry("target").await;
-    // let target: EntryHashB64 = "...".into(); // TODO
-    let result = TrustAtom::spike();
+    let target_entry_hashb64: EntryHashB64 = conductor
+        .call(
+            &cell1.zome("trust_atom"),
+            "create_string_target",
+            "Nuka Sushi",
+        )
+        .await;
 
-    assert_eq!(result, 42);
+    let content: String = "sushi".into();
+    let value: f32 = 0.8;
+    let attributes: BTreeMap<String, String> =
+        BTreeMap::from([("details".into(), "Excellent specials. The regular menu is so-so. Their coconut curry (special) is to die for".into())]);
 
-    // let target: EntryHashB64 = "...".into(); // TODO
-    // let content: String = "sushi".into();
-    // let value: f32 = 0.8;
-    // let attributes: BTreeMap<String, String> = BTreeMap::from([
-    //     ("original_rating_type".into(), "stars".into()),
-    //     ("original_rating_min".into(), "1".into()),
-    //     ("original_rating_max".into(), "5".into()),
-    //     ("original_rating_value".into(), "4".into()),
-    // ]);
+    let trust_atom_input = TrustAtomInput {
+        target: target_entry_hashb64.clone(),
+        content: content.clone(),
+        value: value,
+        attributes: attributes.clone(),
+    };
 
-    // let trust_atom = TrustAtom.create(
-    //     target: target,
-    //     content: content,
+    let trust_atom: TrustAtom = conductor
+        .call(
+            &cell1.zome("trust_atom"),
+            "create_trust_atom",
+            trust_atom_input,
+        )
+        .await;
+
+    // let trust_atom = create_trust_atom(TrustAtomInput {
+    //     target: target_entry_hashb64.clone(),
+    //     content: content.clone(),
     //     value: value,
-    //     attributes: attributes,
-    // );
+    //     attributes: attributes.clone(),
+    // })
+    // .unwrap();
+
+    assert_eq!(trust_atom.clone().target, target_entry_hashb64.clone());
+    assert_eq!(trust_atom.clone().content, content);
+    assert_eq!(trust_atom.clone().value, value);
+    assert_eq!(trust_atom.clone().attributes, attributes);
 }
 
 async fn setup_1_conductor() -> (SweetConductor, AgentPubKey, SweetCell) {

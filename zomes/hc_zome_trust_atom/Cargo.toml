@@ -3,7 +3,7 @@ name = "hc_zome_trust_atom"
 version = "0.0.1"
 authors = ["harlantwood", "code@harlantwood.net"]
 edition = "2021"
-resolver = "2"
+rust-version = "1.56.0"  # require rust >= 1.56 to enable 2021 edition
 
 [lib]
 name = "hc_zome_trust_atom"

@@ -1,8 +1,5 @@
 [workspace]
-edition = "2021"
 resolver = "2"  # 2 is the default in 2021 edition
-rust-version = "1.57.0"  # require this rust version or later for users of the library
-
 members = [
   "zomes/hc_zome_trust_atom",
   # "zomes/hc_zome_trust_graph",
@@ -18,7 +15,7 @@ incremental = true  # see https://nnethercote.github.io/perf-book/compile-times.
 
 [patch.crates-io]
 
-# TODO: remove these when updating to a version of wasmer that fixes these issues
+# TODO: remove these when holochain updates to a version of wasmer that fixes these issues
 # Link to branch: https://github.com/holochain/holochain-wasmer/compare/debug/v0.0.73-wasmer-build-error
 holochain_wasmer_host = { git = "https://github.com/holochain/holochain-wasmer.git", branch = "debug/v0.0.73-wasmer-build-error" }
 holochain_wasmer_guest = { git = "https://github.com/holochain/holochain-wasmer.git", branch = "debug/v0.0.73-wasmer-build-error" }
