@@ -46,7 +46,7 @@ pub async fn test_create_trust_atom() {
     let trust_atom_input = TrustAtomInput {
         target: target_entry_hashb64.clone(),
         content: content.clone(),
-        value: value,
+        value,
         attributes: attributes.clone(),
     };
 
@@ -66,10 +66,10 @@ pub async fn test_create_trust_atom() {
     // })
     // .unwrap();
 
-    assert_eq!(trust_atom.clone().target, target_entry_hashb64.clone());
-    assert_eq!(trust_atom.clone().content, content);
-    assert_eq!(trust_atom.clone().value, value);
-    assert_eq!(trust_atom.clone().attributes, attributes);
+    assert_eq!(trust_atom.target, target_entry_hashb64.clone());
+    assert_eq!(trust_atom.content, content);
+    assert_eq!(trust_atom.value, value);
+    assert_eq!(trust_atom.attributes, attributes);
 }
 
 async fn setup_1_conductor() -> (SweetConductor, AgentPubKey, SweetCell) {

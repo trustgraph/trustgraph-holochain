@@ -4,6 +4,8 @@
 #![deny(clippy::nursery)]
 #![deny(clippy::unwrap_used)]
 #![deny(clippy::unwrap_in_result)]
+#![allow(clippy::missing_errors_doc)] // TODO fix and remove this
+#![allow(clippy::missing_const_for_fn)]
 // #![warn(clippy::cargo)]
 
 use hdk::prelude::*;
