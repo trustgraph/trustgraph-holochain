@@ -42,7 +42,7 @@ shell () {
 }
 
 in_test_env () {
-  shell "CARGO_TARGET_DIR=target"
+  # shell "CARGO_TARGET_DIR=target"
   run_targets $*
 }
 
@@ -53,8 +53,11 @@ checks () {
 }
 
 test_watch () {
-  # ensure_cargo_watch_installed
   shell "cargo watch -- bin/run.sh test"
+}
+
+test_watch_clear () {
+  shell "cargo watch --clear -- bin/run.sh test"
 }
 
 test () {
