@@ -1,6 +1,6 @@
-# HoloTrust
+# TrustGraph::Holochain
 
-HoloTrust is a Rust library, intended to allow for [Hololchain](https://www.holochain.org) developers to easily use the [Trust Graph](https://github.com/trustgraph/trustgraph) protocol in their Happs.
+TrustGraph::Holochain is a Rust library, intended to allow for [Hololchain](https://www.holochain.org) developers to easily use the [Trust Graph](https://github.com/trustgraph/trustgraph) protocol in their Happs.
 
 A TrustGraph is
 
@@ -24,9 +24,9 @@ Rollups
 ```rs
 use holo_trust::prelude::*;
 
-let target: EntryHashB64 = "...".into(); // TODO
+let target: EntryHashB64 = "...".into(); // TODO // coming soon: HC HREL format hc://appid//hashid
 let content: String = "sushi".into();
-let value: f32 = 0.8;
+let value: f32 = 0.8;  // TODO decimal
 let attributes: BTreeMap<String, String> = BTreeMap::from([
   ("original_rating_type".into(), "stars".into()),
   ("original_rating_min".into(), "1".into()),
@@ -89,10 +89,30 @@ It encodes TrustAtoms as links, with the following components:
 1. Holochain Link `target` == TrustAtom `target` - entity being rated/reviewed/etc - one of:
     - `EntryHashB64`
     - `AgentPubKeyB64` (?)
-1. Holochain Link `tag` - formatted as UTF-8 string: one or more of:
-  - TrustAtom `content` - semantic info (eg sushi) - max 100 chars
+1. Holochain Link `tag` (max 999 bytes) - formatted as UTF-8 string: one or more of:
+  - TrustAtom header bytes: `[0xC5][0xA6]` (which together comprise the unicode character `Ŧ`)
+  - Direction byte:
+      - `[0x21][0x92]` (unicode `→`) means: HC target = TA target
+      - `[0x21][0xA9]` (unicode `↩`) means: HC target = TA source
+  - TrustAtom `content` - semantic info (eg sushi) - max 9xx bytes (max we can fit!)
+  - Separator: null byte `[0x00]`
   - TrustAtom `value` - rating ( `"-0.999999999"` to `"0.999999999"`) - max 12 chars
-  - additional attributes - `EntryHashB64`, where the entry contains attributes formatted in: `BTreeMap<String, String>`
+  - Separator: null byte `[0x00]`
+  - Random 9 characters for bucketing purposes
+  - Separator: null byte `[0x00]`
+  - Canonical data including additional attributes - `EntryHashB64`
+      - Entry contains attributes formatted in: `BTreeMap<String, String>`
+      - You will find full content here; if content exceeds link tag limts it ends with `…` as a hint
+      - If value is 1.0, we use "0.999999999" in link tag, but 1.0 here
+      - ~~Entry hash is raw bytes, not a string representation converted to bytes~~
+
+// search on base,
+// so have links in both directions?
+// or at the happ level, you can choose
+// which you treat as base
+// maybe reserve 1 byte at beginning -- bitmask which encodes direction and other things
+
+// maybe attributes contain source and target info, esp do not exist in DHT
 
 ## Link Tags
 
@@ -101,15 +121,15 @@ This format is designed to allow us to encode trust atoms as Holochain links, an
 Each link tag is a UTF8 string:
 1. optional: semantic content -- if hierarchical chunks, separated by `~`
     - example: `"Category~Pop~80s~Boy Band"`
-1. required: null byte (x00)
+1. required: null byte [0x00]
 1. optional: value as a string -- `"-0.999999999"` to `"0.999999999"`
-1. required: null byte (x00)
+1. required: null byte [0x00]
 
-Therefore, the minimum link tag is two null bytes: `[x00][x00]`, meaning no semantic content or value is attached.
+Therefore, the minimum link tag is two null bytes: `[0x00][0x00]`, meaning no semantic content or value is attached.
 
-Example of only semantic content: `"Category~Pop~80s~Boy Band[x00][x00]"`
+Example of only semantic content: `"Category~Pop~80s~Boy Band[0x00][0x00]"`
 
-Example of only value: `"[x00]0.8[x00]"`
+Example of only value: `"[0x00]0.8[0x00]"`
 
 *TODO* describe searching, both of semantic content and values
 
@@ -118,9 +138,15 @@ Example of only value: `"[x00]0.8[x00]"`
 ```
 Add 9-digit random after value:
 
-"Category~Pop~80s~user_ratings[x00]0.9[x00]328425615[x00]uHEntityId"
-"Category~Pop~user_ratings[x00]0.9[x00]328425615[x00]uHEntityId"
-"user_ratings[x00]0.9[x00]328425615[x00]uHEntityId"
+"Category~Pop~80s~user_ratings[0x00]0.9[0x00]328425615[0x00]uHEntityId"
+"Category~Pop~user_ratings[0x00]0.9[0x00]328425615[0x00]uHEntityId"
+"user_ratings[0x00]0.9[0x00]328425615[0x00]uHEntityId"
+
+
+"Ŧ→Category~Pop~80s~user_ratings�0.9�328425615�uHEntityId"
+
+"Ŧ→pop�0.999999999�328425615�"
+"Ŧ→pop�0.999999999��uHEntityId"
 
 ---
 
@@ -128,12 +154,12 @@ Link Tags:
 
 "2021-12-29T00:00:234"
 
-"Category~Pop~80s[x00]0.999999999[x00]"
-"[x00]0.999999999[x00]" // thumbs up
-"[x00]0.0[x00]" // thumbs down
-"[x00]-0.999999999[x00]" // flag/spam/abuse
+"Category~Pop~80s[0x00]0.999999999[0x00]"
+"[0x00]0.999999999[0x00]" // thumbs up
+"[0x00]0.0[0x00]" // thumbs down
+"[0x00]-0.999999999[0x00]" // flag/spam/abuse
 
-"drums[x00]0.999999999[x00]"
+"drums[0x00]0.999999999[0x00]"
 
 // sort by sales
 // sort by artist
