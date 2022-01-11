@@ -4,8 +4,7 @@ use std::collections::BTreeMap;
 
 use futures::future;
 
-// use hc_zome_trust_atom::Restaurant; // TEMP FOR TEST ONLY
-use hc_zome_trust_atom::{TrustAtom, TrustAtomInput};
+use hc_zome_trust_atom::{SearchInput, TrustAtom, TrustAtomInput};
 
 use hdk::prelude::*;
 use holo_hash::EntryHashB64;
@@ -58,18 +57,27 @@ pub async fn test_create_trust_atom() {
         )
         .await;
 
-    // let trust_atom = create_trust_atom(TrustAtomInput {
-    //     target: target_entry_hashb64.clone(),
-    //     content: content.clone(),
-    //     value: value,
-    //     attributes: attributes.clone(),
-    // })
-    // .unwrap();
-
     assert_eq!(trust_atom.target, target_entry_hashb64.clone());
     assert_eq!(trust_atom.content, content);
     assert_eq!(trust_atom.value, value);
     assert_eq!(trust_atom.attributes, attributes);
+
+    let search_input: SearchInput = SearchInput {
+        content_starts_with: Some("sushi".into()),
+        min_rating: Some("0.0".into()),
+        source: None,
+        target: None,
+    };
+
+    let trust_atoms_from_query: Vec<TrustAtom> = conductor
+        .call(&cell1.zome("trust_atom"), "query", search_input)
+        .await;
+
+    assert_eq!(trust_atoms_from_query.len(), 1);
+    assert_eq!(trust_atoms_from_query[0].target, target_entry_hashb64);
+    assert_eq!(trust_atoms_from_query[0].content, content);
+    assert_eq!(trust_atoms_from_query[0].value, value);
+    assert_eq!(trust_atoms_from_query[0].attributes, attributes);
 }
 
 async fn setup_1_conductor() -> (SweetConductor, AgentPubKey, SweetCell) {

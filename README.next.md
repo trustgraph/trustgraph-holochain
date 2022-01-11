@@ -57,14 +57,17 @@ let trust_graph = TrustGraph.create(
   trust_atoms: trust_graph_atoms
 )
 
-let trust_atoms: Vector<TrustAtom> = trust_graph.highest(
-  content_starts_with: "Category~Pop~80s".into(),
-  exclude: vec![
-    // TA's which client has already seen, ie previous "pages" (or screens in infinite scroll)
-  ]
+let trust_atoms: Vec<TrustAtom> = trust_graph.where(
+  content_starts_with: Some("Category~Pop~80s".into()),
+  min_rating: Some("0.0"),
+  source: Some("agentpubkey TODO"),
+  target: Some("entry hash b64 TODO"),
 )
-// TODO ask HC core team about pagination support <-- and/or max # results for link queries
-// what if a million links?  a billion?
+
+let trust_atoms: Vec<TrustAtom> = trust_graph.where(
+  content_starts_with: "Category~Pop~80s".into(),
+  min_rating: "0.0"
+)
 
 let trust_graph_2 = trust_graph.copy(
     with: vec![
@@ -84,7 +87,7 @@ trust_graph.rollup() // <-- do useful work of synthesizing TG to top level; mayb
 It encodes TrustAtoms as links, with the following components:
 
 1. Holochain Link `base` == TrustAtom `source` - one of:
-    - creating agent (`AgentPubKeyB64`) - TODO source must be an entry - do we need to make an entry pointing to the current user?
+    - creating agent (`AgentPubKeyB64`)
     - TrustGraph (`EntryHashB64`) (described below)
 1. Holochain Link `target` == TrustAtom `target` - entity being rated/reviewed/etc - one of:
     - `EntryHashB64`
