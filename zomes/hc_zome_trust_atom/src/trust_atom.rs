@@ -3,11 +3,11 @@
 use std::collections::BTreeMap;
 
 use hdk::prelude::*;
-use holo_hash::{EntryHashB64, HoloHashB64};
+use holo_hash::EntryHashB64;
 
 enum LinkDirection {
     Forward,
-    Backward,
+    Reverse,
 }
 
 /// Client-facing representation of a Trust Atom
@@ -39,15 +39,20 @@ pub struct SearchInput {
     pub target: Option<EntryHashB64>,
 }
 
-#[derive(Serialize, Deserialize, Debug, SerializedBytes)]
-struct StringLinkTag(String);
-
 #[hdk_entry(id = "restaurant", visibility = "public")]
 #[derive(Clone)]
 pub struct StringTarget(String);
 
 impl TrustAtom {
-    pub fn create(input: TrustAtomInput) -> ExternResult<Self> {
+    pub fn create(input: TrustAtomInput) -> ExternResult<()> {
+        let agent_info = agent_info()?;
+        let agent_address: AnyDhtHash = agent_info.agent_initial_pubkey.clone().into();
+
+        let link_tag_string = input.content.clone();
+        let link_tag = link_tag(link_tag_string)?;
+
+        create_link(agent_address.into(), input.target.into(), link_tag)?;
+
         // let trust_atom = Self {
         //     target: input.target,
         //     content: input.content,
@@ -55,7 +60,8 @@ impl TrustAtom {
         //     attributes: input.attributes,
         // };
         // Ok(trust_atom)
-        unimplemented!()
+
+        Ok(())
     }
 
     /// Required: exactly one of source or target
@@ -63,21 +69,21 @@ impl TrustAtom {
     /// Arguments act as additive filters (AND)
     pub fn query(
         content_starts_with: Option<String>,
-        min_rating: Option<String>,
+        _min_rating: Option<String>,
         source: Option<EntryHashB64>,
         target: Option<EntryHashB64>,
     ) -> ExternResult<Vec<Self>> {
-        let link_direction: LinkDirection;
+        // let link_direction: LinkDirection;
 
         let (link_direction, link_base) = match (source, target) {
             (Some(source), None) => (LinkDirection::Forward, source),
-            (None, Some(target)) => (LinkDirection::Backward, target),
+            (None, Some(target)) => (LinkDirection::Reverse, target),
             (None, None) => {
                 return Err(WasmError::Guest(
                     "Either source or target must be specified".into(),
                 ))
             }
-            (Some(source), Some(target)) => {
+            (Some(_source), Some(_target)) => {
                 return Err(WasmError::Guest(
                     "Exactly one of source or target must be specified, but not both".into(),
                 ))
@@ -117,6 +123,7 @@ impl TrustAtom {
         link_base: &EntryHashB64,
     ) -> ExternResult<TrustAtom> {
         let link_target = link.target;
+
         let link_tag = match String::from_utf8(link.tag.clone().into_inner()) {
             Ok(link_tag) => link_tag,
             Err(_) => {
@@ -126,6 +133,15 @@ impl TrustAtom {
                 )))
             }
         };
+
+        // let link_tag_string_result = String::from_utf8(link.tag.clone().into_inner());
+        // let link_tag = link_tag_string_result.or_else(|_| {
+        //     Err(WasmError::Guest(format!(
+        //         "Link tag is not valid UTF-8 -- found: {}",
+        //         String::from_utf8_lossy(&link.tag.into_inner())
+        //     )))
+        // })?;
+
         let trust_atom = match link_direction {
             LinkDirection::Forward => {
                 Self {
@@ -138,7 +154,7 @@ impl TrustAtom {
                     attributes: BTreeMap::new(), // TODO
                 }
             }
-            LinkDirection::Backward => {
+            LinkDirection::Reverse => {
                 Self {
                     source: "".into(),   // TODO
                     target: "".into(),   // TODO
@@ -154,18 +170,21 @@ impl TrustAtom {
     }
 }
 
-pub fn _create_string_target(input: String) -> ExternResult<EntryHashB64> {
+pub fn create_string_target(input: String) -> ExternResult<EntryHashB64> {
     let string_target = StringTarget(input);
 
     create_entry(string_target.clone())?;
 
     let target_entry_hash = hash_entry(string_target)?;
     let target_entry_hashb64: EntryHashB64 = target_entry_hash.into();
-    debug!("target_entry_hashb64: {:#?}", target_entry_hashb64);
+    // debug!("target_entry_hashb64: {:#?}", target_entry_hashb64);
     Ok(target_entry_hashb64)
 }
 
-fn link_tag(tag: String) -> ExternResult<LinkTag> {
+#[derive(Serialize, Deserialize, Debug, SerializedBytes)]
+struct StringLinkTag(String);
+
+pub fn link_tag(tag: String) -> ExternResult<LinkTag> {
     let serialized_bytes: SerializedBytes = StringLinkTag(tag).try_into()?;
     Ok(LinkTag(serialized_bytes.bytes().clone()))
 }

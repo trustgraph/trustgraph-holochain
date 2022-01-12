@@ -181,3 +181,5 @@ Guardian has Sally's privately shared TG in their TG
 - protects her by only publishing rollup TAs, of her and other TGs they follow
 
 What if being invited to a DHT implies access to the next level of DHTs?
+
+hash bound source chain queries

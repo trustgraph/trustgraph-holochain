@@ -11,19 +11,20 @@
 use hdk::prelude::*;
 use holo_hash::EntryHashB64;
 
-mod trust_atom;
 // public for sweettest; TODO can we fix this:
-// pub use crate::trust_atom::spike;
+pub mod trust_atom;
 pub use crate::trust_atom::SearchInput;
 pub use crate::trust_atom::StringTarget;
 pub use crate::trust_atom::TrustAtom;
 pub use crate::trust_atom::TrustAtomInput;
-pub use crate::trust_atom::_create_string_target;
+
+pub mod test_helpers;
+// pub use crate::test_helpers;
 
 entry_defs![StringTarget::entry_def()];
 
 #[hdk_extern]
-pub fn create_trust_atom(input: TrustAtomInput) -> ExternResult<TrustAtom> {
+pub fn create_trust_atom(input: TrustAtomInput) -> ExternResult<()> {
     TrustAtom::create(input)
 }
 
@@ -39,13 +40,12 @@ pub fn query(input: SearchInput) -> ExternResult<Vec<TrustAtom>> {
 
 #[hdk_extern]
 pub fn create_string_target(input: String) -> ExternResult<EntryHashB64> {
-    create_string_target(input)
+    crate::trust_atom::create_string_target(input)
 }
 
-// // TEMP FOR TEST ONLY:
-// #[hdk_entry(id = "restaurant", visibility = "public")]
-// #[derive(Clone)]
-// pub struct Restaurant {
-//     pub website: String,
-// }
-// entry_defs![Restaurant::entry_def()];
+// TEST HELPERS
+
+#[hdk_extern]
+pub fn test_helper_list_links((link_tag, base): (String, AnyDhtHash)) -> ExternResult<Vec<Link>> {
+    test_helpers::list_links(link_tag, base)
+}

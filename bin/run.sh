@@ -65,7 +65,7 @@ test () {
 }
 
 test_metal () {
-  shell "cargo test -- --nocapture"
+  shell "RUST_LOG=debug cargo test -- --nocapture"
 }
 
 dev_watch () {
