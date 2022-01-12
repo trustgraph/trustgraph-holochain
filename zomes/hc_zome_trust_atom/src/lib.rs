@@ -46,6 +46,13 @@ pub fn create_string_target(input: String) -> ExternResult<EntryHashB64> {
 // TEST HELPERS
 
 #[hdk_extern]
-pub fn test_helper_list_links((link_tag, base): (String, AnyDhtHash)) -> ExternResult<Vec<Link>> {
-    test_helpers::list_links(link_tag, base)
+pub fn test_helper_list_links(
+    (base, link_tag_text): (AnyDhtHash, Option<String>),
+) -> ExternResult<Vec<Link>> {
+    test_helpers::list_links(base, link_tag_text)
+}
+
+#[hdk_extern]
+pub fn test_helper_list_links_for_base(base: AnyDhtHash) -> ExternResult<Vec<Link>> {
+    test_helpers::list_links_for_base(base)
 }

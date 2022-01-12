@@ -146,7 +146,13 @@ Add 9-digit random after value:
 "user_ratings[0x00]0.9[0x00]328425615[0x00]uHEntityId"
 
 
-"Ŧ→Category~Pop~80s~user_ratings�0.9�328425615�uHEntityId"
+"Ŧ→Category~Pop~80s~user_ratings�-0.999999999�328425615�uHEntityId"
+"Ŧ→Category~Pop~80s~user_ratings�0.999999999�328425615�uHEntityId"
+"Ŧ→Category~Pop~80s~user_ratings�0.999999999�328425615�uHEntityId"
+"Ŧ→Category~Pop~80s~user_ratings�0.999999999�328425615�uHEntityId"
+"Ŧ→Category~Pop~80s~user_ratings�0.999999999�328425615�uHEntityId"
+"Ŧ→Category~Pop~80s~user_ratings�0.900000000�328425615�uHEntityId"
+"Ŧ→Category~Pop~80s~user_ratings�0.800000000�328425615�uHEntityId"
 
 "Ŧ→pop�0.999999999�328425615�"
 "Ŧ→pop�0.999999999��uHEntityId"
@@ -183,3 +189,8 @@ Guardian has Sally's privately shared TG in their TG
 What if being invited to a DHT implies access to the next level of DHTs?
 
 hash bound source chain queries
+
+----
+
+links - become references
+- source and target optional

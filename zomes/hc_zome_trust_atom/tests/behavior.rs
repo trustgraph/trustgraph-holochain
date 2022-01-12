@@ -68,8 +68,8 @@ pub async fn test_create_trust_atom() {
     let links: Vec<Link> = conductor
         .call(
             &cell1.zome("trust_atom"),
-            "test_helper_list_links",
-            ("sushi".to_string(), agent_address),
+            "test_helper_list_links_for_base",
+            agent_address,
         )
         .await;
 

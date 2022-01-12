@@ -48,7 +48,7 @@ impl TrustAtom {
         let agent_info = agent_info()?;
         let agent_address: AnyDhtHash = agent_info.agent_initial_pubkey.clone().into();
 
-        let link_tag_string = input.content.clone();
+        let link_tag_string = format!("{}{}{}", "Ŧ", "→", input.content.clone());
         let link_tag = link_tag(link_tag_string)?;
 
         create_link(agent_address.into(), input.target.into(), link_tag)?;
