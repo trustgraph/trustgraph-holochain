@@ -10,6 +10,7 @@ use futures::future;
 use hc_zome_trust_atom::{SearchInput, TrustAtom, TrustAtomInput};
 
 use hdk::prelude::*;
+use holo_hash::AgentPubKeyB64;
 use holo_hash::EntryHashB64;
 use holochain::sweettest::{
     SweetAgents, SweetAppBatch, SweetCell, SweetConductor, SweetConductorBatch, SweetDnaFile,
@@ -33,6 +34,8 @@ pub async fn test_create_trust_atom() {
 
     let (conductor, _agent, cell1) = setup_1_conductor().await;
 
+    // CREATE TARGET ENTRY
+
     let target_entry_hashb64: EntryHashB64 = conductor
         .call(
             &cell1.zome("trust_atom"),
@@ -40,6 +43,8 @@ pub async fn test_create_trust_atom() {
             "Nuka Sushi",
         )
         .await;
+
+    // CREATE TRUST ATOM
 
     let content: String = "sushi".into();
     let value: f32 = 0.8;
@@ -63,9 +68,9 @@ pub async fn test_create_trust_atom() {
 
     let agent_address: AnyDhtHash = _agent.clone().into();
 
-    // let agentB64: EntryHashB64 = _agent.as_hash().into();
+    // CHECK FORWARD LINK
 
-    let links: Vec<Link> = conductor
+    let forward_links: Vec<Link> = conductor
         .call(
             &cell1.zome("trust_atom"),
             "test_helper_list_links_for_base",
@@ -73,19 +78,44 @@ pub async fn test_create_trust_atom() {
         )
         .await;
 
-    assert_eq!(links.len(), 1);
-    let link = links.first().unwrap();
+    assert_eq!(forward_links.len(), 1);
+    let link = &forward_links[0];
 
     let target_from_link: EntryHashB64 = link.clone().target.into();
     assert_eq!(target_from_link, target_entry_hashb64);
 
     // println!("link bytes: {:#?}", link.clone().tag.into_inner());
-    let link_bytes = link.clone().tag.into_inner();
-    let relevant_link_bytes = link_bytes[1..].to_vec(); // skip the first byte, which may be the link type???  we get 165:u8
+    let link_tag_bytes = link.clone().tag.into_inner();
+    let relevant_link_bytes = link_tag_bytes[1..].to_vec(); // skip the first byte, which may be the link type???  we get 165:u8
     assert_eq!(
         String::from_utf8(relevant_link_bytes).unwrap(),
         "Ŧ→sushi".to_string()
     );
+
+    // CHECK BACKWARD LINK
+
+    let backward_links: Vec<Link> = conductor
+        .call(
+            &cell1.zome("trust_atom"),
+            "test_helper_list_links_for_base",
+            target_entry_hashb64,
+        )
+        .await;
+
+    assert_eq!(backward_links.len(), 1);
+    let link = &backward_links[0];
+
+    // TODO
+    // let target_from_link: EntryHashB64 = link.clone().target.into();
+    // let agent_address_b64: AgentPubKeyB64 = agent_address.clone().into();
+    // assert_eq!(target_from_link, agent_address_b64);
+
+    // println!("link bytes: {:#?}", link.clone().tag.into_inner());
+    let link_tag_bytes = link.clone().tag.into_inner();
+    let relevant_link_bytes = link_tag_bytes[1..].to_vec(); // skip the first byte, which may be the link type???  we get 165:u8
+    let relevant_link_string = String::from_utf8(relevant_link_bytes).unwrap();
+    println!("relevant link: {:#?}", relevant_link_string);
+    assert_eq!(relevant_link_string, "Ŧ↩sushi".to_string());
 
     // assert_eq!(trust_atom.target, target_entry_hashb64.clone());
     // assert_eq!(trust_atom.content, content);

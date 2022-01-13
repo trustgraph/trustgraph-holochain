@@ -43,15 +43,36 @@ pub struct SearchInput {
 #[derive(Clone)]
 pub struct StringTarget(String);
 
+const LINK_TAG_HEADER: &str = "Ŧ";
+const LINK_TAG_DIRECTION_FORWARD: &str = "→";
+const LINK_TAG_DIRECTION_BACKWARD: &str = "↩";
+
 impl TrustAtom {
     pub fn create(input: TrustAtomInput) -> ExternResult<()> {
         let agent_info = agent_info()?;
         let agent_address: AnyDhtHash = agent_info.agent_initial_pubkey.clone().into();
 
-        let link_tag_string = format!("{}{}{}", "Ŧ", "→", input.content.clone());
-        let link_tag = link_tag(link_tag_string)?;
+        let forward_link_tag_string = format!(
+            "{}{}{}",
+            LINK_TAG_HEADER,
+            LINK_TAG_DIRECTION_FORWARD,
+            input.content.clone()
+        );
+        let forward_link_tag = link_tag(forward_link_tag_string)?;
+        create_link(
+            agent_address.clone().into(),
+            input.target.clone().into(),
+            forward_link_tag,
+        )?;
 
-        create_link(agent_address.into(), input.target.into(), link_tag)?;
+        let backward_link_tag_string = format!(
+            "{}{}{}",
+            LINK_TAG_HEADER,
+            LINK_TAG_DIRECTION_BACKWARD,
+            input.content.clone()
+        );
+        let backward_link_tag = link_tag(backward_link_tag_string)?;
+        create_link(input.target.into(), agent_address.into(), backward_link_tag)?;
 
         // let trust_atom = Self {
         //     target: input.target,
@@ -176,9 +197,7 @@ pub fn create_string_target(input: String) -> ExternResult<EntryHashB64> {
     create_entry(string_target.clone())?;
 
     let target_entry_hash = hash_entry(string_target)?;
-    let target_entry_hashb64: EntryHashB64 = target_entry_hash.into();
-    // debug!("target_entry_hashb64: {:#?}", target_entry_hashb64);
-    Ok(target_entry_hashb64)
+    Ok(target_entry_hash.into())
 }
 
 #[derive(Serialize, Deserialize, Debug, SerializedBytes)]
