@@ -25,12 +25,12 @@ entry_defs![StringTarget::entry_def()];
 
 #[hdk_extern]
 pub fn create_trust_atom(input: TrustAtomInput) -> ExternResult<()> {
-    TrustAtom::create(input)
+    trust_atom::create(input)
 }
 
 #[hdk_extern]
 pub fn query(input: SearchInput) -> ExternResult<Vec<TrustAtom>> {
-    TrustAtom::query(
+    trust_atom::query(
         input.content_starts_with,
         input.min_rating,
         input.source,
