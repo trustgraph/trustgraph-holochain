@@ -27,7 +27,7 @@ pub struct TrustAtom {
 pub struct TrustAtomInput {
     pub target: EntryHashB64,
     pub content: String,
-    pub value: f32,
+    pub value: String,
     pub attributes: BTreeMap<String, String>,
 }
 
@@ -48,14 +48,17 @@ const LINK_TAG_DIRECTION_FORWARD: &str = "→";
 const LINK_TAG_DIRECTION_BACKWARD: &str = "↩";
 
 pub fn create(input: TrustAtomInput) -> ExternResult<()> {
+    let unicode_nul = std::str::from_utf8(&[0]).unwrap();
     let agent_info = agent_info()?;
     let agent_address: AnyDhtHash = agent_info.agent_initial_pubkey.clone().into();
 
     let forward_link_tag_string = format!(
-        "{}{}{}",
+        "{}{}{}{}{}",
         LINK_TAG_HEADER,
         LINK_TAG_DIRECTION_FORWARD,
-        input.content.clone()
+        input.content.clone(),
+        unicode_nul,
+        input.value
     );
     let forward_link_tag = link_tag(forward_link_tag_string)?;
     create_link(

@@ -18,20 +18,19 @@ use holochain::sweettest::{
 
 const DNA_FILEPATH: &str = "../../workdir/dna/trust_atom.dna";
 
-// #[ignore]
-// #[tokio::test(flavor = "multi_thread")]
-// pub async fn test_spike() {
-//     let (conductor, _agent, cell1) = setup_1_conductor().await;
+#[tokio::test]
+pub async fn test_unicode_null() {
+    let unicode_nul: &str = std::str::from_utf8(&[0]).unwrap();
+    assert_eq!(
+        unicode_nul.as_bytes(),
+        &[0] // '\u{00}' // .to_string() // .replace("\u{00}", "�")
+             // .as_str()
+    );
+}
 
-//     let result = hc_zome_trust_atom::spike();
-//     assert_eq!(result, 42);
-// }
-
-// #[ignore]
 #[tokio::test(flavor = "multi_thread")]
 pub async fn test_create_trust_atom() {
-    std::env::set_var("RUST_LOG", "debug");
-
+    let unicode_nul: &str = std::str::from_utf8(&[0]).unwrap();
     let (conductor, _agent, cell1) = setup_1_conductor().await;
 
     // CREATE TARGET ENTRY
@@ -47,7 +46,7 @@ pub async fn test_create_trust_atom() {
     // CREATE TRUST ATOM
 
     let content: String = "sushi".into();
-    let value: f32 = 0.8;
+    let value: String = "0.8".into();
     let attributes: BTreeMap<String, String> =
         BTreeMap::from([("details".into(), "Excellent specials. The regular menu is so-so. Their coconut curry (special) is to die for".into())]);
 
@@ -87,10 +86,16 @@ pub async fn test_create_trust_atom() {
     // println!("link bytes: {:#?}", link.clone().tag.into_inner());
     let link_tag_bytes = link.clone().tag.into_inner();
     let relevant_link_bytes = link_tag_bytes[1..].to_vec(); // skip the first byte, which may be the link type???  we get 165:u8
-    assert_eq!(
-        String::from_utf8(relevant_link_bytes).unwrap(),
-        "Ŧ→sushi".to_string()
-    );
+    let relevant_link_string = String::from_utf8(relevant_link_bytes).unwrap();
+    let expected_link_tag_string = format!("{}{}{}{}{}", "Ŧ", "→", "sushi", unicode_nul, "0.8");
+    // println!("expected_link_tag_string: {:#?}", expected_link_tag_string);
+    println!("relevant_link_string: {:#?}", relevant_link_string);
+    assert_eq!(relevant_link_string, expected_link_tag_string);
+
+    let chunks: Vec<&str> = relevant_link_string.split(unicode_nul).collect();
+    assert_eq!(chunks.len(), 2);
+    assert_eq!(chunks[0], "Ŧ→sushi");
+    assert_eq!(chunks[1], "0.8");
 
     // CHECK BACKWARD LINK
 
@@ -114,31 +119,27 @@ pub async fn test_create_trust_atom() {
     let link_tag_bytes = link.clone().tag.into_inner();
     let relevant_link_bytes = link_tag_bytes[1..].to_vec(); // skip the first byte, which may be the link type???  we get 165:u8
     let relevant_link_string = String::from_utf8(relevant_link_bytes).unwrap();
-    println!("relevant link: {:#?}", relevant_link_string);
+    // println!("relevant link: {:#?}", relevant_link_string);
     assert_eq!(relevant_link_string, "Ŧ↩sushi".to_string());
-
-    // assert_eq!(trust_atom.target, target_entry_hashb64.clone());
-    // assert_eq!(trust_atom.content, content);
-    // assert_eq!(trust_atom.value, value);
-    // assert_eq!(trust_atom.attributes, attributes);
-
-    // let search_input: SearchInput = SearchInput {
-    //     content_starts_with: Some("sushi".into()),
-    //     min_rating: Some("0.0".into()),
-    //     source: None,
-    //     target: None,
-    // };
-
-    // let trust_atoms_from_query: Vec<TrustAtom> = conductor
-    //     .call(&cell1.zome("trust_atom"), "query", search_input)
-    //     .await;
-
-    // assert_eq!(trust_atoms_from_query.len(), 1);
-    // // assert_eq!(trust_atoms_from_query[0].target, target_entry_hashb64);
-    // assert_eq!(trust_atoms_from_query[0].content, content);
-    // // assert_eq!(trust_atoms_from_query[0].value, value);
-    // assert_eq!(trust_atoms_from_query[0].attributes, attributes);
 }
+
+// TEST QUERY:
+// let search_input: SearchInput = SearchInput {
+//     content_starts_with: Some("sushi".into()),
+//     min_rating: Some("0.0".into()),
+//     source: None,
+//     target: None,
+// };
+
+// let trust_atoms_from_query: Vec<TrustAtom> = conductor
+//     .call(&cell1.zome("trust_atom"), "query", search_input)
+//     .await;
+
+// assert_eq!(trust_atoms_from_query.len(), 1);
+// // assert_eq!(trust_atoms_from_query[0].target, target_entry_hashb64);
+// assert_eq!(trust_atoms_from_query[0].content, content);
+// // assert_eq!(trust_atoms_from_query[0].value, value);
+// assert_eq!(trust_atoms_from_query[0].attributes, attributes);
 
 async fn setup_1_conductor() -> (SweetConductor, AgentPubKey, SweetCell) {
     let dna = SweetDnaFile::from_bundle(std::path::Path::new(DNA_FILEPATH))

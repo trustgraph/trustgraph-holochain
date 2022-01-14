@@ -65,7 +65,7 @@ test () {
 }
 
 test_metal () {
-  shell "cargo test -- --nocapture"
+  shell "time cargo test -- --nocapture"
 }
 
 dev_watch () {

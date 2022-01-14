@@ -24,7 +24,7 @@ Rollups
 ```rs
 use holo_trust::prelude::*;
 
-let target: EntryHashB64 = "...".into(); // TODO // coming soon: HC HREL format hc://appid//hashid
+let target: EntryHashB64 = "...".into(); // TODO // coming soon: HC HREL format hc://appid//hashid -- maybe should be hc://dna_hash//entry_hash|header_hash|agent_pub_key
 let content: String = "sushi".into();
 let value: f32 = 0.8;  // TODO decimal
 let attributes: BTreeMap<String, String> = BTreeMap::from([
