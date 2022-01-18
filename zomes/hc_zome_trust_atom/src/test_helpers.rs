@@ -2,13 +2,13 @@
 
 use hdk::prelude::*;
 
-pub fn list_links_for_base(base: AnyDhtHash) -> ExternResult<Vec<Link>> {
+pub fn list_links_for_base(base: EntryHash) -> ExternResult<Vec<Link>> {
     let links = hdk::link::get_links(base.into(), None)?;
 
     Ok(links)
 }
 
-pub fn list_links(base: AnyDhtHash, link_tag_text: Option<String>) -> ExternResult<Vec<Link>> {
+pub fn list_links(base: EntryHash, link_tag_text: Option<String>) -> ExternResult<Vec<Link>> {
     let link_tag = match link_tag_text {
         Some(link_tag_text) => Some(link_tag(link_tag_text)?),
         None => None,

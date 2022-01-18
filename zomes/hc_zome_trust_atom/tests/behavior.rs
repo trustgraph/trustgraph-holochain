@@ -7,11 +7,13 @@ use std::collections::BTreeMap;
 
 use futures::future;
 
-use hc_zome_trust_atom::{SearchInput, TrustAtom, TrustAtomInput};
+// use hc_zome_trust_atom::SearchInput;
+// use hc_zome_trust_atom::TrustAtom;
+use hc_zome_trust_atom::TrustAtomInput;
 
 use hdk::prelude::*;
-use holo_hash::AgentPubKeyB64;
-use holo_hash::EntryHashB64;
+// use holo_hash::AgentPubKeyB64;
+// use holo_hash::EntryHashB64;
 use holochain::sweettest::{
     SweetAgents, SweetAppBatch, SweetCell, SweetConductor, SweetConductorBatch, SweetDnaFile,
 };
@@ -65,7 +67,7 @@ pub async fn test_create_trust_atom() {
         )
         .await;
 
-    let agent_address: AnyDhtHash = _agent.clone().into();
+    let agent_address: EntryHash = _agent.clone().into();
 
     // CHECK FORWARD LINK
 

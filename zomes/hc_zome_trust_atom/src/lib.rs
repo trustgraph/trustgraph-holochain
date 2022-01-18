@@ -47,12 +47,12 @@ pub fn create_string_target(input: String) -> ExternResult<EntryHashB64> {
 
 #[hdk_extern]
 pub fn test_helper_list_links(
-    (base, link_tag_text): (AnyDhtHash, Option<String>),
+    (base, link_tag_text): (EntryHash, Option<String>),
 ) -> ExternResult<Vec<Link>> {
     test_helpers::list_links(base, link_tag_text)
 }
 
 #[hdk_extern]
-pub fn test_helper_list_links_for_base(base: AnyDhtHash) -> ExternResult<Vec<Link>> {
+pub fn test_helper_list_links_for_base(base: EntryHash) -> ExternResult<Vec<Link>> {
     test_helpers::list_links_for_base(base)
 }

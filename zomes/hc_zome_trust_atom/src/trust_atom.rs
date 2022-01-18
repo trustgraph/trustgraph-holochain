@@ -50,7 +50,7 @@ const LINK_TAG_DIRECTION_BACKWARD: &str = "↩";
 pub fn create(input: TrustAtomInput) -> ExternResult<()> {
     let unicode_nul = std::str::from_utf8(&[0]).unwrap();
     let agent_info = agent_info()?;
-    let agent_address: AnyDhtHash = agent_info.agent_initial_pubkey.clone().into();
+    let agent_address: EntryHash = agent_info.agent_initial_pubkey.clone().into();
 
     let forward_link_tag_string = format!(
         "{}{}{}{}{}",
