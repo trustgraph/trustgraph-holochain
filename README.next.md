@@ -88,16 +88,16 @@ It encodes TrustAtoms as links, with the following components:
 
 1. Holochain Link `base` == TrustAtom `source` - one of:
     - creating agent (`AgentPubKeyB64`)
-    - TrustGraph (`EntryHashB64`) (described below)
+    - TrustGraph (`EntryHashB64`)
 1. Holochain Link `target` == TrustAtom `target` - entity being rated/reviewed/etc - one of:
     - `EntryHashB64`
-    - `AgentPubKeyB64` (?)
-1. Holochain Link `tag` (max 999 bytes) - formatted as UTF-8 string: one or more of:
-  - TrustAtom header bytes: `[0xC5][0xA6]` (which together comprise the unicode character `Ŧ`)
+    - `AgentPubKeyB64`
+1. Holochain Link `tag` (max 999 bytes) - formatted as UTF-8 string:
+  - TrustAtom header bytes: `[0xC5][0xA6]` (which together comprise the unicode character `Ŧ`) (required)
   - Direction byte:
       - `[0x21][0x92]` (unicode `→`) means: HC target = TA target
       - `[0x21][0xA9]` (unicode `↩`) means: HC target = TA source
-  - TrustAtom `content` - semantic info (eg sushi) - max 9xx bytes (max we can fit!)
+  - TrustAtom `content` - semantic info (eg sushi) - max 900 bytes
   - Separator: null byte `[0x00]`
   - TrustAtom `value` - rating ( `"-0.999999999"` to `"0.999999999"`) - max 12 chars
   - Separator: null byte `[0x00]`
@@ -107,7 +107,7 @@ It encodes TrustAtoms as links, with the following components:
       - Entry contains attributes formatted in: `BTreeMap<String, String>`
       - You will find full content here; if content exceeds link tag limts it ends with `…` as a hint
       - If value is 1.0, we use "0.999999999" in link tag, but 1.0 here
-      - ~~Entry hash is raw bytes, not a string representation converted to bytes~~
+      - Entry hash is a sring version of EntryHashB64 for debugging purposes, not raw bytes
 
 // search on base,
 // so have links in both directions?
@@ -181,6 +181,8 @@ Link Tags:
 If a thumbs up is a "1" value (perfect score), what rollup score should we assign to an album with 30k thumbs ups vs another with 30 thumbs ups?  This invokes the reputon field [`sample-size`](https://datatracker.ietf.org/doc/html/rfc7071#section-6.3) -- "how many ratings this reputon is synthesized from"...
 
 ----
+
+Sally is a Journalist's source who must be protected
 
 Guardian has Sally's privately shared TG in their TG
 
