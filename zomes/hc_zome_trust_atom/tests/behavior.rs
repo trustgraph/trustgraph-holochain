@@ -35,7 +35,7 @@ pub async fn test_create_trust_atom() {
 
     // CREATE TARGET ENTRY
 
-    let target_entry_hashb64: EntryHashB64 = conductor
+    let target_entry_hash: EntryHash = conductor
         .call(
             &cell1.zome("trust_atom"),
             "create_string_target",
@@ -51,7 +51,7 @@ pub async fn test_create_trust_atom() {
         BTreeMap::from([("details".into(), "Excellent specials. The regular menu is so-so. Their coconut curry (special) is to die for".into())]);
 
     let trust_atom_input = TrustAtomInput {
-        target: target_entry_hashb64.clone(),
+        target: target_entry_hash.clone().into(),
         content: content.clone(),
         value,
         attributes: attributes.clone(),
@@ -80,8 +80,8 @@ pub async fn test_create_trust_atom() {
     assert_eq!(forward_links.len(), 1);
     let link = &forward_links[0];
 
-    let target_from_link: EntryHashB64 = link.clone().target.into();
-    assert_eq!(target_from_link, target_entry_hashb64);
+    let target_from_link: EntryHash = link.clone().target.into();
+    assert_eq!(target_from_link, target_entry_hash);
 
     // println!("link bytes: {:#?}", link.clone().tag.into_inner());
     let link_tag_bytes = link.clone().tag.into_inner();
@@ -103,7 +103,7 @@ pub async fn test_create_trust_atom() {
         .call(
             &cell1.zome("trust_atom"),
             "test_helper_list_links_for_base",
-            target_entry_hashb64,
+            target_entry_hash,
         )
         .await;
 
@@ -136,7 +136,7 @@ pub async fn test_create_trust_atom() {
 //     .await;
 
 // assert_eq!(trust_atoms_from_query.len(), 1);
-// // assert_eq!(trust_atoms_from_query[0].target, target_entry_hashb64);
+// // assert_eq!(trust_atoms_from_query[0].target, target_entry_hash);
 // assert_eq!(trust_atoms_from_query[0].content, content);
 // // assert_eq!(trust_atoms_from_query[0].value, value);
 // assert_eq!(trust_atoms_from_query[0].attributes, attributes);

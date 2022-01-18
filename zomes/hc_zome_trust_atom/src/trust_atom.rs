@@ -25,7 +25,7 @@ pub struct TrustAtom {
 
 #[derive(Serialize, Deserialize, SerializedBytes, Debug, Clone)]
 pub struct TrustAtomInput {
-    pub target: EntryHashB64,
+    pub target: EntryHash,
     pub content: String,
     pub value: String,
     pub attributes: BTreeMap<String, String>,
@@ -61,6 +61,7 @@ pub fn create(input: TrustAtomInput) -> ExternResult<()> {
         input.value
     );
     let forward_link_tag = link_tag(forward_link_tag_string)?;
+    debug!("about to create forward link");
     create_link(
         agent_address.clone().into(),
         input.target.clone().into(),
