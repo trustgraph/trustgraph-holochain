@@ -9,19 +9,36 @@
 // #![warn(clippy::cargo)]
 
 use hdk::prelude::*;
-use holo_hash::EntryHashB64;
 
 // public for sweettest; TODO can we fix this:
 pub mod trust_atom;
-pub use crate::trust_atom::SearchInput;
-pub use crate::trust_atom::StringTarget;
-pub use crate::trust_atom::TrustAtom;
-pub use crate::trust_atom::TrustAtomInput;
+pub use crate::trust_atom::*;
 
 pub mod test_helpers;
 // pub use crate::test_helpers;
 
 entry_defs![StringTarget::entry_def()];
+
+// INPUT TYPES
+
+#[derive(Serialize, Deserialize, SerializedBytes, Debug, Clone)]
+pub struct QueryInput {
+    // pub source: Option<EntryHash>,
+    pub target: Option<EntryHash>,
+    pub content_starts_with: Option<String>,
+    pub min_rating: Option<String>,
+    pub source: Option<EntryHash>,
+}
+
+#[derive(Serialize, Deserialize, SerializedBytes, Debug, Clone)]
+pub struct QueryMineInput {
+    pub target: Option<EntryHash>,
+    pub content_starts_with: Option<String>,
+    pub min_rating: Option<String>,
+    pub source: Option<EntryHash>,
+}
+
+// ZOME API FUNCTIONS
 
 #[hdk_extern]
 pub fn create_trust_atom(input: TrustAtomInput) -> ExternResult<()> {
@@ -29,7 +46,7 @@ pub fn create_trust_atom(input: TrustAtomInput) -> ExternResult<()> {
 }
 
 #[hdk_extern]
-pub fn query(input: SearchInput) -> ExternResult<Vec<TrustAtom>> {
+pub fn query(input: QueryInput) -> ExternResult<Vec<TrustAtom>> {
     trust_atom::query(
         input.content_starts_with,
         input.min_rating,
@@ -39,7 +56,12 @@ pub fn query(input: SearchInput) -> ExternResult<Vec<TrustAtom>> {
 }
 
 #[hdk_extern]
-pub fn create_string_target(input: String) -> ExternResult<EntryHashB64> {
+pub fn query_mine(input: QueryMineInput) -> ExternResult<Vec<TrustAtom>> {
+    trust_atom::query_mine(input.content_starts_with, input.min_rating)
+}
+
+#[hdk_extern]
+pub fn create_string_target(input: String) -> ExternResult<EntryHash> {
     crate::trust_atom::create_string_target(input)
 }
 

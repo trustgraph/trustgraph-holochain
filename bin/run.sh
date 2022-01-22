@@ -49,7 +49,7 @@ in_test_env () {
 # targets to be passed in as command line args:
 
 checks () {
-  time bin/run.sh package test clippy
+  time bin/run.sh test clippy
 }
 
 test_watch () {

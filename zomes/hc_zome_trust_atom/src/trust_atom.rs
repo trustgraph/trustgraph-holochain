@@ -31,14 +31,6 @@ pub struct TrustAtomInput {
     pub attributes: BTreeMap<String, String>,
 }
 
-#[derive(Serialize, Deserialize, SerializedBytes, Debug, Clone)]
-pub struct SearchInput {
-    pub content_starts_with: Option<String>,
-    pub min_rating: Option<String>,
-    pub source: Option<EntryHashB64>,
-    pub target: Option<EntryHashB64>,
-}
-
 #[hdk_entry(id = "restaurant", visibility = "public")]
 #[derive(Clone)]
 pub struct StringTarget(String);
@@ -61,7 +53,7 @@ pub fn create(input: TrustAtomInput) -> ExternResult<()> {
         input.value
     );
     let forward_link_tag = link_tag(forward_link_tag_string)?;
-    debug!("about to create forward link");
+    // debug!("about to create forward link");
     create_link(
         agent_address.clone().into(),
         input.target.clone().into(),
@@ -88,14 +80,25 @@ pub fn create(input: TrustAtomInput) -> ExternResult<()> {
     Ok(())
 }
 
+pub fn query_mine(
+    content_starts_with: Option<String>,
+    min_rating: Option<String>,
+) -> ExternResult<Vec<TrustAtom>> {
+    let agent_address: EntryHash = agent_info()?.agent_initial_pubkey.into();
+
+    let result = query(content_starts_with, min_rating, Some(agent_address), None)?;
+
+    Ok(result)
+}
+
 /// Required: exactly one of source or target
 /// All other arguments are optional
 /// Arguments act as additive filters (AND)
 pub fn query(
     content_starts_with: Option<String>,
     _min_rating: Option<String>,
-    source: Option<EntryHashB64>,
-    target: Option<EntryHashB64>,
+    source: Option<EntryHash>,
+    target: Option<EntryHash>,
 ) -> ExternResult<Vec<TrustAtom>> {
     // let link_direction: LinkDirection;
 
@@ -129,14 +132,11 @@ pub fn query(
 fn convert_links_to_trust_atoms(
     links: Vec<Link>,
     link_direction: LinkDirection,
-    link_base: EntryHashB64,
+    link_base: EntryHash,
 ) -> ExternResult<Vec<TrustAtom>> {
     let trust_atoms: Result<Vec<TrustAtom>, _> = links
         .into_iter()
-        .map(
-            |link| //foo
-                convert_link_to_trust_atom(link, &link_direction, &link_base), // bar
-        )
+        .map(|link| convert_link_to_trust_atom(link, &link_direction, &link_base))
         .collect();
     Ok(trust_atoms?)
 }
@@ -144,11 +144,11 @@ fn convert_links_to_trust_atoms(
 fn convert_link_to_trust_atom(
     link: Link,
     link_direction: &LinkDirection,
-    link_base: &EntryHashB64,
+    link_base: &EntryHash,
 ) -> ExternResult<TrustAtom> {
     let link_target = link.target;
 
-    let link_tag = match String::from_utf8(link.tag.clone().into_inner()) {
+    let link_tag = match String::from_utf8(link.tag.clone().into_inner()[1..].to_vec()) {
         Ok(link_tag) => link_tag,
         Err(_) => {
             return Err(WasmError::Guest(format!(
@@ -173,7 +173,7 @@ fn convert_link_to_trust_atom(
                 target: "".into(),   // TODO
                 content: link_tag,   // TODO
                 value: "999".into(), // TODO
-                source_entry_hash: link_base.clone(),
+                source_entry_hash: link_base.clone().into(),
                 target_entry_hash: link_target.into(),
                 attributes: BTreeMap::new(), // TODO
             }
@@ -185,7 +185,7 @@ fn convert_link_to_trust_atom(
                 content: link_tag,   // TODO
                 value: "999".into(), // TODO
                 source_entry_hash: link_target.into(),
-                target_entry_hash: link_base.clone(),
+                target_entry_hash: link_base.clone().into(),
                 attributes: BTreeMap::new(), // TODO
             }
         }
@@ -193,7 +193,7 @@ fn convert_link_to_trust_atom(
     Ok(trust_atom)
 }
 
-pub fn create_string_target(input: String) -> ExternResult<EntryHashB64> {
+pub fn create_string_target(input: String) -> ExternResult<EntryHash> {
     let string_target = StringTarget(input);
 
     create_entry(string_target.clone())?;

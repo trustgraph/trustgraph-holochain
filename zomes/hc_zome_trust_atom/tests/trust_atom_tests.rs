@@ -1,19 +1,13 @@
 #![warn(warnings)]
 
-// pub mod trust_atom {
-//     pub mod behavior {
-
 use std::collections::BTreeMap;
 
 use futures::future;
 
-// use hc_zome_trust_atom::SearchInput;
-// use hc_zome_trust_atom::TrustAtom;
-use hc_zome_trust_atom::TrustAtomInput;
+// use hc_zome_trust_atom::*;
 
+use hc_zome_trust_atom::*;
 use hdk::prelude::*;
-// use holo_hash::AgentPubKeyB64;
-// use holo_hash::EntryHashB64;
 use holochain::sweettest::{
     SweetAgents, SweetAppBatch, SweetCell, SweetConductor, SweetConductorBatch, SweetDnaFile,
 };
@@ -125,23 +119,31 @@ pub async fn test_create_trust_atom() {
     assert_eq!(relevant_link_string, "Ŧ↩sushi".to_string());
 }
 
-// TEST QUERY:
-// let search_input: SearchInput = SearchInput {
-//     content_starts_with: Some("sushi".into()),
-//     min_rating: Some("0.0".into()),
-//     source: None,
-//     target: None,
-// };
+#[tokio::test(flavor = "multi_thread")]
+pub async fn test_query_source_me_target_all() {
+    let (conductor, _agent, cell1) = setup_1_conductor().await;
 
-// let trust_atoms_from_query: Vec<TrustAtom> = conductor
-//     .call(&cell1.zome("trust_atom"), "query", search_input)
-//     .await;
+    let search_input = QueryMineInput {
+        content_starts_with: Some("sushi".into()),
+        min_rating: Some("0.0".into()),
+    };
 
-// assert_eq!(trust_atoms_from_query.len(), 1);
-// // assert_eq!(trust_atoms_from_query[0].target, target_entry_hash);
-// assert_eq!(trust_atoms_from_query[0].content, content);
-// // assert_eq!(trust_atoms_from_query[0].value, value);
-// assert_eq!(trust_atoms_from_query[0].attributes, attributes);
+    let trust_atoms_from_query: Vec<TrustAtom> = conductor
+        .call(
+            &cell1.zome("trust_atom"),
+            "query_source_me_target_all",
+            search_input,
+        )
+        .await;
+
+    assert_eq!(trust_atoms_from_query.len(), 1);
+    // assert_eq!(trust_atoms_from_query[0].target, target_entry_hash);
+    assert_eq!(trust_atoms_from_query[0].content, content);
+    // assert_eq!(trust_atoms_from_query[0].value, value);
+    assert_eq!(trust_atoms_from_query[0].attributes, attributes);
+}
+
+// TESTING UTILITY FUNCTIONS
 
 async fn setup_1_conductor() -> (SweetConductor, AgentPubKey, SweetCell) {
     let dna = SweetDnaFile::from_bundle(std::path::Path::new(DNA_FILEPATH))
@@ -178,5 +180,3 @@ pub async fn setup_conductors(n: usize) -> (SweetConductorBatch, Vec<AgentPubKey
     conductors.exchange_peer_info().await;
     (conductors, all_agents, apps)
 }
-//     }
-// }
