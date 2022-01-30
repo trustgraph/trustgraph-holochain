@@ -22,12 +22,12 @@ entry_defs![StringTarget::entry_def()];
 
 #[hdk_extern]
 pub fn create_trust_atom(input: TrustAtomInput) -> ExternResult<TrustAtom> {
-    TrustAtom::create(input)
+  TrustAtom::create(input)
 }
 
 #[hdk_extern]
 pub fn create_string_target(input: String) -> ExternResult<EntryHashB64> {
-    TrustAtom::create_string_target(input)
+  TrustAtom::create_string_target(input)
 }
 
 // // TEMP FOR TEST ONLY:
