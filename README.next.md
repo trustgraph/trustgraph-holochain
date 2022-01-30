@@ -24,7 +24,7 @@ Rollups
 ```rs
 use holo_trust::prelude::*;
 
-let target: EntryHashB64 = "...".into(); // TODO // coming soon: HC HREL format hc://appid//hashid
+let target: EntryHashB64 = "...".into(); // TODO // coming soon: HC HREL format hc://appid//hashid -- maybe should be hc://dna_hash//entry_hash|header_hash|agent_pub_key
 let content: String = "sushi".into();
 let value: f32 = 0.8;  // TODO decimal
 let attributes: BTreeMap<String, String> = BTreeMap::from([
@@ -57,14 +57,17 @@ let trust_graph = TrustGraph.create(
   trust_atoms: trust_graph_atoms
 )
 
-let trust_atoms: Vector<TrustAtom> = trust_graph.highest(
-  content_starts_with: "Category~Pop~80s".into(),
-  exclude: vec![
-    // TA's which client has already seen, ie previous "pages" (or screens in infinite scroll)
-  ]
+let trust_atoms: Vec<TrustAtom> = trust_graph.where(
+  content_starts_with: Some("Category~Pop~80s".into()),
+  min_rating: Some("0.0"),
+  source: Some("agentpubkey TODO"),
+  target: Some("entry hash b64 TODO"),
 )
-// TODO ask HC core team about pagination support <-- and/or max # results for link queries
-// what if a million links?  a billion?
+
+let trust_atoms: Vec<TrustAtom> = trust_graph.where(
+  content_starts_with: "Category~Pop~80s".into(),
+  min_rating: "0.0"
+)
 
 let trust_graph_2 = trust_graph.copy(
     with: vec![
@@ -84,17 +87,17 @@ trust_graph.rollup() // <-- do useful work of synthesizing TG to top level; mayb
 It encodes TrustAtoms as links, with the following components:
 
 1. Holochain Link `base` == TrustAtom `source` - one of:
-    - creating agent (`AgentPubKeyB64`) - TODO source must be an entry - do we need to make an entry pointing to the current user?
-    - TrustGraph (`EntryHashB64`) (described below)
+    - creating agent (`AgentPubKeyB64`)
+    - TrustGraph (`EntryHashB64`)
 1. Holochain Link `target` == TrustAtom `target` - entity being rated/reviewed/etc - one of:
     - `EntryHashB64`
-    - `AgentPubKeyB64` (?)
-1. Holochain Link `tag` (max 999 bytes) - formatted as UTF-8 string: one or more of:
-  - TrustAtom header bytes: `[0xC5][0xA6]` (which together comprise the unicode character `Ŧ`)
+    - `AgentPubKeyB64`
+1. Holochain Link `tag` (max 999 bytes) - formatted as UTF-8 string:
+  - TrustAtom header bytes: `[0xC5][0xA6]` (which together comprise the unicode character `Ŧ`) (required)
   - Direction byte:
       - `[0x21][0x92]` (unicode `→`) means: HC target = TA target
       - `[0x21][0xA9]` (unicode `↩`) means: HC target = TA source
-  - TrustAtom `content` - semantic info (eg sushi) - max 9xx bytes (max we can fit!)
+  - TrustAtom `content` - semantic info (eg sushi) - max 900 bytes
   - Separator: null byte `[0x00]`
   - TrustAtom `value` - rating ( `"-0.999999999"` to `"0.999999999"`) - max 12 chars
   - Separator: null byte `[0x00]`
@@ -104,15 +107,27 @@ It encodes TrustAtoms as links, with the following components:
       - Entry contains attributes formatted in: `BTreeMap<String, String>`
       - You will find full content here; if content exceeds link tag limts it ends with `…` as a hint
       - If value is 1.0, we use "0.999999999" in link tag, but 1.0 here
-      - ~~Entry hash is raw bytes, not a string representation converted to bytes~~
+      - Entry hash is a sring version of EntryHashB64 for debugging purposes, not raw bytes
 
 // search on base,
 // so have links in both directions?
 // or at the happ level, you can choose
 // which you treat as base
 // maybe reserve 1 byte at beginning -- bitmask which encodes direction and other things
-
 // maybe attributes contain source and target info, esp do not exist in DHT
+
+### Full Example Link Tags
+
+```
+Ŧ→sushi[0x00]0.999999999[0x00]892412523[0x00]uhCEk…UFnFF
+Ŧ↩sushi[0x00]0.999999999[0x00]892412523[0x00]uhCEk…UFnFF
+
+Ŧ→sushi[0x00]0.800000000[0x00]087423432[0x00]uhCEk…qS5wc
+Ŧ↩sushi[0x00]0.800000000[0x00]087423432[0x00]uhCEk…qS5wc
+
+Ŧ→spam[0x00]-0.999999999[0x00]328425615[0x00]uhCEk…VaaDd
+Ŧ→block[0x00]-0.999999999[0x00]837592944[0x00]uhCEk…VaaDd
+```
 
 ## Link Tags
 
@@ -133,20 +148,6 @@ Example of only value: `"[0x00]0.8[0x00]"`
 
 *TODO* describe searching, both of semantic content and values
 
-## Scratchpad
-
-```
-Add 9-digit random after value:
-
-"Category~Pop~80s~user_ratings[0x00]0.9[0x00]328425615[0x00]uHEntityId"
-"Category~Pop~user_ratings[0x00]0.9[0x00]328425615[0x00]uHEntityId"
-"user_ratings[0x00]0.9[0x00]328425615[0x00]uHEntityId"
-
-
-"Ŧ→Category~Pop~80s~user_ratings�0.9�328425615�uHEntityId"
-
-"Ŧ→pop�0.999999999�328425615�"
-"Ŧ→pop�0.999999999��uHEntityId"
 
 ---
 
@@ -173,8 +174,17 @@ If a thumbs up is a "1" value (perfect score), what rollup score should we assig
 
 ----
 
+Sally is a Journalist's source who must be protected
+
 Guardian has Sally's privately shared TG in their TG
 
 - protects her by only publishing rollup TAs, of her and other TGs they follow
 
 What if being invited to a DHT implies access to the next level of DHTs?
+
+hash bound source chain queries
+
+----
+
+links - become references
+- source and target optional
