@@ -9,31 +9,70 @@
 // #![warn(clippy::cargo)]
 
 use hdk::prelude::*;
-use holo_hash::EntryHashB64;
 
-mod trust_atom;
 // public for sweettest; TODO can we fix this:
-pub use crate::trust_atom::spike;
-pub use crate::trust_atom::StringTarget;
-pub use crate::trust_atom::TrustAtom;
-pub use crate::trust_atom::TrustAtomInput;
+pub mod trust_atom;
+pub use crate::trust_atom::*;
+
+pub mod test_helpers;
+// pub use crate::test_helpers;
 
 entry_defs![StringTarget::entry_def()];
 
+// INPUT TYPES
+
+#[derive(Serialize, Deserialize, SerializedBytes, Debug, Clone)]
+pub struct QueryInput {
+  pub source: Option<EntryHash>,
+  pub target: Option<EntryHash>,
+  pub content_starts_with: Option<String>,
+  pub min_rating: Option<String>,
+}
+
+#[derive(Serialize, Deserialize, SerializedBytes, Debug, Clone)]
+pub struct QueryMineInput {
+  pub target: Option<EntryHash>,
+  pub content_starts_with: Option<String>,
+  pub min_rating: Option<String>,
+}
+
+// ZOME API FUNCTIONS
+
 #[hdk_extern]
-pub fn create_trust_atom(input: TrustAtomInput) -> ExternResult<TrustAtom> {
-  TrustAtom::create(input)
+pub fn create_trust_atom(input: TrustAtomInput) -> ExternResult<()> {
+  trust_atom::create(input)
 }
 
 #[hdk_extern]
-pub fn create_string_target(input: String) -> ExternResult<EntryHashB64> {
-  TrustAtom::create_string_target(input)
+pub fn query(input: QueryInput) -> ExternResult<Vec<TrustAtom>> {
+  trust_atom::query(
+    input.source,
+    input.target,
+    input.content_starts_with,
+    input.min_rating,
+  )
 }
 
-// // TEMP FOR TEST ONLY:
-// #[hdk_entry(id = "restaurant", visibility = "public")]
-// #[derive(Clone)]
-// pub struct Restaurant {
-//     pub website: String,
-// }
-// entry_defs![Restaurant::entry_def()];
+#[hdk_extern]
+pub fn query_mine(input: QueryMineInput) -> ExternResult<Vec<TrustAtom>> {
+  trust_atom::query_mine(input.target, input.content_starts_with, input.min_rating)
+}
+
+// TEST HELPERS
+
+#[hdk_extern]
+pub fn create_string_target(input: String) -> ExternResult<EntryHash> {
+  crate::trust_atom::create_string_target(input)
+}
+
+#[hdk_extern]
+pub fn test_helper_list_links(
+  (base, link_tag_text): (EntryHash, Option<String>),
+) -> ExternResult<Vec<Link>> {
+  test_helpers::list_links(base, link_tag_text)
+}
+
+#[hdk_extern]
+pub fn test_helper_list_links_for_base(base: EntryHash) -> ExternResult<Vec<Link>> {
+  test_helpers::list_links_for_base(base)
+}
