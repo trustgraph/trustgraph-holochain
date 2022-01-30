@@ -49,15 +49,15 @@ in_test_env () {
 # targets to be passed in as command line args:
 
 checks () {
-  time bin/run.sh package test clippy
+  time bin/run test clippy
 }
 
 test_watch () {
-  shell "cargo watch -- bin/run.sh test"
+  shell "cargo watch -- bin/run test"
 }
 
 test_watch_clear () {
-  shell "cargo watch --clear -- bin/run.sh test"
+  shell "cargo watch --clear -- bin/run test"
 }
 
 test () {
@@ -65,15 +65,15 @@ test () {
 }
 
 test_metal () {
-  shell "cargo test -- --nocapture"
+  shell "time cargo test -- --nocapture"
 }
 
 dev_watch () {
-	shell "cargo watch -- bin/run.sh dev"
+	shell "cargo watch -- bin/run dev"
 }
 
 dev_watch_clear () {
-	shell "cargo watch --clear -- bin/run.sh dev"
+	shell "cargo watch --clear -- bin/run dev"
 }
 
 dev () {
@@ -134,7 +134,7 @@ clippy () {
 }
 
 clippy_watch () {
-  shell "cargo watch --clear -- bin/run.sh clippy"
+  shell "cargo watch --clear -- bin/run clippy"
 }
 
 clean () {
