@@ -65,9 +65,9 @@ jobs:
       - name: Prepare Nix environment
         run: nix-shell --command "echo Completed"
 
-      - run: nix-shell --pure --run 'bin/run.sh build'
-      - run: nix-shell --pure --run 'bin/run.sh test'
-      - run: nix-shell --pure --run 'bin/run.sh clippy'
+      - run: nix-shell --pure --run 'bin/run build'
+      - run: nix-shell --pure --run 'bin/run test'
+      - run: nix-shell --pure --run 'bin/run clippy'
 
       - name: Slack notify of failure
         uses: 8398a7/action-slack@v3
