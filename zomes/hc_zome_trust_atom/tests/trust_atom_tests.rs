@@ -10,7 +10,8 @@ use hc_zome_trust_atom::*;
 use hdk::prelude::*;
 use holo_hash::EntryHashB64;
 use holochain::sweettest::{
-  SweetAgents, SweetAppBatch, SweetCell, SweetConductor, SweetConductorBatch, SweetDnaFile,
+  SweetAgents, SweetAppBatch, SweetCell, SweetConductor, SweetConductorBatch,
+  SweetDnaFile,
 };
 
 const DNA_FILEPATH: &str = "../../workdir/dna/trust_atom.dna";
@@ -87,9 +88,8 @@ pub async fn test_create_trust_atom() {
   let link_tag_bytes = link.clone().tag.into_inner();
   let relevant_link_bytes = link_tag_bytes[1..].to_vec(); // skip the first byte, which may be the link type???  we get 165:u8
   let relevant_link_string = String::from_utf8(relevant_link_bytes).unwrap();
-  let expected_link_tag_string = format!("{}{}{}{}{}", "Ŧ", "→", "sushi", unicode_nul, "0.8");
-  // println!("expected_link_tag_string: {:#?}", expected_link_tag_string);
-  println!("relevant_link_string: {:#?}", relevant_link_string);
+  let expected_link_tag_string =
+    format!("{}{}{}{}{}", "Ŧ", "→", "sushi", unicode_nul, "0.8");
   assert_eq!(relevant_link_string, expected_link_tag_string);
 
   let chunks: Vec<&str> = relevant_link_string.split(unicode_nul).collect();
@@ -115,11 +115,9 @@ pub async fn test_create_trust_atom() {
   // let agent_address_b64: AgentPubKeyB64 = agent_address.clone().into();
   // assert_eq!(target_from_link, agent_address_b64);
 
-  // println!("link bytes: {:#?}", link.clone().tag.into_inner());
   let link_tag_bytes = link.clone().tag.into_inner();
   let relevant_link_bytes = link_tag_bytes[1..].to_vec(); // skip the first byte, which may be the link type???  we get 165:u8
   let relevant_link_string = String::from_utf8(relevant_link_bytes).unwrap();
-  // println!("relevant link: {:#?}", relevant_link_string);
   assert_eq!(relevant_link_string, "Ŧ↩sushi".to_string());
 }
 
@@ -170,7 +168,8 @@ pub async fn test_query_mine() {
 
   assert_eq!(trust_atoms_from_query.clone().len(), 1);
 
-  let source_entry_hash_b64 = EntryHashB64::from(EntryHash::from(agent.clone()));
+  let source_entry_hash_b64 =
+    EntryHashB64::from(EntryHash::from(agent.clone()));
   let target_entry_hash_b64 = EntryHashB64::from(target_entry_hash);
   let trust_atom = &trust_atoms_from_query.clone()[0];
 
@@ -215,7 +214,9 @@ async fn setup_1_conductor() -> (SweetConductor, AgentPubKey, SweetCell) {
   (conductor, agent, cell1)
 }
 
-pub async fn setup_conductors(n: usize) -> (SweetConductorBatch, Vec<AgentPubKey>, SweetAppBatch) {
+pub async fn setup_conductors(
+  n: usize,
+) -> (SweetConductorBatch, Vec<AgentPubKey>, SweetAppBatch) {
   let dna = SweetDnaFile::from_bundle(std::path::Path::new(DNA_FILEPATH))
     .await
     .unwrap();
@@ -223,7 +224,8 @@ pub async fn setup_conductors(n: usize) -> (SweetConductorBatch, Vec<AgentPubKey
   let mut conductors = SweetConductorBatch::from_standard_config(n).await;
 
   let all_agents: Vec<AgentPubKey> =
-    future::join_all(conductors.iter().map(|c| SweetAgents::one(c.keystore()))).await;
+    future::join_all(conductors.iter().map(|c| SweetAgents::one(c.keystore())))
+      .await;
   let apps = conductors
     .setup_app_for_zipped_agents("app", &all_agents, &[dna])
     .await

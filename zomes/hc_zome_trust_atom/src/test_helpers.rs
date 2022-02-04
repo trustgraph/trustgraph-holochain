@@ -8,7 +8,10 @@ pub fn list_links_for_base(base: EntryHash) -> ExternResult<Vec<Link>> {
   Ok(links)
 }
 
-pub fn list_links(base: EntryHash, link_tag_text: Option<String>) -> ExternResult<Vec<Link>> {
+pub fn list_links(
+  base: EntryHash,
+  link_tag_text: Option<String>,
+) -> ExternResult<Vec<Link>> {
   let link_tag = match link_tag_text {
     Some(link_tag_text) => Some(link_tag(link_tag_text)?),
     None => None,
