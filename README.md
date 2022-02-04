@@ -92,7 +92,7 @@ It encodes TrustAtoms as links, with the following components:
 1. Holochain Link `target` == TrustAtom `target` - entity being rated/reviewed/etc - one of:
     - `EntryHashB64`
     - `AgentPubKeyB64`
-1. Holochain Link `tag` (max 999 bytes) - formatted as UTF-8 string:
+1. Holochain Link `tag`* (max 999 bytes) - formatted as UTF-8 string
   - TrustAtom header bytes: `[0xC5][0xA6]` (which together comprise the unicode character `Ŧ`) (required)
   - Direction byte:
       - `[0x21][0x92]` (unicode `→`) means: HC target = TA target
@@ -109,12 +109,7 @@ It encodes TrustAtoms as links, with the following components:
       - If value is 1.0, we use "0.999999999" in link tag, but 1.0 here
       - Entry hash is a sring version of EntryHashB64 for debugging purposes, not raw bytes
 
-// search on base,
-// so have links in both directions?
-// or at the happ level, you can choose
-// which you treat as base
-// maybe reserve 1 byte at beginning -- bitmask which encodes direction and other things
-// maybe attributes contain source and target info, esp do not exist in DHT
+*This format is designed to allow us to encode trust atoms as Holochain links, and search them by their tags.  Holochain can search for all links _starting_ with a given set of bytes (characters).
 
 ### Full Example Link Tags
 
@@ -160,31 +155,51 @@ Link Tags:
 "[0x00]0.0[0x00]" // thumbs down
 "[0x00]-0.999999999[0x00]" // flag/spam/abuse
 
-"drums[0x00]0.999999999[0x00]"
+TrustAtom Creation:
 
-// sort by sales
-// sort by artist
-// sort by album
-// sort by recently rated?
+```rs
+pub struct TrustAtomInput {
+    pub target: EntryHash,
+    pub content: String,
+    pub value: String,
+    pub attributes: BTreeMap<String, String>,
+}
+
+
+#[hdk_extern]
+pub fn create(input: TrustAtomInput) -> ExternResult<()> {
+    // ...
+}
 ```
 
----
+TrustAtom Query:
 
-If a thumbs up is a "1" value (perfect score), what rollup score should we assign to an album with 30k thumbs ups vs another with 30 thumbs ups?  This invokes the reputon field [`sample-size`](https://datatracker.ietf.org/doc/html/rfc7071#section-6.3) -- "how many ratings this reputon is synthesized from"...
+```rs
+pub struct QueryInput {
+    pub source: Option<EntryHash>,
+    pub target: Option<EntryHash>,
+    pub content_starts_with: Option<String>,
+    pub min_value: Option<String>,
+    pub max_value: Option<String>,
+}
 
-----
+#[hdk_extern]
+pub fn query(input: QueryInput) -> ExternResult<Vec<TrustAtom>> {
+    // ...
+}
 
-Sally is a Journalist's source who must be protected
+```
 
-Guardian has Sally's privately shared TG in their TG
+Client-facing representation of a Trust Atom (this is what is returned to client from a `query`)
 
-- protects her by only publishing rollup TAs, of her and other TGs they follow
-
-What if being invited to a DHT implies access to the next level of DHTs?
-
-hash bound source chain queries
-
-----
-
-links - become references
-- source and target optional
+```rs
+pub struct TrustAtom {
+    pub source: String,
+    pub target: String,
+    pub content: String,
+    pub value: String,
+    pub source_entry_hash: EntryHashB64,
+    pub target_entry_hash: EntryHashB64,
+    pub attributes: BTreeMap<String, String>,
+}
+```
