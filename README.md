@@ -1,6 +1,41 @@
-# TrustGraph::Holochain
+<h1 align="center">
+  <div>👋 Welcome to the</div>
+  <img src="./doc/img/logo.png" alt="Logo" height="125">
+  <div>Holochain library</div>
+</h1>
+
+<div align="center">
+
+[![license](https://img.shields.io/github/license/trustgraph/amazing-github-template.svg?style=flat-square)](LICENSE.md)
+[![PRs welcome](https://img.shields.io/badge/PRs-welcome-ff69b4.svg?style=flat-square)](https://github.com/trustgraph/amazing-github-template/issues?q=is%3Aissue+is%3Aopen+label%3A%22help+wanted%22)
+[![made with hearth by trustgraph](https://img.shields.io/badge/made%20with%20%E2%99%A5%20-cc14cc.svg?style=flat-square)](https://github.com/trustgraph)
+
+</div>
+
 
 TrustGraph::Holochain is a Rust library, intended to allow for [Hololchain](https://www.holochain.org) developers to easily use the [Trust Graph](https://github.com/trustgraph/trustgraph) protocol in their Happs.
+
+
+## Prerequisites
+
+- rust >= 1.56
+
+## Install
+
+In your `Cargo.toml`:
+
+```rs
+hc_zome_trust_atom = {git = "https://github.com/trustgraph/trustgraph-holochain.git", rev="x.y.z", package = "hc_zome_trust_atom"}
+```
+
+Replace `x.y.z` with the tag corresponding to the version you want. See the list of [available tags](https://github.com/trustgraph/trustgraph-holochain/tags).
+
+HDK version correspondence:
+
+- version `0.0.1` works with `hdk` version `0.0.116`
+
+
+## stuff
 
 A TrustGraph is
 
@@ -203,3 +238,35 @@ pub struct TrustAtom {
     pub attributes: BTreeMap<String, String>,
 }
 ```
+
+## Author
+
+👤 **Harlan T Wood (https://github.com/harlantwood)**
+
+* Website: https://trustgraph.net
+* Github: [@trustgraph](https://github.com/trustgraph)
+
+## 🤝 Contributing
+
+Contributions, issues and feature requests are welcome!<br />
+
+<!-- Feel free to check [issues page](https://github.com/trustgraph/js-trustgraph-core/issues). -->
+<!-- You can also take a look at the [contributing guide](https://github.com/trustgraph/js-trustgraph-core/blob/master/CONTRIBUTING.md). -->
+
+<a href="https://github.com/trustgraph/amazing-github-template/issues/new?assignees=&labels=bug&template=01_BUG_REPORT.md&title=bug%3A+">Report a Bug</a>
+·
+<a href="https://github.com/trustgraph/amazing-github-template/issues/new?assignees=&labels=enhancement&template=02_FEATURE_REQUEST.md&title=feat%3A+">Request a Feature</a>
+·
+<a href="https://github.com/trustgraph/amazing-github-template/discussions">Ask a Question</a>
+
+
+
+
+## Show your support
+
+Give a ⭐️ if you like the project!
+
+## 📝 License
+
+Copyright © 2022 [Harlan T Wood (https://github.com/harlantwood)](https://github.com/trustgraph).<br />
+This project is [Apache-2.0](https://github.com/trustgraph/js-trustgraph-core/blob/master/LICENSE) licensed.
