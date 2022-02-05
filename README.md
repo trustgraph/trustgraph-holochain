@@ -132,6 +132,16 @@ We encode TrustAtoms as links, with the following components:
 Ŧ→block[0x00]-0.999999999[0x00]837592944[0x00]uhCEk…VaaDd
 ```
 
+## Roadmap
+
+- [x] Create TrustAtoms as paired Holochain links
+- [x] Fetch TrustAtoms by content leading bytes
+- [ ] Fetch TrustAtoms by content and amount
+- [ ] Create a TrustGraph seeded from TrustAtoms
+- [ ] Roll up a TrustGraph by crawling TrustAtoms (2 levels deep)
+- [ ] Search across a TrustGraph by content and amount
+- [ ] Integration into holochain example projects, eg [Clutter](https://github.com/artbrock/clutter)
+
 ## Author
 
 👤 **Harlan T Wood (https://github.com/harlantwood)**
