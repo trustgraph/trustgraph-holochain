@@ -1,9 +1,10 @@
 [package]
 name = "hc_zome_trust_atom"
+description = "Holochain implementation of TrustAtom format from TrustGraph"
 version = "0.0.1"
 authors = ["harlantwood", "code@harlantwood.net"]
 edition = "2021"
-rust-version = "1.56.0"  # require rust >= 1.56 to enable 2021 edition
+rust-version = "1.56.0"  # this requires rust >= 1.56, required to enable 2021 edition
 
 [lib]
 name = "hc_zome_trust_atom"
