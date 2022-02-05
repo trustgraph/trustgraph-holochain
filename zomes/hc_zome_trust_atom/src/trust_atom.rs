@@ -96,6 +96,7 @@ pub fn query_mine(
 /// Required: exactly one of source or target
 /// All other arguments are optional
 /// Arguments act as additive filters (AND)
+#[warn(clippy::needless_pass_by_value)]
 pub fn query(
   source: Option<EntryHash>,
   target: Option<EntryHash>,
