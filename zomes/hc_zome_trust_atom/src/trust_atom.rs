@@ -5,6 +5,7 @@ use std::collections::BTreeMap;
 use hdk::prelude::*;
 use holo_hash::EntryHashB64;
 
+#[derive(Debug, Clone)]
 enum LinkDirection {
   Forward,
   Reverse,
@@ -36,38 +37,31 @@ pub struct TrustAtomInput {
 pub struct StringTarget(String);
 
 const UNICODE_NUL: &str = "\u{0}"; // Unicode NUL character
-const LINK_TAG_HEADER: &str = "\u{166}"; // "Ŧ"
-const LINK_TAG_DIRECTION_FORWARD: &str = "\u{2192}"; // "→"
-const LINK_TAG_DIRECTION_BACKWARD: &str = "\u{21a9}"; // "↩"
+const LINK_TAG_HEADER: &str = "\u{0166}"; // "Ŧ"
+const LINK_TAG_ARROW_FORWARD: &str = "\u{2192}"; // "→"
+const LINK_TAG_ARROW_REVERSE: &str = "\u{21a9}"; // "↩"
 
-// #[allow(clippy::missing_panics_doc)]
 pub fn create(input: TrustAtomInput) -> ExternResult<()> {
-  //   let unicode_nul = std::str::from_utf8(&[0]).expect("Unable to convert Unicode NUL to UTF-8");
   let agent_info = agent_info()?;
   let agent_address: EntryHash = agent_info.agent_initial_pubkey.into();
 
-  let forward_link_tag_string = format!(
-    "{}{}{}{}{}",
-    LINK_TAG_HEADER,
-    LINK_TAG_DIRECTION_FORWARD,
+  let forward_link_tag = trust_atom_link_tag(
+    LinkDirection::Forward,
     input.content.clone(),
-    UNICODE_NUL,
-    input.value
-  );
-  let forward_link_tag = link_tag(forward_link_tag_string)?;
-  // debug!("about to create forward link");
+    input.value.clone(),
+  )?;
+
+  debug!("in create: forward_link_tag: {:#?}", forward_link_tag);
+
   create_link(
     agent_address.clone(),
     input.target.clone(),
     forward_link_tag,
   )?;
 
-  let backward_link_tag_string = format!(
-    "{}{}{}",
-    LINK_TAG_HEADER, LINK_TAG_DIRECTION_BACKWARD, input.content
-  );
-  let backward_link_tag = link_tag(backward_link_tag_string)?;
-  create_link(input.target, agent_address, backward_link_tag)?;
+  let reverse_link_tag =
+    trust_atom_link_tag(LinkDirection::Reverse, input.content.clone(), input.value)?;
+  create_link(input.target, agent_address, reverse_link_tag)?;
 
   // let trust_atom = TrustAtom {
   //     target: input.target,
@@ -80,6 +74,52 @@ pub fn create(input: TrustAtomInput) -> ExternResult<()> {
   Ok(())
 }
 
+fn trust_atom_link_tag(
+  link_direction: LinkDirection,
+  content: String,
+  value: String,
+) -> ExternResult<LinkTag> {
+  let link_tag_arrow = match link_direction {
+    LinkDirection::Forward => LINK_TAG_ARROW_FORWARD,
+    LinkDirection::Reverse => LINK_TAG_ARROW_REVERSE,
+  };
+
+  let link_tag_string = format!(
+    "{}{}{}{}{}",
+    LINK_TAG_HEADER,
+    link_tag_arrow,
+    content.clone(),
+    UNICODE_NUL,
+    value
+  );
+
+  debug!(
+    "trust_atom_link_tag: link_tag_string: {:#?}",
+    link_tag_string
+  );
+
+  let link_tag = link_tag(link_tag_string)?;
+  Ok(link_tag)
+}
+
+fn trust_atom_link_tag_leading_bytes(
+  link_direction: LinkDirection,
+  content: String,
+  // value: Option<String>, // TODO
+) -> ExternResult<LinkTag> {
+  let link_tag_arrow = match link_direction {
+    LinkDirection::Forward => LINK_TAG_ARROW_FORWARD,
+    LinkDirection::Reverse => LINK_TAG_ARROW_REVERSE,
+  };
+  let link_tag_string = format!("{}{}{}", LINK_TAG_HEADER, link_tag_arrow, content.clone(),);
+  debug!(
+    "trust_atom_link_tag_leading_bytes: link_tag_string: {:#?}",
+    link_tag_string
+  );
+  let link_tag = link_tag(link_tag_string)?;
+  Ok(link_tag)
+}
+
 pub fn query_mine(
   target: Option<EntryHash>,
   content_starts_with: Option<String>,
@@ -87,8 +127,7 @@ pub fn query_mine(
 ) -> ExternResult<Vec<TrustAtom>> {
   let agent_address: EntryHash = agent_info()?.agent_initial_pubkey.into();
 
-  let result =
-    query(Some(agent_address), target, content_starts_with, min_rating)?;
+  let result = query(Some(agent_address), target, content_starts_with, min_rating)?;
 
   Ok(result)
 }
@@ -115,21 +154,27 @@ pub fn query(
     }
     (Some(_source), Some(_target)) => {
       return Err(WasmError::Guest(
-        "Exactly one of source or target must be specified, but not both"
-          .into(),
+        "Exactly one of source or target must be specified, but not both".into(),
       ))
     }
   };
 
-  let link_tag = match content_starts_with {
-    Some(content_starts_with) => Some(link_tag(content_starts_with)?),
-    None => None,
-  };
+  let link_tag =
+    match (content_starts_with, link_direction.clone()) {
+      (Some(content_starts_with), LinkDirection::Forward) => Some(
+        trust_atom_link_tag_leading_bytes(LinkDirection::Forward, content_starts_with)?,
+      ),
+      (Some(content_starts_with), LinkDirection::Reverse) => Some(
+        trust_atom_link_tag_leading_bytes(LinkDirection::Reverse, content_starts_with)?,
+      ),
+      (None, _) => None,
+    };
+
+  debug!("in query: link_tag: {:#?}", link_tag);
 
   let links = get_links(link_base.clone(), link_tag)?;
 
-  let trust_atoms =
-    convert_links_to_trust_atoms(links, &link_direction, &link_base)?;
+  let trust_atoms = convert_links_to_trust_atoms(links, &link_direction, &link_base)?;
 
   Ok(trust_atoms)
 }
@@ -157,8 +202,7 @@ fn convert_link_to_trust_atom(
   const HC_LINK_HEADER_BYTES: usize = 1; // always created by HC links
                                          //   let unicode_nul = std::str::from_utf8(&[0]).unwrap();
 
-  let link_tag_bytes =
-    link.tag.clone().into_inner()[HC_LINK_HEADER_BYTES..].to_vec();
+  let link_tag_bytes = link.tag.clone().into_inner()[HC_LINK_HEADER_BYTES..].to_vec();
   let link_tag = match String::from_utf8(link_tag_bytes) {
     Ok(link_tag) => link_tag,
     Err(_) => {
@@ -221,5 +265,5 @@ pub fn link_tag(tag: String) -> ExternResult<LinkTag> {
 }
 
 const fn tg_link_tag_header_length() -> usize {
-  LINK_TAG_HEADER.len() + LINK_TAG_DIRECTION_FORWARD.len()
+  LINK_TAG_HEADER.len() + LINK_TAG_ARROW_FORWARD.len()
 }
