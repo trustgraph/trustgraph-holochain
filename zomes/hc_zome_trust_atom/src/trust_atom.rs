@@ -5,6 +5,7 @@ use std::collections::BTreeMap;
 use hdk::prelude::*;
 use holo_hash::EntryHashB64;
 
+#[derive(Debug, Clone)]
 enum LinkDirection {
   Forward,
   Reverse,
@@ -35,49 +36,62 @@ pub struct TrustAtomInput {
 #[derive(Clone)]
 pub struct StringTarget(String);
 
-const UNICODE_NUL: &str = "\u{0}"; // Unicode NUL character
-const LINK_TAG_HEADER: &str = "\u{166}"; // "Ŧ"
-const LINK_TAG_DIRECTION_FORWARD: &str = "\u{2192}"; // "→"
-const LINK_TAG_DIRECTION_BACKWARD: &str = "\u{21a9}"; // "↩"
+const UNICODE_NUL_STR: &str = "\u{0}"; // Unicode NUL character
+const UNICODE_NUL_BYTES: [u8; 1] = [0];
+const LINK_TAG_HEADER: [u8; 2] = [197, 166]; // "Ŧ" aka [0xC5][0xA6]
+const LINK_TAG_ARROW_FORWARD: [u8; 3] = [226, 134, 146]; // "→" aka [0xE2][0x86][0x92]
+const LINK_TAG_ARROW_REVERSE: [u8; 3] = [226, 134, 169]; // "↩" aka [0xE2][0x86][0xA9]
 
-// #[allow(clippy::missing_panics_doc)]
 pub fn create(input: TrustAtomInput) -> ExternResult<()> {
-  //   let unicode_nul = std::str::from_utf8(&[0]).expect("Unable to convert Unicode NUL to UTF-8");
   let agent_info = agent_info()?;
   let agent_address: EntryHash = agent_info.agent_initial_pubkey.into();
 
-  let forward_link_tag_string = format!(
-    "{}{}{}{}{}",
-    LINK_TAG_HEADER,
-    LINK_TAG_DIRECTION_FORWARD,
-    input.content.clone(),
-    UNICODE_NUL,
-    input.value
-  );
-  let forward_link_tag = link_tag(forward_link_tag_string)?;
-  // debug!("about to create forward link");
+  let forward_link_tag = trust_atom_link_tag(&LinkDirection::Forward, &input.content, &input.value);
+
   create_link(
     agent_address.clone(),
     input.target.clone(),
     forward_link_tag,
   )?;
 
-  let backward_link_tag_string = format!(
-    "{}{}{}",
-    LINK_TAG_HEADER, LINK_TAG_DIRECTION_BACKWARD, input.content
-  );
-  let backward_link_tag = link_tag(backward_link_tag_string)?;
-  create_link(input.target, agent_address, backward_link_tag)?;
-
-  // let trust_atom = TrustAtom {
-  //     target: input.target,
-  //     content: input.content,
-  //     value: input.value,
-  //     attributes: input.attributes,
-  // };
-  // Ok(trust_atom)
+  let reverse_link_tag = trust_atom_link_tag(&LinkDirection::Reverse, &input.content, &input.value);
+  create_link(input.target, agent_address, reverse_link_tag)?;
 
   Ok(())
+}
+
+fn trust_atom_link_tag(link_direction: &LinkDirection, content: &str, value: &str) -> LinkTag {
+  let link_tag_arrow = match link_direction {
+    LinkDirection::Forward => LINK_TAG_ARROW_FORWARD,
+    LinkDirection::Reverse => LINK_TAG_ARROW_REVERSE,
+  };
+
+  let mut link_tag_bytes = vec![];
+  link_tag_bytes.extend_from_slice(&LINK_TAG_HEADER);
+  link_tag_bytes.extend_from_slice(&link_tag_arrow);
+  link_tag_bytes.extend_from_slice(content.as_bytes());
+  link_tag_bytes.extend_from_slice(&UNICODE_NUL_BYTES);
+  link_tag_bytes.extend_from_slice(value.as_bytes());
+
+  LinkTag(link_tag_bytes)
+}
+
+fn trust_atom_link_tag_leading_bytes(
+  link_direction: &LinkDirection,
+  content: &str,
+  // value: Option<String>, // TODO
+) -> LinkTag {
+  let link_tag_arrow = match link_direction {
+    LinkDirection::Forward => LINK_TAG_ARROW_FORWARD,
+    LinkDirection::Reverse => LINK_TAG_ARROW_REVERSE,
+  };
+
+  let mut link_tag_bytes = vec![];
+  link_tag_bytes.extend_from_slice(&LINK_TAG_HEADER);
+  link_tag_bytes.extend_from_slice(&link_tag_arrow);
+  link_tag_bytes.extend_from_slice(content.as_bytes());
+
+  LinkTag(link_tag_bytes)
 }
 
 pub fn query_mine(
@@ -119,10 +133,16 @@ pub fn query(
     }
   };
 
-  let link_tag = match content_starts_with {
-    Some(content_starts_with) => Some(link_tag(content_starts_with)?),
-    None => None,
-  };
+  let link_tag =
+    match (content_starts_with, link_direction.clone()) {
+      (Some(content_starts_with), LinkDirection::Forward) => Some(
+        trust_atom_link_tag_leading_bytes(&LinkDirection::Forward, &content_starts_with),
+      ),
+      (Some(content_starts_with), LinkDirection::Reverse) => Some(
+        trust_atom_link_tag_leading_bytes(&LinkDirection::Reverse, &content_starts_with),
+      ),
+      (None, _) => None,
+    };
 
   let links = get_links(link_base.clone(), link_tag)?;
 
@@ -151,21 +171,18 @@ fn convert_link_to_trust_atom(
   link_direction: &LinkDirection,
   link_base: &EntryHash,
 ) -> ExternResult<TrustAtom> {
-  const HC_LINK_HEADER_BYTES: usize = 1; // always created by HC links
-                                         //   let unicode_nul = std::str::from_utf8(&[0]).unwrap();
-
-  let link_tag_bytes = link.tag.clone().into_inner()[HC_LINK_HEADER_BYTES..].to_vec();
+  let link_tag_bytes = link.tag.clone().into_inner();
   let link_tag = match String::from_utf8(link_tag_bytes) {
     Ok(link_tag) => link_tag,
     Err(_) => {
       return Err(WasmError::Guest(format!(
-        "Link tag is not valid UTF-8 -- found: {}",
+        "Link tag is not valid UTF-8 -- found: {:?}",
         String::from_utf8_lossy(&link.tag.into_inner())
       )))
     }
   };
 
-  let chunks: Vec<&str> = link_tag.split(UNICODE_NUL).collect();
+  let chunks: Vec<&str> = link_tag.split(UNICODE_NUL_STR).collect();
   let content = chunks[0][tg_link_tag_header_length()..].to_string(); // drop leading "Ŧ→" or "Ŧ↩"
   let value = chunks[1].to_string();
 
@@ -217,5 +234,5 @@ pub fn link_tag(tag: String) -> ExternResult<LinkTag> {
 }
 
 const fn tg_link_tag_header_length() -> usize {
-  LINK_TAG_HEADER.len() + LINK_TAG_DIRECTION_FORWARD.len()
+  LINK_TAG_HEADER.len() + LINK_TAG_ARROW_FORWARD.len()
 }
