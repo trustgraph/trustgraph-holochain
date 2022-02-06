@@ -87,8 +87,7 @@ pub fn query_mine(
 ) -> ExternResult<Vec<TrustAtom>> {
   let agent_address: EntryHash = agent_info()?.agent_initial_pubkey.into();
 
-  let result =
-    query(Some(agent_address), target, content_starts_with, min_rating)?;
+  let result = query(Some(agent_address), target, content_starts_with, min_rating)?;
 
   Ok(result)
 }
@@ -115,8 +114,7 @@ pub fn query(
     }
     (Some(_source), Some(_target)) => {
       return Err(WasmError::Guest(
-        "Exactly one of source or target must be specified, but not both"
-          .into(),
+        "Exactly one of source or target must be specified, but not both".into(),
       ))
     }
   };
@@ -128,8 +126,7 @@ pub fn query(
 
   let links = get_links(link_base.clone(), link_tag)?;
 
-  let trust_atoms =
-    convert_links_to_trust_atoms(links, &link_direction, &link_base)?;
+  let trust_atoms = convert_links_to_trust_atoms(links, &link_direction, &link_base)?;
 
   Ok(trust_atoms)
 }
@@ -157,8 +154,7 @@ fn convert_link_to_trust_atom(
   const HC_LINK_HEADER_BYTES: usize = 1; // always created by HC links
                                          //   let unicode_nul = std::str::from_utf8(&[0]).unwrap();
 
-  let link_tag_bytes =
-    link.tag.clone().into_inner()[HC_LINK_HEADER_BYTES..].to_vec();
+  let link_tag_bytes = link.tag.clone().into_inner()[HC_LINK_HEADER_BYTES..].to_vec();
   let link_tag = match String::from_utf8(link_tag_bytes) {
     Ok(link_tag) => link_tag,
     Err(_) => {

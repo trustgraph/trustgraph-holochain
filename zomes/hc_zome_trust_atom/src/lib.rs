@@ -55,11 +55,7 @@ pub fn query(input: QueryInput) -> ExternResult<Vec<TrustAtom>> {
 
 #[hdk_extern]
 pub fn query_mine(input: QueryMineInput) -> ExternResult<Vec<TrustAtom>> {
-  trust_atom::query_mine(
-    input.target,
-    input.content_starts_with,
-    input.min_rating,
-  )
+  trust_atom::query_mine(input.target, input.content_starts_with, input.min_rating)
 }
 
 // TEST HELPERS
@@ -77,8 +73,6 @@ pub fn test_helper_list_links(
 }
 
 #[hdk_extern]
-pub fn test_helper_list_links_for_base(
-  base: EntryHash,
-) -> ExternResult<Vec<Link>> {
+pub fn test_helper_list_links_for_base(base: EntryHash) -> ExternResult<Vec<Link>> {
   test_helpers::list_links_for_base(base)
 }
