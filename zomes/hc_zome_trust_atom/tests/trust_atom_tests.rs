@@ -83,9 +83,8 @@ pub async fn test_create_trust_atom() {
   let target_from_link: EntryHash = link.clone().target;
   assert_eq!(target_from_link, target_entry_hash);
 
-  // println!("link bytes: {:#?}", link.clone().tag.into_inner());
   let link_tag_bytes = link.clone().tag.into_inner();
-  let relevant_link_bytes = link_tag_bytes[1..].to_vec(); // skip the first byte, which may be the link type???  we get 165:u8
+  let relevant_link_bytes = link_tag_bytes.to_vec();
   let relevant_link_string = String::from_utf8(relevant_link_bytes).unwrap();
   let expected_link_tag_string = format!("{}{}{}{}{}", "Ŧ", "→", "sushi", unicode_nul, "0.8");
   assert_eq!(relevant_link_string, expected_link_tag_string);
@@ -112,7 +111,7 @@ pub async fn test_create_trust_atom() {
   // assert_eq!(target_from_link, agent_entry_hash_b64);
 
   let link_tag_bytes = link.clone().tag.into_inner();
-  let relevant_link_bytes = link_tag_bytes[1..].to_vec(); // skip the first byte, which may be the link type???  we get 165:u8
+  let relevant_link_bytes = link_tag_bytes.to_vec();
   let relevant_link_string = String::from_utf8(relevant_link_bytes).unwrap();
   let expected_link_tag_string = format!("{}{}{}{}{}", "Ŧ", "↩", "sushi", unicode_nul, "0.8");
   assert_eq!(relevant_link_string, expected_link_tag_string);
@@ -250,7 +249,7 @@ pub async fn test_query_mine_with_content() {
   ];
   actual.sort();
 
-  assert_eq!(actual, ["sush i", "sush i!"]);
+  assert_eq!(actual, ["sushi", "sushi!"]);
 }
 
 // TESTING UTILITY FUNCTIONS
