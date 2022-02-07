@@ -38,9 +38,9 @@ pub struct StringTarget(String);
 
 const UNICODE_NUL_STR: &str = "\u{0}"; // Unicode NUL character
 const UNICODE_NUL_BYTES: [u8; 1] = [0];
-const LINK_TAG_HEADER: [u8; 2] = [197, 166]; // "Ŧ" aka [0xC5][0xA6]
-const LINK_TAG_ARROW_FORWARD: [u8; 3] = [226, 134, 146]; // "→" aka [0xE2][0x86][0x92]
-const LINK_TAG_ARROW_REVERSE: [u8; 3] = [226, 134, 169]; // "↩" aka [0xE2][0x86][0xA9]
+const LINK_TAG_HEADER: [u8; 2] = [197, 166]; // Unicode "Ŧ" // hex bytes: [0xC5][0xA6]
+const LINK_TAG_ARROW_FORWARD: [u8; 3] = [226, 134, 146]; // Unicode "→" // hex bytes: [0xE2][0x86][0x92]
+const LINK_TAG_ARROW_REVERSE: [u8; 3] = [226, 134, 169]; // Unicode "↩" // hex bytes: [0xE2][0x86][0xA9]
 
 pub fn create(input: TrustAtomInput) -> ExternResult<()> {
   let agent_info = agent_info()?;
