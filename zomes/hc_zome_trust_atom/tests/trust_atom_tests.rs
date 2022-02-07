@@ -6,8 +6,8 @@ use futures::future;
 
 // use hc_zome_trust_atom::*;
 
-use ::holo_hash::EntryHashB64;
 use hc_zome_trust_atom::*;
+use hdk::prelude::holo_hash::EntryHashB64;
 use hdk::prelude::*;
 use holochain::sweettest::{
   SweetAgents, SweetAppBatch, SweetCell, SweetConductor, SweetConductorBatch, SweetDnaFile,
