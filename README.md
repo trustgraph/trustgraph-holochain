@@ -135,7 +135,7 @@ We encode TrustAtoms as links, with the following components:
 ## Roadmap
 
 - [x] Create TrustAtoms as paired Holochain links
-- [ ] Fetch TrustAtoms by content leading bytes
+- [x] Fetch TrustAtoms by content leading bytes
 - [ ] Fetch TrustAtoms by content and amount
 - [ ] Create a TrustGraph seeded from TrustAtoms
 - [ ] Roll up a TrustGraph by crawling TrustAtoms (2 levels deep)
