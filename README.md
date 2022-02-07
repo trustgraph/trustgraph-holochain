@@ -33,7 +33,8 @@ Replace `v1.2.3` with the tag corresponding to the version you want. See the lis
 
 HDK version correspondence:
 
-- version `v0.0.1` works with `hdk` version `0.0.116`
+- TrustGraph::Holochain `v0.0.1` works with `hdk` version `0.0.116`
+- TrustGraph::Holochain `v0.0.2` works with `hdk` version `0.0.116`
 
 ## Usage
 
