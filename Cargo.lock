@@ -1494,7 +1494,7 @@ dependencies = [
 
 [[package]]
 name = "hc_zome_trust_atom"
-version = "0.0.1"
+version = "0.0.4"
 dependencies = [
  "futures",
  "hdk",
