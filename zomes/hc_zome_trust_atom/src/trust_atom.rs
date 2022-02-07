@@ -3,7 +3,7 @@
 use std::collections::BTreeMap;
 
 use hdk::prelude::*;
-use holo_hash::EntryHashB64;
+use ::holo_hash::EntryHashB64;
 
 #[derive(Debug, Clone)]
 enum LinkDirection {
