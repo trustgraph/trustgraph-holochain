@@ -46,7 +46,8 @@ pub fn create(input: TrustAtomInput) -> ExternResult<()> {
   let agent_info = agent_info()?;
   let agent_address: EntryHash = agent_info.agent_initial_pubkey.into();
 
-  let forward_link_tag = trust_atom_link_tag(&LinkDirection::Forward, &input.content, &input.value);
+  let forward_link_tag =
+    trust_atom_link_tag(&LinkDirection::Forward, vec![&input.content, &input.value]);
 
   create_link(
     agent_address.clone(),
@@ -54,13 +55,14 @@ pub fn create(input: TrustAtomInput) -> ExternResult<()> {
     forward_link_tag,
   )?;
 
-  let reverse_link_tag = trust_atom_link_tag(&LinkDirection::Reverse, &input.content, &input.value);
+  let reverse_link_tag =
+    trust_atom_link_tag(&LinkDirection::Reverse, vec![&input.content, &input.value]);
   create_link(input.target, agent_address, reverse_link_tag)?;
 
   Ok(())
 }
 
-fn trust_atom_link_tag(link_direction: &LinkDirection, content: &str, value: &str) -> LinkTag {
+fn trust_atom_link_tag(link_direction: &LinkDirection, mut chunks: Vec<&str>) -> LinkTag {
   let link_tag_arrow = match link_direction {
     LinkDirection::Forward => LINK_TAG_ARROW_FORWARD,
     LinkDirection::Reverse => LINK_TAG_ARROW_REVERSE,
@@ -69,39 +71,32 @@ fn trust_atom_link_tag(link_direction: &LinkDirection, content: &str, value: &st
   let mut link_tag_bytes = vec![];
   link_tag_bytes.extend_from_slice(&LINK_TAG_HEADER);
   link_tag_bytes.extend_from_slice(&link_tag_arrow);
+  let content = chunks.remove(0);
   link_tag_bytes.extend_from_slice(content.as_bytes());
-  link_tag_bytes.extend_from_slice(&UNICODE_NUL_BYTES);
-  link_tag_bytes.extend_from_slice(value.as_bytes());
 
-  LinkTag(link_tag_bytes)
-}
-
-fn trust_atom_link_tag_leading_bytes(
-  link_direction: &LinkDirection,
-  content: &str,
-  // value: Option<String>, // TODO
-) -> LinkTag {
-  let link_tag_arrow = match link_direction {
-    LinkDirection::Forward => LINK_TAG_ARROW_FORWARD,
-    LinkDirection::Reverse => LINK_TAG_ARROW_REVERSE,
-  };
-
-  let mut link_tag_bytes = vec![];
-  link_tag_bytes.extend_from_slice(&LINK_TAG_HEADER);
-  link_tag_bytes.extend_from_slice(&link_tag_arrow);
-  link_tag_bytes.extend_from_slice(content.as_bytes());
+  for chunk in &chunks {
+    link_tag_bytes.extend_from_slice(&UNICODE_NUL_BYTES);
+    link_tag_bytes.extend_from_slice(chunk.as_bytes());
+  }
 
   LinkTag(link_tag_bytes)
 }
 
 pub fn query_mine(
   target: Option<EntryHash>,
+  content_full: Option<String>,
   content_starts_with: Option<String>,
-  min_rating: Option<String>,
+  min_value: Option<String>,
 ) -> ExternResult<Vec<TrustAtom>> {
   let agent_address: EntryHash = agent_info()?.agent_initial_pubkey.into();
 
-  let result = query(Some(agent_address), target, content_starts_with, min_rating)?;
+  let result = query(
+    Some(agent_address),
+    target,
+    content_full,
+    content_starts_with,
+    min_value,
+  )?;
 
   Ok(result)
 }
@@ -113,10 +108,25 @@ pub fn query_mine(
 pub fn query(
   source: Option<EntryHash>,
   target: Option<EntryHash>,
+  content_full: Option<String>,
   content_starts_with: Option<String>,
-  _min_rating: Option<String>,
+  min_value: Option<String>,
 ) -> ExternResult<Vec<TrustAtom>> {
-  // let link_direction: LinkDirection;
+  let (full, starts_with, min_val) = match (content_full, content_starts_with, min_value) {
+    (Some(_content_full), Some(_content_starts_with), _) => {
+      return Err(WasmError::Guest(
+        "Exactly one query method must be specified, but not both".into(),
+      ))
+    }
+    (_, Some(_content_starts_with), Some(_min_value)) => {
+      return Err(WasmError::Guest(
+        "Must be full content to pass min value".into(),
+      ))
+    }
+    (Some(content_full), None, min_value) => (Some(content_full), None, min_value),
+    (None, Some(content_starts_with), None) => (None, Some(content_starts_with), None),
+    (None, None, min_value) => (None, None, min_value),
+  };
 
   let (link_direction, link_base) = match (source, target) {
     (Some(source), None) => (LinkDirection::Forward, source),
@@ -133,16 +143,26 @@ pub fn query(
     }
   };
 
-  let link_tag =
-    match (content_starts_with, link_direction.clone()) {
-      (Some(content_starts_with), LinkDirection::Forward) => Some(
-        trust_atom_link_tag_leading_bytes(&LinkDirection::Forward, &content_starts_with),
-      ),
-      (Some(content_starts_with), LinkDirection::Reverse) => Some(
-        trust_atom_link_tag_leading_bytes(&LinkDirection::Reverse, &content_starts_with),
-      ),
-      (None, _) => None,
-    };
+  let link_tag = match (full, starts_with, link_direction.clone()) {
+    (Some(full), None, LinkDirection::Forward) => Some(trust_atom_link_tag(
+      &LinkDirection::Forward,
+      vec![&full, &min_val.unwrap_or("".to_string())],
+    )),
+    (Some(full), None, LinkDirection::Reverse) => Some(trust_atom_link_tag(
+      &LinkDirection::Reverse,
+      vec![&full, &min_val.unwrap_or("".to_string())],
+    )),
+    (None, Some(starts_with), LinkDirection::Forward) => Some(trust_atom_link_tag(
+      &LinkDirection::Forward,
+      vec![&starts_with],
+    )),
+    (None, Some(starts_with), LinkDirection::Reverse) => Some(trust_atom_link_tag(
+      &LinkDirection::Reverse,
+      vec![&starts_with],
+    )),
+    (Some(_full), Some(_starts_with), _) => None, // error handled earlier
+    (None, None, _) => None,
+  };
 
   let links = get_links(link_base.clone(), link_tag)?;
 
