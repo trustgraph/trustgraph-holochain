@@ -163,6 +163,7 @@ pub async fn test_query_mine() {
       QueryMineInput {
         target: None,
         content_starts_with: None,
+        content_full: None,
         min_rating: None,
         // content_starts_with: Some("sushi".into()),
         // min_rating: Some("0.0".into()),
@@ -198,7 +199,7 @@ pub async fn test_query_mine() {
 }
 
 #[tokio::test(flavor = "multi_thread")]
-pub async fn test_query_mine_with_content() {
+pub async fn test_query_mine_with_content_starts_with() {
   let (conductor, _agent, cell1) = setup_1_conductor().await;
 
   // CREATE TARGET ENTRY
@@ -213,7 +214,7 @@ pub async fn test_query_mine_with_content() {
 
   // CREATE TRUST ATOMS
 
-  let contents = vec!["sushi", "sushi!", "burgers"];
+  let contents = vec!["sushi", "sushi joint", "sush"];
 
   for content in contents {
     let _result: () = conductor
@@ -238,6 +239,7 @@ pub async fn test_query_mine_with_content() {
       QueryMineInput {
         target: None,
         content_starts_with: Some("sushi".into()),
+        content_full: None,
         min_rating: None,
         // min_rating: Some("0.0".into()),
       },
@@ -252,7 +254,63 @@ pub async fn test_query_mine_with_content() {
   ];
   actual.sort();
 
-  assert_eq!(actual, ["sushi", "sushi!"]);
+  assert_eq!(actual, ["sushi", "sushi joint"]);
+}
+
+#[tokio::test(flavor = "multi_thread")]
+pub async fn test_query_mine_with_content_full() {
+  let (conductor, _agent, cell1) = setup_1_conductor().await;
+
+  // CREATE TARGET ENTRY
+
+  let target_entry_hash: EntryHash = conductor
+    .call(
+      &cell1.zome("trust_atom"),
+      "create_string_target",
+      "Sushi Ran",
+    )
+    .await;
+
+  // CREATE TRUST ATOMS
+
+  let content_fulls = vec!["sushi", "sushi joint", "sush"];
+
+  for content_full in content_fulls {
+    let _result: () = conductor
+      .call(
+        &cell1.zome("trust_atom"),
+        "create_trust_atom",
+        TrustAtomInput {
+          target: target_entry_hash.clone(),
+          content: content_full.into(),
+          value: "0.8".into(),
+          attributes: BTreeMap::new(),
+        },
+      )
+      .await;
+  }
+  // QUERY MY TRUST ATOMS
+
+  let trust_atoms_from_query: Vec<TrustAtom> = conductor
+    .call(
+      &cell1.zome("trust_atom"),
+      "query_mine",
+      QueryMineInput {
+        target: None,
+        content_starts_with: None,
+        content_full: Some("sushi".into()),
+        min_rating: None,
+        // min_rating: Some("0.0".into()),
+      },
+    )
+    .await;
+
+  assert_eq!(trust_atoms_from_query.len(), 1);
+
+  assert_eq!(
+    trust_atoms_from_query[0].clone().content,
+    "sushi".to_string()
+  );
 }
 
 // TESTING UTILITY FUNCTIONS

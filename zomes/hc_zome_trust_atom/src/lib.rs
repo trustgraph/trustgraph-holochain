@@ -4,8 +4,10 @@
 #![deny(clippy::nursery)]
 #![deny(clippy::unwrap_used)]
 #![deny(clippy::unwrap_in_result)]
-#![allow(clippy::missing_errors_doc)] // TODO fix and remove this
 #![allow(clippy::missing_const_for_fn)]
+#![allow(clippy::missing_errors_doc)] // TODO fix and remove this
+#![allow(clippy::or_fun_call)]
+
 // #![warn(clippy::cargo)]
 
 use hdk::prelude::*;
@@ -25,6 +27,7 @@ entry_defs![StringTarget::entry_def()];
 pub struct QueryInput {
   pub source: Option<EntryHash>,
   pub target: Option<EntryHash>,
+  pub content_full: Option<String>,
   pub content_starts_with: Option<String>,
   pub min_rating: Option<String>,
 }
@@ -32,6 +35,7 @@ pub struct QueryInput {
 #[derive(Serialize, Deserialize, SerializedBytes, Debug, Clone)]
 pub struct QueryMineInput {
   pub target: Option<EntryHash>,
+  pub content_full: Option<String>,
   pub content_starts_with: Option<String>,
   pub min_rating: Option<String>,
 }
@@ -48,6 +52,7 @@ pub fn query(input: QueryInput) -> ExternResult<Vec<TrustAtom>> {
   trust_atom::query(
     input.source,
     input.target,
+    input.content_full,
     input.content_starts_with,
     input.min_rating,
   )
@@ -55,7 +60,12 @@ pub fn query(input: QueryInput) -> ExternResult<Vec<TrustAtom>> {
 
 #[hdk_extern]
 pub fn query_mine(input: QueryMineInput) -> ExternResult<Vec<TrustAtom>> {
-  trust_atom::query_mine(input.target, input.content_starts_with, input.min_rating)
+  trust_atom::query_mine(
+    input.target,
+    input.content_full,
+    input.content_starts_with,
+    input.min_rating,
+  )
 }
 
 // TEST HELPERS
