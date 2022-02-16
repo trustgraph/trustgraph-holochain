@@ -48,7 +48,7 @@ pub fn create(
   target: EntryHash,
   content: &str,
   value: &str,
-  attributes: BTreeMap<String, String>,
+  _attributes: BTreeMap<String, String>,
 ) -> ExternResult<()> {
   let agent_info = agent_info()?;
   let agent_address: EntryHash = agent_info.agent_initial_pubkey.into();
@@ -132,6 +132,19 @@ fn trust_atom_link_tag(link_direction: &LinkDirection, mut chunks: Vec<&str>) ->
 
   LinkTag(link_tag_bytes)
 }
+
+// fn gen_bucket<'a>() -> &'a str {
+//   let mut rng = rand::thread_rng();
+//   let bucket: String = String::new();
+//   let total = 0;
+//   while total < 9 {
+//   let digit = rng.gen_range(0..10).as_str();
+//   bucket.push_str(digit);
+//   total += 1;
+//   }
+//   bucket.as_str()  
+// }
+
 
 pub fn query_mine(
   target: Option<EntryHash>,
@@ -420,6 +433,22 @@ mod tests {
 
   // #[test]
   // fn test_normalize_value() {
-  //   // assert_eq!(normalize_value("0.9").unwrap(), ".900000000");
+  //   assert_eq!(normalize_value("0.9"), ".999999999");
+
+  //   // let test_data = [
+  //   //   "0"
+  //   // ];
+  //   // for item in &test_data {
+  //   //   let input: u8 = item.0;
+  //   //   let expected = item.1;
+  //   //   assert_eq!(normalize_value(value), expected);
+  //   // }
   // }
-}
+
+// #[test]
+// fn test_gen_bucket() {
+//   assert_eq!(gen_bucket().chars().count(), 9);
+//   assert!(chars().all(char::is_digit(10)));
+// }
+
+ }

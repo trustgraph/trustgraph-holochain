@@ -15,6 +15,7 @@ hdk = "=0.0.116"
 holo_hash = {version = "*", features = ["encoding"]}
 regex = "1"
 serde = "1"
+# rand = "0.8.5"
 
 [dev-dependencies]
 holochain = { version = "=0.0.119", default-features = false, features = ["test_utils"] }

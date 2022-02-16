@@ -10,6 +10,7 @@
 
 // #![warn(clippy::cargo)]
 
+// extern crate rand;
 use hdk::prelude::*;
 
 // public for sweettest; TODO can we fix this:

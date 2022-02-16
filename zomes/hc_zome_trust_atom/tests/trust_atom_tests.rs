@@ -6,6 +6,8 @@ use futures::future;
 
 // use hc_zome_trust_atom::*;
 
+
+
 use hc_zome_trust_atom::*;
 use hdk::prelude::holo_hash::EntryHashB64;
 use hdk::prelude::*;
@@ -87,6 +89,7 @@ pub async fn test_create_trust_atom() {
   let relevant_link_bytes = link_tag_bytes.to_vec();
   let relevant_link_string = String::from_utf8(relevant_link_bytes).unwrap();
   let expected_link_tag_string = format!("{}{}{}{}{}", "Ŧ", "→", "sushi", unicode_nul, "0.8");
+  assert_eq!(relevant_link_string, expected_link_tag_string);
   assert_eq!(relevant_link_string, expected_link_tag_string);
 
   let chunks: Vec<&str> = relevant_link_string.split(unicode_nul).collect();

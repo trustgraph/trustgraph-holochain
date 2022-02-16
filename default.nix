@@ -7,7 +7,7 @@ let
     holochainVersionId = "v0_0_119";
     rustVersion = {
       track = "stable";
-      version = "1.57.0";
+      version = "1.57.0";  # outside of nix = 1.58
     };
   };
   nixpkgs = holonix.pkgs;
@@ -16,6 +16,6 @@ in nixpkgs.mkShell {
   buildInputs = with nixpkgs; [
     binaryen
     nodejs-16_x
-    cargo-watch
+    #    cargo-watch  # broke on M1
   ];
 }
