@@ -42,25 +42,52 @@ const LINK_TAG_HEADER: [u8; 2] = [197, 166]; // Unicode "Ŧ" // hex bytes: [0xC5
 const LINK_TAG_ARROW_FORWARD: [u8; 3] = [226, 134, 146]; // Unicode "→" // hex bytes: [0xE2][0x86][0x92]
 const LINK_TAG_ARROW_REVERSE: [u8; 3] = [226, 134, 169]; // Unicode "↩" // hex bytes: [0xE2][0x86][0xA9]
 
-pub fn create(input: TrustAtomInput) -> ExternResult<()> {
+#[warn(clippy::needless_pass_by_value)] // TODO remove when `attributes` is used
+pub fn create(
+  target: EntryHash,
+  content: &str,
+  value: &str,
+  attributes: BTreeMap<String, String>,
+) -> ExternResult<()> {
   let agent_info = agent_info()?;
   let agent_address: EntryHash = agent_info.agent_initial_pubkey.into();
 
-  let forward_link_tag =
-    trust_atom_link_tag(&LinkDirection::Forward, vec![&input.content, &input.value]);
+  validate_value(value)?;
+  // let normalized_value = normalize_value(value); // TODO
 
-  create_link(
-    agent_address.clone(),
-    input.target.clone(),
-    forward_link_tag,
-  )?;
+  let forward_link_tag = trust_atom_link_tag(&LinkDirection::Forward, vec![content, value]);
+  let reverse_link_tag = trust_atom_link_tag(&LinkDirection::Reverse, vec![content, value]);
 
-  let reverse_link_tag =
-    trust_atom_link_tag(&LinkDirection::Reverse, vec![&input.content, &input.value]);
-  create_link(input.target, agent_address, reverse_link_tag)?;
+  create_link(agent_address.clone(), target.clone(), forward_link_tag)?;
+  create_link(target, agent_address, reverse_link_tag)?;
 
   Ok(())
 }
+
+fn validate_value(value_str: &str) -> ExternResult<()> {
+  match value_str.parse::<f64>() {
+    Ok(value) => {
+      if (-1.0..=1.0).contains(&value) {
+        Ok(())
+      } else {
+        Err(WasmError::Guest(format!(
+          "Value must be in the range -1..1, but got: {}",
+          value
+        )))
+      }
+    }
+
+    Err(_) => {
+      return Err(WasmError::Guest(format!(
+        "Value must be a number, but got: {}",
+        value_str
+      )))
+    }
+  }
+}
+
+// fn normalize_value(value_str: &str) -> ExternResult<&str> {
+// }
 
 fn trust_atom_link_tag(link_direction: &LinkDirection, mut chunks: Vec<&str>) -> LinkTag {
   let link_tag_arrow = match link_direction {
@@ -255,4 +282,51 @@ pub fn link_tag(tag: String) -> ExternResult<LinkTag> {
 
 const fn tg_link_tag_header_length() -> usize {
   LINK_TAG_HEADER.len() + LINK_TAG_ARROW_FORWARD.len()
+}
+
+#[cfg(test)]
+#[allow(clippy::unwrap_used)]
+mod tests {
+
+  use super::*; // allows testing of private functions
+
+  #[test]
+  fn test_validate_value_range() {
+    validate_value("1.0").unwrap();
+    validate_value("1.000000000000000000000000000").unwrap();
+    validate_value("1").unwrap();
+    validate_value("0.534857395723489529357489283").unwrap();
+    validate_value("0.0").unwrap();
+    validate_value("0.000000000000000000000000000").unwrap();
+    validate_value("0").unwrap();
+    validate_value("-1.0").unwrap();
+    validate_value("-1").unwrap();
+    validate_value("-1.00000000000000000000000000").unwrap();
+
+    assert!(validate_value("1.0000000001")
+      .expect_err("expected error, got")
+      .to_string()
+      .contains("Value must be in the range -1..1"));
+    assert!(validate_value("-1.0000000001")
+      .expect_err("expected error, got")
+      .to_string()
+      .contains("Value must be in the range -1..1"));
+    assert!(validate_value("-10.0000000001")
+      .expect_err("expected error, got")
+      .to_string()
+      .contains("Value must be in the range -1..1"));
+    assert!(validate_value("100000000000000000000000000000.0")
+      .expect_err("expected error, got")
+      .to_string()
+      .contains("Value must be in the range -1..1"));
+    assert!(validate_value("-100000000000000000000000000000.0")
+      .expect_err("expected error, got")
+      .to_string()
+      .contains("Value must be in the range -1..1"));
+  }
+
+  // #[test]
+  // fn test_normalize_value() {
+  //   assert_eq!(normalize_value("0.9"), ".999999999");
+  // }
 }
