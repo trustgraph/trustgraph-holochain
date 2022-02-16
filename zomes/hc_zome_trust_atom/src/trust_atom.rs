@@ -42,22 +42,48 @@ const LINK_TAG_HEADER: [u8; 2] = [197, 166]; // Unicode "Ŧ" // hex bytes: [0xC5
 const LINK_TAG_ARROW_FORWARD: [u8; 3] = [226, 134, 146]; // Unicode "→" // hex bytes: [0xE2][0x86][0x92]
 const LINK_TAG_ARROW_REVERSE: [u8; 3] = [226, 134, 169]; // Unicode "↩" // hex bytes: [0xE2][0x86][0xA9]
 
-pub fn create(input: TrustAtomInput) -> ExternResult<()> {
+pub fn create(
+  target: EntryHash,
+  content: String,
+  value: String,
+  attributes: BTreeMap<String, String>,
+) -> ExternResult<()> {
   let agent_info = agent_info()?;
   let agent_address: EntryHash = agent_info.agent_initial_pubkey.into();
 
-  let forward_link_tag = trust_atom_link_tag(&LinkDirection::Forward, &input.content, &input.value);
+  // validate_value(value);
+  // let normalized_value = normalize_value(value);
 
-  create_link(
-    agent_address.clone(),
-    input.target.clone(),
-    forward_link_tag,
-  )?;
+  let forward_link_tag = trust_atom_link_tag(&LinkDirection::Forward, &content, &value);
 
-  let reverse_link_tag = trust_atom_link_tag(&LinkDirection::Reverse, &input.content, &input.value);
-  create_link(input.target, agent_address, reverse_link_tag)?;
+  create_link(agent_address.clone(), target.clone(), forward_link_tag)?;
+
+  let reverse_link_tag = trust_atom_link_tag(&LinkDirection::Reverse, &content, &value);
+  create_link(target, agent_address, reverse_link_tag)?;
 
   Ok(())
+}
+
+// fn normalize_value(value_str: &str) -> ExternResult<&str> {
+//   let value: Result<f32> = value_str.parse();
+//   match value {
+//     Ok(number) => validate_value_range(number),
+//     // check that it's -1..1
+//     // if so normalize
+//     // else error
+//     Err(err) => return WasmError("xxx"),
+//   }
+// }
+
+fn validate_value_range(value: f64) -> ExternResult<bool> {
+  if value >= -1.0 && value <= 1.0 {
+    Ok(true)
+  } else {
+    Err(WasmError::Guest(format!(
+      "Value must be in the range -1..1, but got: {}",
+      value
+    )))
+  }
 }
 
 fn trust_atom_link_tag(link_direction: &LinkDirection, content: &str, value: &str) -> LinkTag {
@@ -235,4 +261,45 @@ pub fn link_tag(tag: String) -> ExternResult<LinkTag> {
 
 const fn tg_link_tag_header_length() -> usize {
   LINK_TAG_HEADER.len() + LINK_TAG_ARROW_FORWARD.len()
+}
+
+#[cfg(test)]
+mod tests {
+
+  use super::*; // allows testing of private functions
+
+  #[test]
+  fn test_normalize_value() {
+    assert_eq!(validate_value_range(1.0).unwrap(), true);
+    assert_eq!(validate_value_range(0.0).unwrap(), true);
+    assert_eq!(validate_value_range(-1.0).unwrap(), true);
+
+    // let err: WasmError::Guest = validate_value_range(1.00001).expect_err("xxx");
+    assert!(validate_value_range(1.00001)
+      .expect_err("expected error, got")
+      .to_string()
+      .contains("Value must be in the range -1..1"));
+    assert!(validate_value_range(1.0000000001)
+      .expect_err("expected error, got")
+      .to_string()
+      .contains("Value must be in the range -1..1"));
+    assert!(validate_value_range(-1.0000000001)
+      .expect_err("expected error, got")
+      .to_string()
+      .contains("Value must be in the range -1..1"));
+  }
+
+  // #[test]
+  // fn test_normalize_value() {
+  //   assert_eq!(normalize_value("0.9"), ".999999999");
+
+  //   // let test_data = [
+  //   //   "0"
+  //   // ];
+  //   // for item in &test_data {
+  //   //   let input: u8 = item.0;
+  //   //   let expected = item.1;
+  //   //   assert_eq!(normalize_value(value), expected);
+  //   // }
+  // }
 }

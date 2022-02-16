@@ -40,7 +40,7 @@ pub struct QueryMineInput {
 
 #[hdk_extern]
 pub fn create_trust_atom(input: TrustAtomInput) -> ExternResult<()> {
-  trust_atom::create(input)
+  trust_atom::create(input.target, input.content, input.value, input.attributes)
 }
 
 #[hdk_extern]
