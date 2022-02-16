@@ -1,5 +1,6 @@
 #![allow(clippy::module_name_repetitions)]
 
+use rand::Rng;
 use std::collections::BTreeMap;
 
 use hdk::prelude::holo_hash::EntryHashB64;
@@ -122,10 +123,10 @@ fn trust_atom_link_tag_leading_bytes(
 }
 
 fn gen_bucket() -> &str {
-  let bucket = vec![];
+  let mut rng = rand::thread_rng();
+  let bucket = "";
   while total < 9 {
-    let rand = random_bytes(2)?;
-    let digit = str::from_utf8(rand);
+    let digit = rng.gen_range(0..10).to_str();
     bucket.extend_from_slice(digit);
     total += 1;
   }
