@@ -88,15 +88,22 @@ pub async fn test_create_trust_atom() {
   let link_tag_bytes = link.clone().tag.into_inner();
   let relevant_link_bytes = link_tag_bytes.to_vec();
   let relevant_link_string = String::from_utf8(relevant_link_bytes).unwrap();
-  let expected_link_tag_string =
-    format!("{}{}{}{}{}", "Ŧ", "→", "sushi", unicode_nul, ".800000000");
-  assert_eq!(relevant_link_string, expected_link_tag_string);
-  assert_eq!(relevant_link_string, expected_link_tag_string);
 
   let chunks: Vec<&str> = relevant_link_string.split(unicode_nul).collect();
-  assert_eq!(chunks.len(), 2);
+  assert_eq!(chunks.len(), 3);
   assert_eq!(chunks[0], "Ŧ→sushi");
   assert_eq!(chunks[1], ".800000000");
+
+  let bucket = chunks[2];
+
+  assert_eq!(bucket.chars().count(), 9);
+  assert!(bucket.chars().all(|c| c.is_digit(10)));
+
+  let expected_link_tag_string = format!(
+    "{}{}{}{}{}{}{}",
+    "Ŧ", "→", "sushi", unicode_nul, ".800000000", unicode_nul, bucket
+  );
+  assert_eq!(relevant_link_string, expected_link_tag_string);
 
   // CHECK BACKWARD LINK
 
@@ -117,14 +124,17 @@ pub async fn test_create_trust_atom() {
   let link_tag_bytes = link.clone().tag.into_inner();
   let relevant_link_bytes = link_tag_bytes.to_vec();
   let relevant_link_string = String::from_utf8(relevant_link_bytes).unwrap();
-  let expected_link_tag_string =
-    format!("{}{}{}{}{}", "Ŧ", "↩", "sushi", unicode_nul, ".800000000");
+  let expected_link_tag_string = format!(
+    "{}{}{}{}{}{}{}",
+    "Ŧ", "↩", "sushi", unicode_nul, ".800000000", unicode_nul, bucket
+  );
   assert_eq!(relevant_link_string, expected_link_tag_string);
 
   let chunks: Vec<&str> = relevant_link_string.split(unicode_nul).collect();
-  assert_eq!(chunks.len(), 2);
+  assert_eq!(chunks.len(), 3);
   assert_eq!(chunks[0], "Ŧ↩sushi");
   assert_eq!(chunks[1], ".800000000");
+  assert_eq!(chunks[2], bucket);
 }
 
 #[tokio::test(flavor = "multi_thread")]
