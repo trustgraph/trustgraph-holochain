@@ -166,6 +166,38 @@ Contributions, issues and feature requests are welcome!<br />
 
 Give a ⭐️ if you like the project!
 
+## Dev
+
+If you're new to holochain dev, start here: <https://developer.holochain.org/install>.  Then, from a terminal in the root of this repo:
+
+```
+nix-shell
+```
+
+Then within nix shell:
+
+```
+bin/run test             # rust tests
+bin/run test_watch       # rust tests with watch
+
+bin/run clippy           # rust linter
+bin/run clippy_watch     # rust linter with watch
+
+bin/run clean            # reset to clean repo state; removes all gitignored files
+```
+
+Or to run all checks:
+
+```
+bin/run checks
+```
+
+When you have commits that you are ready to push, to run checks and push only if checks are all green:
+
+```
+bin/run shipit
+```
+
 ## 📝 License
 
 Copyright © 2022 [Harlan T Wood (https://github.com/harlantwood)](https://github.com/trustgraph).<br />
