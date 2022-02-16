@@ -42,7 +42,7 @@ shell () {
 }
 
 in_test_env () {
-  # shell "CARGO_TARGET_DIR=target"
+  # shell "CARGO_TARGET_DIR=target/subdir"
   run_targets $*
 }
 
@@ -68,46 +68,6 @@ test_metal () {
   shell "time cargo test -- --nocapture"
 }
 
-dev_watch () {
-	shell "cargo watch -- bin/run dev"
-}
-
-dev_watch_clear () {
-	shell "cargo watch --clear -- bin/run dev"
-}
-
-dev () {
-  build_happ
-
-	shell "
-    hc sandbox generate
-      --run 8000
-      --app-id holonexus
-      --root tmp
-      workdir/happ/holonexus.happ
-    "
-}
-
-package_ci () {
-  shell "cd ../ui"
-  shell "npm ci"
-  shell "cd -"
-  run package
-}
-
-package () {
-  run build_happ
-  run package_ui
-  shell "hc web-app pack workdir"
-}
-
-package_ui() {
-  shell "cd ../ui"
-  shell "npm run build || true"  # TODO fix and then remove `|| true`
-  shell "npm run zip"
-  shell "cd -"
-}
-
 build () {
   run build_happ
 }
@@ -123,18 +83,19 @@ build_dna () {
 }
 
 build_zome () {
-  # CARGO_TARGET_DIR=target/zome
-  # cargo build --target wasm32-unknown-unknown
   shell "cargo build --release --target wasm32-unknown-unknown"
 }
 
 clippy () {
-  # CARGO_TARGET_DIR=target/clippy
   shell "cargo clippy --all-targets --all-features -- -D warnings"
 }
 
 clippy_watch () {
   shell "cargo watch --clear -- bin/run clippy"
+}
+
+format () {
+  shell "cargo fmt"
 }
 
 clean () {
@@ -143,11 +104,12 @@ clean () {
 }
 
 shipit () {
+  run format
   if [[ -z $(git status --porcelain) ]]; then
     run checks
     shell "git push origin HEAD"
   else
-    echo "Error: git status not clean:"
+    echo "Error: git status not clean (after formatting):"
     set -x
     git status
     exit 1
