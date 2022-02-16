@@ -78,8 +78,58 @@ fn trust_atom_link_tag(link_direction: &LinkDirection, mut chunks: Vec<&str>) ->
     link_tag_bytes.extend_from_slice(&UNICODE_NUL_BYTES);
     link_tag_bytes.extend_from_slice(chunk.as_bytes());
   }
+}
+
+fn trust_atom_link_tag(
+  link_direction: &LinkDirection,
+  content: &str,
+  value: &str,
+  bucket: &str,
+) -> LinkTag {
+  let link_tag_arrow = match link_direction {
+    LinkDirection::Forward => LINK_TAG_ARROW_FORWARD,
+    LinkDirection::Reverse => LINK_TAG_ARROW_REVERSE,
+  };
+
+  let mut link_tag_bytes = vec![];
+  link_tag_bytes.extend_from_slice(&LINK_TAG_HEADER);
+  link_tag_bytes.extend_from_slice(&link_tag_arrow);
+  link_tag_bytes.extend_from_slice(content.as_bytes());
+  link_tag_bytes.extend_from_slice(&UNICODE_NUL_BYTES);
+  link_tag_bytes.extend_from_slice(value.as_bytes());
+  link_tag_bytes.extend_from_slice(&UNICODE_NUL_BYTES);
+  link_tag_bytes.extend_from_slice(bucket.as_bytes());
 
   LinkTag(link_tag_bytes)
+}
+
+fn trust_atom_link_tag_leading_bytes(
+  link_direction: &LinkDirection,
+  content: &str,
+  // value: Option<String>, // TODO
+) -> LinkTag {
+  let link_tag_arrow = match link_direction {
+    LinkDirection::Forward => LINK_TAG_ARROW_FORWARD,
+    LinkDirection::Reverse => LINK_TAG_ARROW_REVERSE,
+  };
+
+  let mut link_tag_bytes = vec![];
+  link_tag_bytes.extend_from_slice(&LINK_TAG_HEADER);
+  link_tag_bytes.extend_from_slice(&link_tag_arrow);
+  link_tag_bytes.extend_from_slice(content.as_bytes());
+
+  LinkTag(link_tag_bytes)
+}
+
+fn gen_bucket() -> &str {
+  let bucket = vec![];
+  while total < 9 {
+    let rand = random_bytes(2)?;
+    let digit = str::from_utf8(rand);
+    bucket.extend_from_slice(digit);
+    total += 1;
+  }
+  bucket
 }
 
 pub fn query_mine(
