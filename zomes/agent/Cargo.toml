@@ -1,0 +1,14 @@
+[package]
+edition = "2018"
+name = "agent"
+version = "0.0.1"
+
+[lib]
+crate-type = ["cdylib", "rlib"]
+name = "agent"
+
+[dependencies]
+serde = "1"
+derive_more = "0"
+
+hdk = {version = "0.0.122", features = ["encoding"]}
