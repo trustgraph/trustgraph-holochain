@@ -1500,6 +1500,7 @@ dependencies = [
  "hdk",
  "holo_hash",
  "holochain",
+ "regex",
  "serde",
  "tokio",
 ]
