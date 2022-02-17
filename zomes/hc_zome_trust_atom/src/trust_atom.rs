@@ -1,5 +1,6 @@
 #![allow(clippy::module_name_repetitions)]
 
+use regex::Regex;
 use std::collections::BTreeMap;
 
 use hdk::prelude::holo_hash::EntryHashB64;
@@ -53,10 +54,14 @@ pub fn create(
   let agent_address: EntryHash = agent_info.agent_initial_pubkey.into();
 
   validate_value(value)?;
-  // let normalized_value = normalize_value(value); // TODO
 
-  let forward_link_tag = trust_atom_link_tag(&LinkDirection::Forward, vec![content, value]);
-  let reverse_link_tag = trust_atom_link_tag(&LinkDirection::Reverse, vec![content, value]);
+  // let normalized_value = normalize_value(value)?;
+  let normalized_value = value;
+
+  let forward_link_tag =
+    trust_atom_link_tag(&LinkDirection::Forward, vec![content, normalized_value]);
+  let reverse_link_tag =
+    trust_atom_link_tag(&LinkDirection::Reverse, vec![content, normalized_value]);
 
   create_link(agent_address.clone(), target.clone(), forward_link_tag)?;
   create_link(target, agent_address, reverse_link_tag)?;
@@ -65,13 +70,31 @@ pub fn create(
 }
 
 fn validate_value(value_str: &str) -> ExternResult<()> {
+  let pattern = r"^-?(\d+|\d+\.\d+|\.\d+)$";
+  match Regex::new(pattern) {
+    Ok(regex) => {
+      if !regex.is_match(value_str) {
+        return Err(WasmError::Guest(format!(
+          "Value must be a number in the formatat `{}` but got `{}`",
+          pattern, value_str
+        )));
+      }
+    }
+    Err(_) => {
+      return Err(WasmError::Guest(format!(
+        "Failed to build regex from pattern: `{}`",
+        pattern
+      )))
+    }
+  }
+
   match value_str.parse::<f64>() {
     Ok(value) => {
       if (-1.0..=1.0).contains(&value) {
         Ok(())
       } else {
         Err(WasmError::Guest(format!(
-          "Value must be in the range -1..1, but got: {}",
+          "Value must be in the range -1..1, but got: `{}`",
           value
         )))
       }
@@ -79,14 +102,15 @@ fn validate_value(value_str: &str) -> ExternResult<()> {
 
     Err(_) => {
       return Err(WasmError::Guest(format!(
-        "Value must be a number, but got: {}",
+        "Value must be a number, but got: `{}`",
         value_str
       )))
     }
   }
 }
 
-// fn normalize_value(value_str: &str) -> ExternResult<&str> {
+// fn normalize_value(value: &str) -> ExternResult<&str> {
+//   Ok(value)
 // }
 
 fn trust_atom_link_tag(link_direction: &LinkDirection, mut chunks: Vec<&str>) -> LinkTag {
@@ -286,47 +310,116 @@ const fn tg_link_tag_header_length() -> usize {
 
 #[cfg(test)]
 #[allow(clippy::unwrap_used)]
+#[allow(non_snake_case)]
 mod tests {
 
   use super::*; // allows testing of private functions
 
   #[test]
-  fn test_validate_value_range() {
-    validate_value("1.0").unwrap();
-    validate_value("1.000000000000000000000000000").unwrap();
-    validate_value("1").unwrap();
-    validate_value("0.534857395723489529357489283").unwrap();
-    validate_value("0.0").unwrap();
-    validate_value("0.000000000000000000000000000").unwrap();
-    validate_value("0").unwrap();
-    validate_value("-1.0").unwrap();
-    validate_value("-1").unwrap();
-    validate_value("-1.00000000000000000000000000").unwrap();
+  fn test_validate_value__valid_value() {
+    let valid_values = [
+      "1.0",
+      "1.000000000000000000000000000",
+      "1",
+      "0.534857395723489529357489283",
+      "0.0",
+      "0.000000000000000000000000000",
+      "0",
+      "-1.0",
+      "-1",
+      "-1.00000000000000000000000000",
+    ];
 
-    assert!(validate_value("1.0000000001")
-      .expect_err("expected error, got")
-      .to_string()
-      .contains("Value must be in the range -1..1"));
-    assert!(validate_value("-1.0000000001")
-      .expect_err("expected error, got")
-      .to_string()
-      .contains("Value must be in the range -1..1"));
-    assert!(validate_value("-10.0000000001")
-      .expect_err("expected error, got")
-      .to_string()
-      .contains("Value must be in the range -1..1"));
-    assert!(validate_value("100000000000000000000000000000.0")
-      .expect_err("expected error, got")
-      .to_string()
-      .contains("Value must be in the range -1..1"));
-    assert!(validate_value("-100000000000000000000000000000.0")
-      .expect_err("expected error, got")
-      .to_string()
-      .contains("Value must be in the range -1..1"));
+    for value in valid_values {
+      validate_value(value).unwrap();
+    }
+  }
+
+  #[test]
+  fn test_validate_value__values_out_of_range() {
+    let out_of_range_values = [
+      "1.0000000001",
+      "-1.0000000001",
+      "-10.0000000001",
+      "100000000000000000000000000000.0",
+      "-100000000000000000000000000000.0",
+    ];
+
+    for value in out_of_range_values {
+      let expected_error_message = "Value must be in the range -1..1";
+      let actual_error_message = validate_value(value)
+        .expect_err(&format!("expected error for value `{}`, got", value))
+        .to_string();
+      assert!(
+        actual_error_message.contains(expected_error_message),
+        "Expected error message: `...{}...`, but got: `{}`",
+        expected_error_message,
+        actual_error_message
+      );
+    }
+  }
+
+  #[test]
+
+  fn test_validate_value__values_not_numeric() {
+    #[rustfmt::skip]
+    let non_numeric_values = [
+      " ",
+      " 0 ",
+      " 0",
+      "-.",
+      "-",
+      "!",
+      ".",
+      "",
+      "0 ",
+      "e",
+      "foo",
+     ];
+
+    for value in non_numeric_values {
+      let expected_error_message = "Value must be a number in the format";
+      let actual_error_message = validate_value(value)
+        .expect_err(&format!("expected error for value `{}`, got", value))
+        .to_string();
+      assert!(
+        actual_error_message.contains(expected_error_message),
+        "Expected error message: `...{}...`, but got: `{}`",
+        expected_error_message,
+        actual_error_message
+      );
+    }
+  }
+
+  #[test]
+
+  fn test_validate_value__values_not_simple_numbers() {
+    #[rustfmt::skip]
+    let non_numeric_values = [
+      "1e0",
+      "1e",
+      "e0",
+      "-1e0",
+      "-1e",
+      "-e0",
+     ];
+
+    for value in non_numeric_values {
+      let expected_error_message = "Value must be a number in the format";
+      let actual_error_message = validate_value(value)
+        .expect_err(&format!("expected error for value `{}`, got", value))
+        .to_string();
+      assert!(
+        actual_error_message.contains(expected_error_message),
+        "Expected error message: `...{}...`, but got: `{}`",
+        expected_error_message,
+        actual_error_message
+      );
+    }
   }
 
   // #[test]
   // fn test_normalize_value() {
-  //   assert_eq!(normalize_value("0.9"), ".999999999");
+  //   // assert_eq!(normalize_value("0.9").unwrap(), ".900000000");
   // }
 }
