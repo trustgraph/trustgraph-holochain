@@ -16,6 +16,6 @@ in nixpkgs.mkShell {
   buildInputs = with nixpkgs; [
     binaryen
     nodejs-16_x
-    #    cargo-watch  # broke on M1
+    cargo-watch
   ];
 }

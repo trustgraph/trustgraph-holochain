@@ -142,9 +142,8 @@ fn trust_atom_link_tag(link_direction: &LinkDirection, mut chunks: Vec<&str>) ->
 //   bucket.push_str(digit);
 //   total += 1;
 //   }
-//   bucket.as_str()  
+//   bucket.as_str()
 // }
-
 
 pub fn query_mine(
   target: Option<EntryHash>,
@@ -445,10 +444,9 @@ mod tests {
   //   // }
   // }
 
-// #[test]
-// fn test_gen_bucket() {
-//   assert_eq!(gen_bucket().chars().count(), 9);
-//   assert!(chars().all(char::is_digit(10)));
-// }
-
- }
+  // #[test]
+  // fn test_gen_bucket() {
+  //   assert_eq!(gen_bucket().chars().count(), 9);
+  //   assert!(chars().all(char::is_digit(10)));
+  // }
+}

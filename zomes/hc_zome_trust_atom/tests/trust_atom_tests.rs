@@ -6,8 +6,6 @@ use futures::future;
 
 // use hc_zome_trust_atom::*;
 
-
-
 use hc_zome_trust_atom::*;
 use hdk::prelude::holo_hash::EntryHashB64;
 use hdk::prelude::*;
