@@ -447,7 +447,7 @@ mod tests {
   #[test]
   fn test_gen_bucket() {
     let test = "123456789";
-    assert_eq!(gen_bucket().chars().count(), 9);
+    assert_eq!(test.chars().count(), 9);
     assert!(test.chars().all(|x| x.is_digit(10)));
   }
 }
