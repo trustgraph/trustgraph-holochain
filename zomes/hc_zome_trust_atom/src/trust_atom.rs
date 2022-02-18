@@ -2,7 +2,7 @@
 
 use regex::Regex;
 use std::collections::BTreeMap;
-
+use std::convert::TryInto;
 use hdk::prelude::holo_hash::EntryHashB64;
 use hdk::prelude::*;
 
@@ -133,16 +133,17 @@ fn trust_atom_link_tag(link_direction: &LinkDirection, mut chunks: Vec<&str>) ->
   LinkTag(link_tag_bytes)
 }
 
-fn gen_bucket<'a>() -> &'a str {
-  let mut rng = rand::thread_rng();
-  let bucket: String = String::new();
-  let total = 0;
+fn gen_bucket() -> ExternResult<String> {
+  let mut bucket: String = String::new();
+  let mut total = 0;
   while total < 9 {
-  let digit = rng.gen_range(0..10).as_str();
-  bucket.push_str(digit);
+  let rand_bytes = random_bytes(1)?.into_vec();
+  let array: [u8; 1] = [rand_bytes[0]];
+  let rand_num = u8::from_ne_bytes(array).to_string();
+  bucket.push_str(&rand_num);
   total += 1;
   }
-  bucket.as_str()
+  Ok(bucket)
 }
 
 pub fn query_mine(
