@@ -13,7 +13,7 @@ crate-type = ["cdylib", "rlib"]
 [dependencies]
 hdk = "=0.0.116"
 holo_hash = {version = "*", features = ["encoding"]}
-regex = "1"
+rust_decimal = "1"
 serde = "1"
 
 [dev-dependencies]
