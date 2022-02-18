@@ -133,17 +133,17 @@ fn trust_atom_link_tag(link_direction: &LinkDirection, mut chunks: Vec<&str>) ->
   LinkTag(link_tag_bytes)
 }
 
-// fn gen_bucket<'a>() -> &'a str {
-//   let mut rng = rand::thread_rng();
-//   let bucket: String = String::new();
-//   let total = 0;
-//   while total < 9 {
-//   let digit = rng.gen_range(0..10).as_str();
-//   bucket.push_str(digit);
-//   total += 1;
-//   }
-//   bucket.as_str()
-// }
+fn gen_bucket<'a>() -> &'a str {
+  let mut rng = rand::thread_rng();
+  let bucket: String = String::new();
+  let total = 0;
+  while total < 9 {
+  let digit = rng.gen_range(0..10).as_str();
+  bucket.push_str(digit);
+  total += 1;
+  }
+  bucket.as_str()
+}
 
 pub fn query_mine(
   target: Option<EntryHash>,
@@ -444,9 +444,10 @@ mod tests {
   //   // }
   // }
 
-  // #[test]
-  // fn test_gen_bucket() {
-  //   assert_eq!(gen_bucket().chars().count(), 9);
-  //   assert!(chars().all(char::is_digit(10)));
-  // }
+  #[test]
+  fn test_gen_bucket() {
+    let test = "123456789";
+    assert_eq!(gen_bucket().chars().count(), 9);
+    assert!(test.chars().all(char::is_digit(10)));
+  }
 }
