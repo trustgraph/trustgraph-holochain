@@ -43,31 +43,31 @@ pub struct QueryMineInput {
 
 // ZOME API FUNCTIONS
 
-#[hdk_extern]
-pub fn create_trust_atom(input: TrustAtomInput) -> ExternResult<()> {
-  trust_atom::create(input.target, &input.content, &input.value, input.attributes)
-}
+// #[hdk_extern]
+// pub fn create_trust_atom(input: TrustAtomInput) -> ExternResult<()> {
+//   trust_atom::create(input.target, &input.content, &input.value, input.attributes)
+// }
 
-#[hdk_extern]
-pub fn query(input: QueryInput) -> ExternResult<Vec<TrustAtom>> {
-  trust_atom::query(
-    input.source,
-    input.target,
-    input.content_full,
-    input.content_starts_with,
-    input.min_rating,
-  )
-}
+// #[hdk_extern]
+// pub fn query(input: QueryInput) -> ExternResult<Vec<TrustAtom>> {
+//   trust_atom::query(
+//     input.source,
+//     input.target,
+//     input.content_full,
+//     input.content_starts_with,
+//     input.min_rating,
+//   )
+// }
 
-#[hdk_extern]
-pub fn query_mine(input: QueryMineInput) -> ExternResult<Vec<TrustAtom>> {
-  trust_atom::query_mine(
-    input.target,
-    input.content_full,
-    input.content_starts_with,
-    input.min_rating,
-  )
-}
+// #[hdk_extern]
+// pub fn query_mine(input: QueryMineInput) -> ExternResult<Vec<TrustAtom>> {
+//   trust_atom::query_mine(
+//     input.target,
+//     input.content_full,
+//     input.content_starts_with,
+//     input.min_rating,
+//   )
+// }
 
 // TEST HELPERS
 

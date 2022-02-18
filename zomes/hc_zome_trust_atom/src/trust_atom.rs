@@ -3,6 +3,7 @@
 use regex::Regex;
 use std::collections::BTreeMap;
 use std::convert::TryInto;
+use std::str;
 use hdk::prelude::holo_hash::EntryHashB64;
 use hdk::prelude::*;
 
@@ -48,6 +49,7 @@ pub fn create(
   target: EntryHash,
   content: &str,
   value: &str,
+  bucket: Vec<u8>,
   _attributes: BTreeMap<String, String>,
 ) -> ExternResult<()> {
   let agent_info = agent_info()?;
@@ -59,9 +61,9 @@ pub fn create(
   let normalized_value = value;
 
   let forward_link_tag =
-    trust_atom_link_tag(&LinkDirection::Forward, vec![content, normalized_value]);
+    trust_atom_link_tag(&LinkDirection::Forward, vec![content, normalized_value], bucket.clone());
   let reverse_link_tag =
-    trust_atom_link_tag(&LinkDirection::Reverse, vec![content, normalized_value]);
+    trust_atom_link_tag(&LinkDirection::Reverse, vec![content, normalized_value], bucket);
 
   create_link(agent_address.clone(), target.clone(), forward_link_tag)?;
   create_link(target, agent_address, reverse_link_tag)?;
@@ -113,7 +115,7 @@ fn validate_value(value_str: &str) -> ExternResult<()> {
 //   Ok(value)
 // }
 
-fn trust_atom_link_tag(link_direction: &LinkDirection, mut chunks: Vec<&str>) -> LinkTag {
+fn trust_atom_link_tag(link_direction: &LinkDirection, mut chunks: Vec<&str>, bucket: Vec<u8>) -> LinkTag {
   let link_tag_arrow = match link_direction {
     LinkDirection::Forward => LINK_TAG_ARROW_FORWARD,
     LinkDirection::Reverse => LINK_TAG_ARROW_REVERSE,
@@ -129,111 +131,108 @@ fn trust_atom_link_tag(link_direction: &LinkDirection, mut chunks: Vec<&str>) ->
     link_tag_bytes.extend_from_slice(&UNICODE_NUL_BYTES);
     link_tag_bytes.extend_from_slice(chunk.as_bytes());
   }
+  link_tag_bytes.extend_from_slice(&UNICODE_NUL_BYTES);
+  let bucket_slice: &str = str::from_utf8(&bucket).unwrap();
+  link_tag_bytes.extend_from_slice(bucket_slice.as_bytes());
 
   LinkTag(link_tag_bytes)
 }
 
-fn gen_bucket() -> ExternResult<String> {
-  let mut bucket: String = String::new();
-  let mut total = 0;
-  while total < 9 {
-  let rand_bytes = random_bytes(1)?.into_vec();
-  let array: [u8; 1] = [rand_bytes[0]];
-  let rand_num = u8::from_ne_bytes(array).to_string();
-  bucket.push_str(&rand_num);
-  total += 1;
-  }
+fn gen_bucket() -> ExternResult<Vec<u8>> {
+
+  let bucket = random_bytes(9)?.into_vec(); 
+
   Ok(bucket)
 }
 
-pub fn query_mine(
-  target: Option<EntryHash>,
-  content_full: Option<String>,
-  content_starts_with: Option<String>,
-  min_value: Option<String>,
-) -> ExternResult<Vec<TrustAtom>> {
-  let agent_address: EntryHash = agent_info()?.agent_initial_pubkey.into();
+// pub fn query_mine(
+//   target: Option<EntryHash>,
+//   content_full: Option<String>,
+//   content_starts_with: Option<String>,
+//   min_value: Option<String>,
+// ) -> ExternResult<Vec<TrustAtom>> {
+//   let agent_address: EntryHash = agent_info()?.agent_initial_pubkey.into();
 
-  let result = query(
-    Some(agent_address),
-    target,
-    content_full,
-    content_starts_with,
-    min_value,
-  )?;
+//   let result = query(
+//     Some(agent_address),
+//     target,
+//     content_full,
+//     content_starts_with,
+//     min_value,
+//   )?;
 
-  Ok(result)
-}
+//   Ok(result)
+// }
 
 /// Required: exactly one of source or target
 /// All other arguments are optional
 /// Arguments act as additive filters (AND)
-#[warn(clippy::needless_pass_by_value)]
-pub fn query(
-  source: Option<EntryHash>,
-  target: Option<EntryHash>,
-  content_full: Option<String>,
-  content_starts_with: Option<String>,
-  min_value: Option<String>,
-) -> ExternResult<Vec<TrustAtom>> {
-  let (full, starts_with, min_val) = match (content_full, content_starts_with, min_value) {
-    (Some(_content_full), Some(_content_starts_with), _) => {
-      return Err(WasmError::Guest(
-        "Exactly one query method must be specified, but not both".into(),
-      ))
-    }
-    (_, Some(_content_starts_with), Some(_min_value)) => {
-      return Err(WasmError::Guest(
-        "Must be full content to pass min value".into(),
-      ))
-    }
-    (Some(content_full), None, min_value) => (Some(content_full), None, min_value),
-    (None, Some(content_starts_with), None) => (None, Some(content_starts_with), None),
-    (None, None, min_value) => (None, None, min_value),
-  };
+// #[warn(clippy::needless_pass_by_value)]
+// pub fn query(
+//   source: Option<EntryHash>,
+//   target: Option<EntryHash>,
+//   content_full: Option<String>,
+//   content_starts_with: Option<String>,
+//   min_value: Option<String>,
+// ) -> ExternResult<Vec<TrustAtom>> {
+//   let (full, starts_with, min_val) = match (content_full, content_starts_with, min_value) {
+//     (Some(_content_full), Some(_content_starts_with), _) => {
+//       return Err(WasmError::Guest(
+//         "Exactly one query method must be specified, but not both".into(),
+//       ))
+//     }
+//     (_, Some(_content_starts_with), Some(_min_value)) => {
+//       return Err(WasmError::Guest(
+//         "Must be full content to pass min value".into(),
+//       ))
+//     }
+//     (Some(content_full), None, min_value) => (Some(content_full), None, min_value),
+//     (None, Some(content_starts_with), None) => (None, Some(content_starts_with), None),
+//     (None, None, min_value) => (None, None, min_value),
+//   };
 
-  let (link_direction, link_base) = match (source, target) {
-    (Some(source), None) => (LinkDirection::Forward, source),
-    (None, Some(target)) => (LinkDirection::Reverse, target),
-    (None, None) => {
-      return Err(WasmError::Guest(
-        "Either source or target must be specified".into(),
-      ))
-    }
-    (Some(_source), Some(_target)) => {
-      return Err(WasmError::Guest(
-        "Exactly one of source or target must be specified, but not both".into(),
-      ))
-    }
-  };
+//   let (link_direction, link_base) = match (source, target) {
+//     (Some(source), None) => (LinkDirection::Forward, source),
+//     (None, Some(target)) => (LinkDirection::Reverse, target),
+//     (None, None) => {
+//       return Err(WasmError::Guest(
+//         "Either source or target must be specified".into(),
+//       ))
+//     }
+//     (Some(_source), Some(_target)) => {
+//       return Err(WasmError::Guest(
+//         "Exactly one of source or target must be specified, but not both".into(),
+//       ))
+//     }
+//   };
 
-  let link_tag = match (full, starts_with, link_direction.clone()) {
-    (Some(full), None, LinkDirection::Forward) => Some(trust_atom_link_tag(
-      &LinkDirection::Forward,
-      vec![&full, &min_val.unwrap_or("".to_string())],
-    )),
-    (Some(full), None, LinkDirection::Reverse) => Some(trust_atom_link_tag(
-      &LinkDirection::Reverse,
-      vec![&full, &min_val.unwrap_or("".to_string())],
-    )),
-    (None, Some(starts_with), LinkDirection::Forward) => Some(trust_atom_link_tag(
-      &LinkDirection::Forward,
-      vec![&starts_with],
-    )),
-    (None, Some(starts_with), LinkDirection::Reverse) => Some(trust_atom_link_tag(
-      &LinkDirection::Reverse,
-      vec![&starts_with],
-    )),
-    (Some(_full), Some(_starts_with), _) => None, // error handled earlier
-    (None, None, _) => None,
-  };
+//   let link_tag = match (full, starts_with, link_direction.clone()) {
+//     (Some(full), None, LinkDirection::Forward) => Some(trust_atom_link_tag(
+//       &LinkDirection::Forward,
+//       vec![&full, &min_val.unwrap_or("".to_string())],
+//     )),
+//     (Some(full), None, LinkDirection::Reverse) => Some(trust_atom_link_tag(
+//       &LinkDirection::Reverse,
+//       vec![&full, &min_val.unwrap_or("".to_string())],
+//     )),
+//     (None, Some(starts_with), LinkDirection::Forward) => Some(trust_atom_link_tag(
+//       &LinkDirection::Forward,
+//       vec![&starts_with],
+//     )),
+//     (None, Some(starts_with), LinkDirection::Reverse) => Some(trust_atom_link_tag(
+//       &LinkDirection::Reverse,
+//       vec![&starts_with],
+//     )),
+//     (Some(_full), Some(_starts_with), _) => None, // error handled earlier
+//     (None, None, _) => None,
+//   };
 
-  let links = get_links(link_base.clone(), link_tag)?;
+//   let links = get_links(link_base.clone(), link_tag)?;
 
-  let trust_atoms = convert_links_to_trust_atoms(links, &link_direction, &link_base)?;
+//   let trust_atoms = convert_links_to_trust_atoms(links, &link_direction, &link_base)?;
 
-  Ok(trust_atoms)
-}
+//   Ok(trust_atoms)
+// }
 
 fn convert_links_to_trust_atoms(
   links: Vec<Link>,
