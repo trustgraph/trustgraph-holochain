@@ -1,10 +1,9 @@
 #![allow(clippy::module_name_repetitions)]
 
-use regex::Regex;
-use std::collections::BTreeMap;
-
 use hdk::prelude::holo_hash::EntryHashB64;
 use hdk::prelude::*;
+use rust_decimal::prelude::*;
+use std::collections::BTreeMap;
 
 #[derive(Debug, Clone)]
 enum LinkDirection {
@@ -53,15 +52,12 @@ pub fn create(
   let agent_info = agent_info()?;
   let agent_address: EntryHash = agent_info.agent_initial_pubkey.into();
 
-  validate_value(value)?;
-
-  // let normalized_value = normalize_value(value)?;
-  let normalized_value = value;
+  let normalized_value = normalize_value(value)?;
 
   let forward_link_tag =
-    trust_atom_link_tag(&LinkDirection::Forward, vec![content, normalized_value]);
+    trust_atom_link_tag(&LinkDirection::Forward, vec![content, &normalized_value]);
   let reverse_link_tag =
-    trust_atom_link_tag(&LinkDirection::Reverse, vec![content, normalized_value]);
+    trust_atom_link_tag(&LinkDirection::Reverse, vec![content, &normalized_value]);
 
   create_link(agent_address.clone(), target.clone(), forward_link_tag)?;
   create_link(target, agent_address, reverse_link_tag)?;
@@ -69,49 +65,37 @@ pub fn create(
   Ok(())
 }
 
-fn validate_value(value_str: &str) -> ExternResult<()> {
-  let pattern = r"^-?(\d+|\d+\.\d+|\.\d+)$";
-  match Regex::new(pattern) {
-    Ok(regex) => {
-      if !regex.is_match(value_str) {
-        return Err(WasmError::Guest(format!(
-          "Value must be a number in the formatat `{}` but got `{}`",
-          pattern, value_str
-        )));
+fn normalize_value(value_str: &str) -> ExternResult<String> {
+  match Decimal::from_str(value_str) {
+    Ok(value_decimal) => {
+      match value_decimal.round_sf_with_strategy(9, RoundingStrategy::MidpointAwayFromZero) {
+        Some(value_decimal) => {
+          if value_decimal == Decimal::ONE {
+            Ok(".999999999".to_string())
+          } else if value_decimal == Decimal::NEGATIVE_ONE {
+            Ok("-.999999999".to_string())
+          } else if value_decimal > Decimal::NEGATIVE_ONE && value_decimal < Decimal::ONE {
+            let value_zero_stripped = value_decimal.to_string().replace("0.", ".");
+            Ok(value_zero_stripped)
+          } else {
+            Err(WasmError::Guest(format!(
+              "Value must be in the range -1..1, but got: `{}`",
+              value_str
+            )))
+          }
+        }
+        None => Err(WasmError::Guest(format!(
+          "Value could not be processed: `{}`",
+          value_str
+        ))),
       }
     }
-    Err(_) => {
-      return Err(WasmError::Guest(format!(
-        "Failed to build regex from pattern: `{}`",
-        pattern
-      )))
-    }
-  }
-
-  match value_str.parse::<f64>() {
-    Ok(value) => {
-      if (-1.0..=1.0).contains(&value) {
-        Ok(())
-      } else {
-        Err(WasmError::Guest(format!(
-          "Value must be in the range -1..1, but got: `{}`",
-          value
-        )))
-      }
-    }
-
-    Err(_) => {
-      return Err(WasmError::Guest(format!(
-        "Value must be a number, but got: `{}`",
-        value_str
-      )))
-    }
+    Err(error) => Err(WasmError::Guest(format!(
+      "Value could not be processed: `{}`.  Error: `{}`",
+      value_str, error
+    ))),
   }
 }
-
-// fn normalize_value(value: &str) -> ExternResult<&str> {
-//   Ok(value)
-// }
 
 fn trust_atom_link_tag(link_direction: &LinkDirection, mut chunks: Vec<&str>) -> LinkTag {
   let link_tag_arrow = match link_direction {
@@ -316,7 +300,7 @@ mod tests {
   use super::*; // allows testing of private functions
 
   #[test]
-  fn test_validate_value__valid_value() {
+  fn test_normalize_value__valid_value() {
     let valid_values = [
       "1.0",
       "1.000000000000000000000000000",
@@ -331,23 +315,26 @@ mod tests {
     ];
 
     for value in valid_values {
-      validate_value(value).unwrap();
+      normalize_value(value).unwrap();
     }
   }
 
   #[test]
-  fn test_validate_value__values_out_of_range() {
+  fn test_normalize_value__values_out_of_range() {
     let out_of_range_values = [
-      "1.0000000001",
-      "-1.0000000001",
-      "-10.0000000001",
-      "100000000000000000000000000000.0",
-      "-100000000000000000000000000000.0",
+      "100000000000000000",
+      "-100000000000000000",
+      "2",
+      "1.000000005",
+      "1.00000001",
+      "-1.00000001",
+      "-1.000000005",
+      "-2",
     ];
 
     for value in out_of_range_values {
       let expected_error_message = "Value must be in the range -1..1";
-      let actual_error_message = validate_value(value)
+      let actual_error_message = normalize_value(value)
         .expect_err(&format!("expected error for value `{}`, got", value))
         .to_string();
       assert!(
@@ -360,8 +347,7 @@ mod tests {
   }
 
   #[test]
-
-  fn test_validate_value__values_not_numeric() {
+  fn test_normalize_value__values_not_numeric() {
     #[rustfmt::skip]
     let non_numeric_values = [
       " ",
@@ -369,17 +355,27 @@ mod tests {
       " 0",
       "-.",
       "-",
+      "-100000000000000000000000000000.0",
+      "-1e",
+      "-1e0",
+      "-e0",
       "!",
       ".",
       "",
+      "",
+      "\u{1f9d0}",
       "0 ",
+      "100000000000000000000000000000.0",
+      "1e",
+      "1e0",
       "e",
+      "e0",
       "foo",
      ];
 
     for value in non_numeric_values {
-      let expected_error_message = "Value must be a number in the format";
-      let actual_error_message = validate_value(value)
+      let expected_error_message = "Value could not be processed";
+      let actual_error_message = normalize_value(value)
         .expect_err(&format!("expected error for value `{}`, got", value))
         .to_string();
       assert!(
@@ -392,34 +388,35 @@ mod tests {
   }
 
   #[test]
+  fn test_normalize_value() {
+    assert_eq!(normalize_value("-.9").unwrap(), "-.900000000");
+    assert_eq!(normalize_value("-.9000").unwrap(), "-.900000000");
+    assert_eq!(normalize_value("-.900000000").unwrap(), "-.900000000");
+    assert_eq!(normalize_value("-.9000000004").unwrap(), "-.900000000");
+    assert_eq!(normalize_value("-.9000000005").unwrap(), "-.900000001");
+    assert_eq!(normalize_value("-0.900000000").unwrap(), "-.900000000");
 
-  fn test_validate_value__values_not_simple_numbers() {
-    #[rustfmt::skip]
-    let non_numeric_values = [
-      "1e0",
-      "1e",
-      "e0",
-      "-1e0",
-      "-1e",
-      "-e0",
-     ];
+    assert_eq!(normalize_value("0.8999999995").unwrap(), ".900000000");
+    assert_eq!(normalize_value("0.7999999995").unwrap(), ".800000000");
+    assert_eq!(normalize_value("-0.8999999995").unwrap(), "-.900000000");
+    assert_eq!(normalize_value("-0.7999999995").unwrap(), "-.800000000");
 
-    for value in non_numeric_values {
-      let expected_error_message = "Value must be a number in the format";
-      let actual_error_message = validate_value(value)
-        .expect_err(&format!("expected error for value `{}`, got", value))
-        .to_string();
-      assert!(
-        actual_error_message.contains(expected_error_message),
-        "Expected error message: `...{}...`, but got: `{}`",
-        expected_error_message,
-        actual_error_message
-      );
-    }
+    assert_eq!(normalize_value("0.8999999994").unwrap(), ".899999999");
+    assert_eq!(normalize_value("0.7999999994").unwrap(), ".799999999");
+    assert_eq!(normalize_value("-0.8999999994").unwrap(), "-.899999999");
+    assert_eq!(normalize_value("-0.7999999994").unwrap(), "-.799999999");
+
+    assert_eq!(normalize_value(".9").unwrap(), ".900000000");
+    assert_eq!(normalize_value(".9000").unwrap(), ".900000000");
+    assert_eq!(normalize_value(".900000000").unwrap(), ".900000000");
+    assert_eq!(normalize_value("0.900000000").unwrap(), ".900000000");
+
+    //
+
+    assert_eq!(normalize_value("1").unwrap(), ".999999999");
+    assert_eq!(normalize_value("1.0").unwrap(), ".999999999");
+
+    assert_eq!(normalize_value("-1").unwrap(), "-.999999999");
+    assert_eq!(normalize_value("-1.0").unwrap(), "-.999999999");
   }
-
-  // #[test]
-  // fn test_normalize_value() {
-  //   // assert_eq!(normalize_value("0.9").unwrap(), ".900000000");
-  // }
 }

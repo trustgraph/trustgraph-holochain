@@ -43,7 +43,7 @@ pub async fn test_create_trust_atom() {
   // CREATE TRUST ATOM
 
   let content: String = "sushi".into();
-  let value: String = "0.8".into();
+  let value: String = ".8".into();
   let attributes: BTreeMap<String, String> = BTreeMap::from([(
     "details".into(),
     "Excellent specials. The regular menu is so-so. Their coconut curry (special) is to die for"
@@ -86,13 +86,14 @@ pub async fn test_create_trust_atom() {
   let link_tag_bytes = link.clone().tag.into_inner();
   let relevant_link_bytes = link_tag_bytes.to_vec();
   let relevant_link_string = String::from_utf8(relevant_link_bytes).unwrap();
-  let expected_link_tag_string = format!("{}{}{}{}{}", "Ŧ", "→", "sushi", unicode_nul, "0.8");
+  let expected_link_tag_string =
+    format!("{}{}{}{}{}", "Ŧ", "→", "sushi", unicode_nul, ".800000000");
   assert_eq!(relevant_link_string, expected_link_tag_string);
 
   let chunks: Vec<&str> = relevant_link_string.split(unicode_nul).collect();
   assert_eq!(chunks.len(), 2);
   assert_eq!(chunks[0], "Ŧ→sushi");
-  assert_eq!(chunks[1], "0.8");
+  assert_eq!(chunks[1], ".800000000");
 
   // CHECK BACKWARD LINK
 
@@ -113,13 +114,14 @@ pub async fn test_create_trust_atom() {
   let link_tag_bytes = link.clone().tag.into_inner();
   let relevant_link_bytes = link_tag_bytes.to_vec();
   let relevant_link_string = String::from_utf8(relevant_link_bytes).unwrap();
-  let expected_link_tag_string = format!("{}{}{}{}{}", "Ŧ", "↩", "sushi", unicode_nul, "0.8");
+  let expected_link_tag_string =
+    format!("{}{}{}{}{}", "Ŧ", "↩", "sushi", unicode_nul, ".800000000");
   assert_eq!(relevant_link_string, expected_link_tag_string);
 
   let chunks: Vec<&str> = relevant_link_string.split(unicode_nul).collect();
   assert_eq!(chunks.len(), 2);
   assert_eq!(chunks[0], "Ŧ↩sushi");
-  assert_eq!(chunks[1], "0.8");
+  assert_eq!(chunks[1], ".800000000");
 }
 
 #[tokio::test(flavor = "multi_thread")]
@@ -180,19 +182,12 @@ pub async fn test_query_mine() {
       source: source_entry_hash_b64.to_string(),
       target: target_entry_hash_b64.to_string(),
       content: "sushi".to_string(),
-      value: "0.8".to_string(),
+      value: ".800000000".to_string(),
       source_entry_hash: source_entry_hash_b64,
       target_entry_hash: target_entry_hash_b64,
       attributes: BTreeMap::new(),
     }
   );
-  //   assert_eq!(trust_atom.source, "x".to_string());
-  //   assert_eq!(trust_atom.target, "x".to_string());
-  //   assert_eq!(trust_atom.content, "sushi".to_string());
-  //   assert_eq!(trust_atom.value, "0.8".to_string());
-  //   assert_eq!(trust_atom.source_entry_hash, agent_address);
-  //   assert_eq!(trust_atom.target_entry_hash, target_entry_hash);
-  //   assert_eq!(trust_atom.attributes, BTreeMap::new());
 }
 
 #[tokio::test(flavor = "multi_thread")]
