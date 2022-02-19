@@ -2,8 +2,9 @@
 set -euo pipefail
 # set -x
 
-
 export CARGO_HOME=$(pwd)/.cargo
+COLOR_HIGHLIGHT='\033[1;35m'
+NO_COLOR='\033[0m'
 
 main () {
   run_targets $*
@@ -37,7 +38,7 @@ shell () {
   fi
 
   command=$(echo $1 | tr '\n' ' ' | tr -s ' ') # remove newlines, collapse spaces
-  echo "----> ${command}"
+  echo -e "${COLOR_HIGHLIGHT}----> ${command} ${NO_COLOR}"
   eval "$command"
 }
 
@@ -124,6 +125,7 @@ release_patch () {
 }
 
 clean () {
+  shell "rm -rf .cargo target"
   shell "git clean -Xfd"
   shell "cargo clean"
 }
