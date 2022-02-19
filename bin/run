@@ -101,7 +101,9 @@ format () {
 release_patch_dry () {
   shell "
     cargo release
-      -v
+      --verbose
+      --dev-version
+      --dev-version-ext 'dev'
       --no-publish
       --tag-prefix ''
       patch
@@ -111,7 +113,9 @@ release_patch_dry () {
 release_patch () {
   shell "
     cargo release
-      -v
+      --verbose
+      --dev-version
+      --dev-version-ext 'dev'
       --no-publish
       --tag-prefix ''
       --execute
