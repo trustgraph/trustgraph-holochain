@@ -98,6 +98,27 @@ format () {
   shell "cargo fmt"
 }
 
+release_patch_dry () {
+  shell "
+    cargo release
+      -v
+      --no-publish
+      --tag-prefix ''
+      patch
+  "
+}
+
+release_patch () {
+  shell "
+    cargo release
+      -v
+      --no-publish
+      --tag-prefix ''
+      --execute
+      patch
+  "
+}
+
 clean () {
   shell "git clean -Xfd"
   shell "cargo clean"
