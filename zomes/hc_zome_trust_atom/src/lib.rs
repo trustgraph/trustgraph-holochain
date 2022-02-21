@@ -19,7 +19,7 @@ pub use crate::trust_atom::*;
 pub mod test_helpers;
 // pub use crate::test_helpers;
 
-entry_defs![StringTarget::entry_def()];
+entry_defs![StringTarget::entry_def(), Extra::entry_def()];
 
 // INPUT TYPES
 

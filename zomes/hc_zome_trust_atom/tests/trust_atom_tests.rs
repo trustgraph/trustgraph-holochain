@@ -230,8 +230,8 @@ pub async fn test_query_mine_with_content_starts_with() {
       "query_mine",
       QueryMineInput {
         target: None,
-        content_starts_with: Some("sushi".into()),
         content_full: None,
+        content_starts_with: Some("sushi".into()),
         min_rating: None,
         // min_rating: Some("0.0".into()),
       },

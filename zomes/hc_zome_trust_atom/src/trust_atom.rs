@@ -42,12 +42,19 @@ const LINK_TAG_HEADER: [u8; 2] = [197, 166]; // Unicode "Ŧ" // hex bytes: [0xC5
 const LINK_TAG_ARROW_FORWARD: [u8; 3] = [226, 134, 146]; // Unicode "→" // hex bytes: [0xE2][0x86][0x92]
 const LINK_TAG_ARROW_REVERSE: [u8; 3] = [226, 134, 169]; // Unicode "↩" // hex bytes: [0xE2][0x86][0xA9]
 
+#[hdk_entry(id = "extra_field", visibility = "public")]
+#[derive(Clone)]
+pub struct Extra {
+  field: BTreeMap<String, String>
+}
+
 #[warn(clippy::needless_pass_by_value)] // TODO remove when `attributes` is used
 pub fn create(
   target: EntryHash,
   content: &str,
   value: &str,
   attributes: BTreeMap<String, String>,
+  extra_field: Option<BTreeMap<String, String>>
 ) -> ExternResult<()> {
   let agent_info = agent_info()?;
   let agent_address: EntryHash = agent_info.agent_initial_pubkey.into();
