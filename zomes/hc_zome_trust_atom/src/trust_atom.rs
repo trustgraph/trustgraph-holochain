@@ -30,6 +30,7 @@ pub struct TrustAtomInput {
   pub content: String,
   pub value: String,
   pub attributes: BTreeMap<String, String>,
+  pub extra_field: Option<BTreeMap<String, String>>
 }
 
 #[hdk_entry(id = "restaurant", visibility = "public")]
@@ -45,7 +46,7 @@ const LINK_TAG_ARROW_REVERSE: [u8; 3] = [226, 134, 169]; // Unicode "↩" // hex
 #[hdk_entry(id = "extra_field", visibility = "public")]
 #[derive(Clone)]
 pub struct Extra {
-  field: BTreeMap<String, String>
+  pub field: BTreeMap<String, String>
 }
 
 #[warn(clippy::needless_pass_by_value)] // TODO remove when `attributes` is used
@@ -60,15 +61,24 @@ pub fn create(
   let agent_address: EntryHash = agent_info.agent_initial_pubkey.into();
 
   let normalized_value = normalize_value(value)?;
-
-  let forward_link_tag =
-    trust_atom_link_tag(&LinkDirection::Forward, vec![content, &normalized_value]);
-  let reverse_link_tag =
-    trust_atom_link_tag(&LinkDirection::Reverse, vec![content, &normalized_value]);
-
+  //TODO: used Box to consolidate
+  if let Some(extra) = extra_field {
+    let xtr_field_eh = create_extra_field(extra)?.to_string();
+    let forward_link_tag =
+      trust_atom_link_tag(&LinkDirection::Forward, vec![content, &normalized_value, &xtr_field_eh]);
+    let reverse_link_tag =
+      trust_atom_link_tag(&LinkDirection::Reverse, vec![content, &normalized_value, &xtr_field_eh]);
+    create_link(agent_address.clone(), target.clone(), forward_link_tag)?;
+    create_link(target, agent_address, reverse_link_tag)?;
+  }
+  else {
+    let forward_link_tag =
+      trust_atom_link_tag(&LinkDirection::Forward, vec![content, &normalized_value]);
+    let reverse_link_tag =
+      trust_atom_link_tag(&LinkDirection::Reverse, vec![content, &normalized_value]); 
   create_link(agent_address.clone(), target.clone(), forward_link_tag)?;
   create_link(target, agent_address, reverse_link_tag)?;
-
+  }
   Ok(())
 }
 
@@ -276,6 +286,17 @@ fn convert_link_to_trust_atom(
     }
   };
   Ok(trust_atom)
+}
+
+pub fn create_extra_field(input: BTreeMap<String, String>) -> ExternResult<EntryHash> {
+  let entry = Extra {
+    field: input
+  };
+
+  create_entry(entry.clone())?;
+
+  let entry_hash = hash_entry(entry)?;
+  Ok(entry_hash)
 }
 
 pub fn create_string_target(input: String) -> ExternResult<EntryHash> {
