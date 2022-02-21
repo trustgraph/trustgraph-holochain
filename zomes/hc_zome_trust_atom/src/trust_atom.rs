@@ -21,7 +21,7 @@ pub struct TrustAtom {
   pub value: String,
   pub source_entry_hash: EntryHashB64,
   pub target_entry_hash: EntryHashB64,
-  pub attributes: BTreeMap<String, String>,
+  pub extra: BTreeMap<String, String>,
 }
 
 #[derive(Serialize, Deserialize, SerializedBytes, Debug, Clone)]
@@ -29,8 +29,7 @@ pub struct TrustAtomInput {
   pub target: EntryHash,
   pub content: String,
   pub value: String,
-  pub attributes: BTreeMap<String, String>,
-  pub extra_field: Option<BTreeMap<String, String>>
+  pub extra: Option<BTreeMap<String, String>>,
 }
 
 #[hdk_entry(id = "restaurant", visibility = "public")]
@@ -43,41 +42,43 @@ const LINK_TAG_HEADER: [u8; 2] = [197, 166]; // Unicode "Ŧ" // hex bytes: [0xC5
 const LINK_TAG_ARROW_FORWARD: [u8; 3] = [226, 134, 146]; // Unicode "→" // hex bytes: [0xE2][0x86][0x92]
 const LINK_TAG_ARROW_REVERSE: [u8; 3] = [226, 134, 169]; // Unicode "↩" // hex bytes: [0xE2][0x86][0xA9]
 
-#[hdk_entry(id = "extra_field", visibility = "public")]
+#[hdk_entry(id = "extra", visibility = "public")]
 #[derive(Clone)]
 pub struct Extra {
-  pub field: BTreeMap<String, String>
+  pub field: BTreeMap<String, String>,
 }
 
-#[warn(clippy::needless_pass_by_value)] // TODO remove when `attributes` is used
+#[warn(clippy::needless_pass_by_value)] // TODO remove when `extra` is used
 pub fn create(
   target: EntryHash,
   content: &str,
   value: &str,
-  attributes: BTreeMap<String, String>,
-  extra_field: Option<BTreeMap<String, String>>
+  extra: Option<BTreeMap<String, String>>,
 ) -> ExternResult<()> {
   let agent_info = agent_info()?;
   let agent_address: EntryHash = agent_info.agent_initial_pubkey.into();
 
   let normalized_value = normalize_value(value)?;
   //TODO: used Box to consolidate
-  if let Some(extra) = extra_field {
-    let xtr_field_eh = create_extra_field(extra)?.to_string();
-    let forward_link_tag =
-      trust_atom_link_tag(&LinkDirection::Forward, vec![content, &normalized_value, &xtr_field_eh]);
-    let reverse_link_tag =
-      trust_atom_link_tag(&LinkDirection::Reverse, vec![content, &normalized_value, &xtr_field_eh]);
+  if let Some(extra) = extra {
+    let xtr_field_eh = create_extra(extra)?.to_string();
+    let forward_link_tag = trust_atom_link_tag(
+      &LinkDirection::Forward,
+      vec![content, &normalized_value, &xtr_field_eh],
+    );
+    let reverse_link_tag = trust_atom_link_tag(
+      &LinkDirection::Reverse,
+      vec![content, &normalized_value, &xtr_field_eh],
+    );
     create_link(agent_address.clone(), target.clone(), forward_link_tag)?;
     create_link(target, agent_address, reverse_link_tag)?;
-  }
-  else {
+  } else {
     let forward_link_tag =
       trust_atom_link_tag(&LinkDirection::Forward, vec![content, &normalized_value]);
     let reverse_link_tag =
-      trust_atom_link_tag(&LinkDirection::Reverse, vec![content, &normalized_value]); 
-  create_link(agent_address.clone(), target.clone(), forward_link_tag)?;
-  create_link(target, agent_address, reverse_link_tag)?;
+      trust_atom_link_tag(&LinkDirection::Reverse, vec![content, &normalized_value]);
+    create_link(agent_address.clone(), target.clone(), forward_link_tag)?;
+    create_link(target, agent_address, reverse_link_tag)?;
   }
   Ok(())
 }
@@ -270,7 +271,7 @@ fn convert_link_to_trust_atom(
         value,
         source_entry_hash: link_base_b64,
         target_entry_hash: link_target_b64,
-        attributes: BTreeMap::new(), // TODO
+        extra: BTreeMap::new(), // TODO
       }
     }
     LinkDirection::Reverse => {
@@ -281,17 +282,15 @@ fn convert_link_to_trust_atom(
         value: "999".into(), // TODO
         source_entry_hash: link_target_b64,
         target_entry_hash: link_base.clone().into(),
-        attributes: BTreeMap::new(), // TODO
+        extra: BTreeMap::new(), // TODO
       }
     }
   };
   Ok(trust_atom)
 }
 
-pub fn create_extra_field(input: BTreeMap<String, String>) -> ExternResult<EntryHash> {
-  let entry = Extra {
-    field: input
-  };
+pub fn create_extra(input: BTreeMap<String, String>) -> ExternResult<EntryHash> {
+  let entry = Extra { field: input };
 
   create_entry(entry.clone())?;
 

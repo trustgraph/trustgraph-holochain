@@ -149,6 +149,9 @@ pub async fn test_query_mine() {
         content: "sushi".into(),
         value: "0.8".into(),
         attributes: BTreeMap::new(),
+        // extra: Some(BTreeMap::new([
+        //   ("creator_name".into(), "Bradley Fieldstone Jr.".into()),
+        // ])),
       },
     )
     .await;
@@ -164,8 +167,6 @@ pub async fn test_query_mine() {
         content_starts_with: None,
         content_full: None,
         min_rating: None,
-        // content_starts_with: Some("sushi".into()),
-        // min_rating: Some("0.0".into()),
       },
     )
     .await;
@@ -185,7 +186,7 @@ pub async fn test_query_mine() {
       value: ".800000000".to_string(),
       source_entry_hash: source_entry_hash_b64,
       target_entry_hash: target_entry_hash_b64,
-      attributes: BTreeMap::new(),
+      extra: BTreeMap::new(),
     }
   );
 }
