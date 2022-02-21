@@ -46,7 +46,7 @@ pub async fn test_create_trust_atom() {
 
   let content: String = "sushi".into();
   let value: String = ".8".into();
-  let attributes: BTreeMap<String, String> = BTreeMap::from([(
+  let extra: BTreeMap<String, String> = BTreeMap::from([(
     "details".into(),
     "Excellent specials. The regular menu is so-so. Their coconut curry (special) is to die for"
       .into(),
@@ -54,12 +54,12 @@ pub async fn test_create_trust_atom() {
 
   let trust_atom_input = TrustAtomInput {
     target: target_entry_hash.clone(),
-    content: content.clone(),
-    value,
-    attributes: attributes.clone(),
+    content: Some(content.clone()),
+    value: Some(value.clone()),
+    extra: Some(extra.clone()),
   };
 
-  let _result: () = conductor
+  let _result: TrustAtom = conductor
     .call(
       &cell1.zome("trust_atom"),
       "create_trust_atom",
@@ -90,7 +90,7 @@ pub async fn test_create_trust_atom() {
   let relevant_link_string = String::from_utf8(relevant_link_bytes).unwrap();
 
   let chunks: Vec<&str> = relevant_link_string.split(unicode_nul).collect();
-  assert_eq!(chunks.len(), 3);
+  assert_eq!(chunks.len(), 4);
   assert_eq!(chunks[0], "Ŧ→sushi");
   assert_eq!(chunks[1], ".800000000");
 
@@ -99,9 +99,18 @@ pub async fn test_create_trust_atom() {
   assert_eq!(bucket.chars().count(), 9);
   assert!(bucket.chars().all(|c| c.is_digit(10)));
 
+  let expected_entry_hash = "uhCEkto76kYgGIZMzU6AbEzCx1HMRNzurwPaOdF2utJaP-33mdcdN";
   let expected_link_tag_string = format!(
-    "{}{}{}{}{}{}{}",
-    "Ŧ", "→", "sushi", unicode_nul, ".800000000", unicode_nul, bucket
+    "{}{}{}{}{}{}{}{}{}",
+    "Ŧ",
+    "→",
+    "sushi",
+    unicode_nul,
+    ".800000000",
+    unicode_nul,
+    bucket,
+    unicode_nul,
+    expected_entry_hash
   );
   assert_eq!(relevant_link_string, expected_link_tag_string);
 
@@ -125,16 +134,25 @@ pub async fn test_create_trust_atom() {
   let relevant_link_bytes = link_tag_bytes.to_vec();
   let relevant_link_string = String::from_utf8(relevant_link_bytes).unwrap();
   let expected_link_tag_string = format!(
-    "{}{}{}{}{}{}{}",
-    "Ŧ", "↩", "sushi", unicode_nul, ".800000000", unicode_nul, bucket
+    "{}{}{}{}{}{}{}{}{}",
+    "Ŧ",
+    "↩",
+    "sushi",
+    unicode_nul,
+    ".800000000",
+    unicode_nul,
+    bucket,
+    unicode_nul,
+    expected_entry_hash
   );
   assert_eq!(relevant_link_string, expected_link_tag_string);
 
   let chunks: Vec<&str> = relevant_link_string.split(unicode_nul).collect();
-  assert_eq!(chunks.len(), 3);
+  assert_eq!(chunks.len(), 4);
   assert_eq!(chunks[0], "Ŧ↩sushi");
   assert_eq!(chunks[1], ".800000000");
   assert_eq!(chunks[2], bucket);
+  assert_eq!(chunks[3], expected_entry_hash);
 }
 
 #[tokio::test(flavor = "multi_thread")]
@@ -153,15 +171,18 @@ pub async fn test_query_mine() {
 
   // CREATE TRUST ATOMS
 
-  let _result: () = conductor
+  let _result: TrustAtom = conductor
     .call(
       &cell1.zome("trust_atom"),
       "create_trust_atom",
       TrustAtomInput {
         target: target_entry_hash.clone(),
-        content: "sushi".into(),
-        value: "0.8".into(),
-        attributes: BTreeMap::new(),
+        content: Some("sushi".to_string()),
+        value: Some("0.8".to_string()),
+        extra: Some(BTreeMap::new()),
+        // extra: Some(BTreeMap::new([
+        //   ("creator_name".into(), "Bradley Fieldstone Jr.".into()),
+        // ])),
       },
     )
     .await;
@@ -176,9 +197,7 @@ pub async fn test_query_mine() {
         target: None,
         content_starts_with: None,
         content_full: None,
-        min_rating: None,
-        // content_starts_with: Some("sushi".into()),
-        // min_rating: Some("0.0".into()),
+        value_starts_with: None,
       },
     )
     .await;
@@ -194,11 +213,11 @@ pub async fn test_query_mine() {
     TrustAtom {
       source: source_entry_hash_b64.to_string(),
       target: target_entry_hash_b64.to_string(),
-      content: "sushi".to_string(),
-      value: ".800000000".to_string(),
+      content: Some("sushi".to_string()),
+      value: Some(".800000000".to_string()),
       source_entry_hash: source_entry_hash_b64,
       target_entry_hash: target_entry_hash_b64,
-      attributes: BTreeMap::new(),
+      extra: Some(BTreeMap::new()),
     }
   );
 }
@@ -222,15 +241,15 @@ pub async fn test_query_mine_with_content_starts_with() {
   let contents = vec!["sushi", "sushi joint", "sush"];
 
   for content in contents {
-    let _result: () = conductor
+    let _result: TrustAtom = conductor
       .call(
         &cell1.zome("trust_atom"),
         "create_trust_atom",
         TrustAtomInput {
           target: target_entry_hash.clone(),
-          content: content.into(),
-          value: "0.8".into(),
-          attributes: BTreeMap::new(),
+          content: Some(content.into()),
+          value: Some("0.8".into()),
+          extra: Some(BTreeMap::new()),
         },
       )
       .await;
@@ -243,10 +262,10 @@ pub async fn test_query_mine_with_content_starts_with() {
       "query_mine",
       QueryMineInput {
         target: None,
-        content_starts_with: Some("sushi".into()),
         content_full: None,
-        min_rating: None,
-        // min_rating: Some("0.0".into()),
+        content_starts_with: Some("sushi".into()),
+        value_starts_with: None,
+        // value_starts_with: Some("0.0".into()),
       },
     )
     .await;
@@ -259,7 +278,10 @@ pub async fn test_query_mine_with_content_starts_with() {
   ];
   actual.sort();
 
-  assert_eq!(actual, ["sushi", "sushi joint"]);
+  assert_eq!(
+    actual,
+    [Some("sushi".to_string()), Some("sushi joint".to_string())]
+  );
 }
 
 #[tokio::test(flavor = "multi_thread")]
@@ -281,15 +303,15 @@ pub async fn test_query_mine_with_content_full() {
   let content_fulls = vec!["sushi", "sushi joint", "sush"];
 
   for content_full in content_fulls {
-    let _result: () = conductor
+    let _result: TrustAtom = conductor
       .call(
         &cell1.zome("trust_atom"),
         "create_trust_atom",
         TrustAtomInput {
           target: target_entry_hash.clone(),
-          content: content_full.into(),
-          value: "0.8".into(),
-          attributes: BTreeMap::new(),
+          content: Some(content_full.into()),
+          value: Some("0.8".into()),
+          extra: Some(BTreeMap::new()),
         },
       )
       .await;
@@ -302,10 +324,10 @@ pub async fn test_query_mine_with_content_full() {
       "query_mine",
       QueryMineInput {
         target: None,
-        content_starts_with: None,
         content_full: Some("sushi".into()),
-        min_rating: None,
-        // min_rating: Some("0.0".into()),
+        content_starts_with: None,
+        value_starts_with: None,
+        // value_starts_with: Some("0.0".into()),
       },
     )
     .await;
@@ -314,7 +336,7 @@ pub async fn test_query_mine_with_content_full() {
 
   assert_eq!(
     trust_atoms_from_query[0].clone().content,
-    "sushi".to_string()
+    Some("sushi".to_string())
   );
 }
 
@@ -354,4 +376,80 @@ pub async fn setup_conductors(n: usize) -> (SweetConductorBatch, Vec<AgentPubKey
 
   conductors.exchange_peer_info().await;
   (conductors, all_agents, apps)
+}
+
+#[tokio::test(flavor = "multi_thread")]
+pub async fn test_get_extra() {
+  let (conductor, _agent, cell1) = setup_1_conductor().await;
+
+  let target_entry_hash = conductor
+    .call(
+      &cell1.zome("trust_atom"),
+      "create_string_target",
+      "Nuka Sushi",
+    )
+    .await;
+
+  let mock_input = TrustAtomInput {
+    target: target_entry_hash,
+    content: Some("sushi".to_string()),
+    value: Some("0.9871".to_string()),
+    extra: Some(BTreeMap::from([
+      (
+        "extra_stuff".to_string(),
+        "Say some extra stuff here".to_string(),
+      ),
+      (
+        "another_thing".to_string(),
+        "Put more information here".to_string(),
+      ),
+    ])),
+  };
+
+  let _mock_trust_atom: TrustAtom = conductor
+    .call(
+      &cell1.zome("trust_atom"),
+      "create_trust_atom",
+      mock_input.clone(),
+    )
+    .await;
+
+  let mock_entry = Extra {
+    fields: mock_input.extra.unwrap(),
+  };
+  let mock_extra_entry_hash: EntryHash = conductor
+    .call(&cell1.zome("trust_atom"), "calc_extra_hash", mock_entry)
+    .await;
+
+  let mock_extra_data: Extra = conductor
+    .call(
+      &cell1.zome("trust_atom"),
+      "get_extra",
+      mock_extra_entry_hash,
+    )
+    .await;
+
+  let field1 = mock_extra_data
+    .fields
+    .get_key_value(&"extra_stuff".to_string())
+    .unwrap();
+  let field2 = mock_extra_data
+    .fields
+    .get_key_value(&"another_thing".to_string())
+    .unwrap();
+
+  assert_eq!(
+    field1,
+    (
+      &"extra_stuff".to_string(),
+      &"Say some extra stuff here".to_string()
+    )
+  );
+  assert_eq!(
+    field2,
+    (
+      &"another_thing".to_string(),
+      &"Put more information here".to_string()
+    )
+  );
 }

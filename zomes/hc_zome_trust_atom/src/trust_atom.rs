@@ -15,112 +15,65 @@ enum LinkDirection {
 /// We may support JSON in the future to allow for more complex data structures @TODO
 #[derive(Serialize, Deserialize, SerializedBytes, Debug, Clone, PartialEq)]
 pub struct TrustAtom {
-  pub source: String,
+  pub source: String, // TODO source_name
   pub target: String,
-  pub content: String,
-  pub value: String,
   pub source_entry_hash: EntryHashB64,
   pub target_entry_hash: EntryHashB64,
-  pub attributes: BTreeMap<String, String>,
+  pub content: Option<String>,
+  pub value: Option<String>,
+  pub extra: Option<BTreeMap<String, String>>,
 }
-
-#[derive(Serialize, Deserialize, SerializedBytes, Debug, Clone)]
-pub struct TrustAtomInput {
-  pub target: EntryHash,
-  pub content: String,
-  pub value: String,
-  pub attributes: BTreeMap<String, String>,
-}
-
-#[hdk_entry(id = "restaurant", visibility = "public")]
-#[derive(Clone)]
-pub struct StringTarget(String);
 
 const UNICODE_NUL_STR: &str = "\u{0}"; // Unicode NUL character
-const UNICODE_NUL_BYTES: [u8; 1] = [0];
 const LINK_TAG_HEADER: [u8; 2] = [197, 166]; // Unicode "Ŧ" // hex bytes: [0xC5][0xA6]
 const LINK_TAG_ARROW_FORWARD: [u8; 3] = [226, 134, 146]; // Unicode "→" // hex bytes: [0xE2][0x86][0x92]
 const LINK_TAG_ARROW_REVERSE: [u8; 3] = [226, 134, 169]; // Unicode "↩" // hex bytes: [0xE2][0x86][0xA9]
 
-#[warn(clippy::needless_pass_by_value)] // TODO remove when `attributes` is used
+#[hdk_entry(id = "extra", visibility = "public")]
+#[derive(Clone)]
+pub struct Extra {
+  pub fields: BTreeMap<String, String>, // extra content
+}
+
 pub fn create(
   target: EntryHash,
-  content: &str,
-  value: &str,
-  _attributes: BTreeMap<String, String>,
-) -> ExternResult<()> {
-  let agent_info = agent_info()?;
-  let agent_address: EntryHash = agent_info.agent_initial_pubkey.into();
-
-  let normalized_value = normalize_value(value)?;
+  content: Option<String>,
+  value: Option<String>,
+  extra: Option<BTreeMap<String, String>>,
+) -> ExternResult<TrustAtom> {
+  let agent_address: EntryHash = agent_info()?.agent_initial_pubkey.into();
 
   let bucket = create_bucket()?;
 
-  let forward_link_tag = trust_atom_link_tag(
-    &LinkDirection::Forward,
-    vec![content, &normalized_value, bucket.as_str()],
-  );
-  let reverse_link_tag = trust_atom_link_tag(
-    &LinkDirection::Reverse,
-    vec![content, &normalized_value, bucket.as_str()],
-  );
-
-  create_link(agent_address.clone(), target.clone(), forward_link_tag)?;
-  create_link(target, agent_address, reverse_link_tag)?;
-
-  Ok(())
-}
-
-fn normalize_value(value_str: &str) -> ExternResult<String> {
-  match Decimal::from_str(value_str) {
-    Ok(value_decimal) => {
-      match value_decimal.round_sf_with_strategy(9, RoundingStrategy::MidpointAwayFromZero) {
-        Some(value_decimal) => {
-          if value_decimal == Decimal::ONE {
-            Ok(".999999999".to_string())
-          } else if value_decimal == Decimal::NEGATIVE_ONE {
-            Ok("-.999999999".to_string())
-          } else if value_decimal > Decimal::NEGATIVE_ONE && value_decimal < Decimal::ONE {
-            let value_zero_stripped = value_decimal.to_string().replace("0.", ".");
-            Ok(value_zero_stripped)
-          } else {
-            Err(WasmError::Guest(format!(
-              "Value must be in the range -1..1, but got: `{}`",
-              value_str
-            )))
-          }
-        }
-        None => Err(WasmError::Guest(format!(
-          "Value could not be processed: `{}`",
-          value_str
-        ))),
-      }
-    }
-    Err(error) => Err(WasmError::Guest(format!(
-      "Value could not be processed: `{}`.  Error: `{}`",
-      value_str, error
-    ))),
-  }
-}
-
-fn trust_atom_link_tag(link_direction: &LinkDirection, mut chunks: Vec<&str>) -> LinkTag {
-  let link_tag_arrow = match link_direction {
-    LinkDirection::Forward => LINK_TAG_ARROW_FORWARD,
-    LinkDirection::Reverse => LINK_TAG_ARROW_REVERSE,
+  let extra_entry_hash_string = match extra.clone() {
+    Some(x) => Some(create_extra(x)?),
+    None => None,
   };
 
-  let mut link_tag_bytes = vec![];
-  link_tag_bytes.extend_from_slice(&LINK_TAG_HEADER);
-  link_tag_bytes.extend_from_slice(&link_tag_arrow);
-  let content = chunks.remove(0);
-  link_tag_bytes.extend_from_slice(content.as_bytes());
+  let chunks = [
+    content.clone(),
+    normalize_value(value.clone())?,
+    Some(bucket),
+    extra_entry_hash_string,
+  ];
+  let forward_link_tag = create_link_tag(&LinkDirection::Forward, &chunks);
+  let reverse_link_tag = create_link_tag(&LinkDirection::Reverse, &chunks);
 
-  for chunk in chunks {
-    link_tag_bytes.extend_from_slice(&UNICODE_NUL_BYTES);
-    link_tag_bytes.extend_from_slice(chunk.as_bytes());
-  }
+  create_link(agent_address.clone(), target.clone(), forward_link_tag)?;
+  create_link(target.clone(), agent_address.clone(), reverse_link_tag)?;
 
-  LinkTag(link_tag_bytes)
+  let agent_address_entry: EntryHash = agent_address;
+
+  let trust_atom = TrustAtom {
+    source: agent_address_entry.to_string(),
+    target: target.to_string(),
+    source_entry_hash: agent_address_entry.into(),
+    target_entry_hash: target.into(),
+    content,
+    value,
+    extra,
+  };
+  Ok(trust_atom)
 }
 
 fn create_bucket() -> ExternResult<String> {
@@ -137,11 +90,120 @@ fn create_bucket_string(bucket_bytes: &[u8]) -> String {
   bucket
 }
 
+fn create_extra(input: BTreeMap<String, String>) -> ExternResult<String> {
+  let entry = Extra { fields: input };
+
+  create_entry(entry.clone())?;
+
+  let entry_hash_string = calc_extra_hash(entry)?.to_string();
+  Ok(entry_hash_string)
+}
+
+pub fn calc_extra_hash(input: Extra) -> ExternResult<EntryHash> {
+  let hash = hash_entry(input)?;
+  Ok(hash)
+}
+
+fn normalize_value(value_str: Option<String>) -> ExternResult<Option<String>> {
+  match value_str {
+    Some(value_str) => match Decimal::from_str(value_str.as_str()) {
+      Ok(value_decimal) => {
+        match value_decimal.round_sf_with_strategy(9, RoundingStrategy::MidpointAwayFromZero) {
+          Some(value_decimal) => {
+            if value_decimal == Decimal::ONE {
+              Ok(Some(".999999999".to_string()))
+            } else if value_decimal == Decimal::NEGATIVE_ONE {
+              Ok(Some("-.999999999".to_string()))
+            } else if value_decimal > Decimal::NEGATIVE_ONE && value_decimal < Decimal::ONE {
+              let value_zero_stripped = value_decimal.to_string().replace("0.", ".");
+              Ok(Some(value_zero_stripped))
+            } else {
+              Err(WasmError::Guest(format!(
+                "Value must be in the range -1..1, but got: `{}`",
+                value_str
+              )))
+            }
+          }
+          None => Err(WasmError::Guest(format!(
+            "Value could not be processed: `{}`",
+            value_str
+          ))),
+        }
+      }
+      Err(error) => Err(WasmError::Guest(format!(
+        "Value could not be processed: `{}`.  Error: `{}`",
+        value_str, error
+      ))),
+    },
+    None => Ok(None),
+  }
+}
+
+fn create_link_tag(link_direction: &LinkDirection, chunk_options: &[Option<String>]) -> LinkTag {
+  let mut chunks: Vec<String> = vec![];
+
+  for i in 0..chunk_options.len() {
+    if let Some(chunk) = chunk_options[i].clone() {
+      chunks.push(chunk);
+      if i < chunk_options.len() - 1 {
+        chunks.push(UNICODE_NUL_STR.to_string());
+      }
+    }
+  }
+
+  create_link_tag_metal(link_direction, chunks)
+}
+
+fn create_link_tag_metal(link_direction: &LinkDirection, chunks: Vec<String>) -> LinkTag {
+  let link_tag_arrow = match link_direction {
+    LinkDirection::Forward => LINK_TAG_ARROW_FORWARD,
+    LinkDirection::Reverse => LINK_TAG_ARROW_REVERSE,
+  };
+
+  let mut link_tag_bytes = vec![];
+  link_tag_bytes.extend_from_slice(&LINK_TAG_HEADER);
+  link_tag_bytes.extend_from_slice(&link_tag_arrow);
+
+  for chunk in chunks {
+    link_tag_bytes.extend_from_slice(chunk.as_bytes());
+  }
+
+  // debug!("link_tag: {:?}", String::from_utf8_lossy(&link_tag_bytes));
+  LinkTag(link_tag_bytes)
+}
+
+pub fn get_extra(entry_hash: &EntryHash) -> ExternResult<Extra> {
+  let element = get_element(entry_hash, GetOptions::default())?;
+  match element.entry() {
+    element::ElementEntry::Present(entry) => {
+      Extra::try_from(entry.clone()).or(Err(WasmError::Guest(format!(
+        "Couldn't convert Element entry {:?} into data type {}",
+        entry,
+        std::any::type_name::<Extra>()
+      ))))
+    }
+    _ => Err(WasmError::Guest(format!(
+      "Element {:?} does not have an entry",
+      element
+    ))),
+  }
+}
+
+fn get_element(entry_hash: &EntryHash, get_options: GetOptions) -> ExternResult<Element> {
+  match get(entry_hash.clone(), get_options)? {
+    Some(element) => Ok(element),
+    None => Err(WasmError::Guest(format!(
+      "There is no element at the hash {}",
+      entry_hash
+    ))),
+  }
+}
+
 pub fn query_mine(
   target: Option<EntryHash>,
   content_full: Option<String>,
   content_starts_with: Option<String>,
-  min_value: Option<String>,
+  value_starts_with: Option<String>,
 ) -> ExternResult<Vec<TrustAtom>> {
   let agent_address: EntryHash = agent_info()?.agent_initial_pubkey.into();
 
@@ -150,7 +212,7 @@ pub fn query_mine(
     target,
     content_full,
     content_starts_with,
-    min_value,
+    value_starts_with,
   )?;
 
   Ok(result)
@@ -165,24 +227,8 @@ pub fn query(
   target: Option<EntryHash>,
   content_full: Option<String>,
   content_starts_with: Option<String>,
-  min_value: Option<String>,
+  value_starts_with: Option<String>,
 ) -> ExternResult<Vec<TrustAtom>> {
-  let (full, starts_with, min_val) = match (content_full, content_starts_with, min_value) {
-    (Some(_content_full), Some(_content_starts_with), _) => {
-      return Err(WasmError::Guest(
-        "Exactly one query method must be specified, but not both".into(),
-      ))
-    }
-    (_, Some(_content_starts_with), Some(_min_value)) => {
-      return Err(WasmError::Guest(
-        "Must be full content to pass min value".into(),
-      ))
-    }
-    (Some(content_full), None, min_value) => (Some(content_full), None, min_value),
-    (None, Some(content_starts_with), None) => (None, Some(content_starts_with), None),
-    (None, None, min_value) => (None, None, min_value),
-  };
-
   let (link_direction, link_base) = match (source, target) {
     (Some(source), None) => (LinkDirection::Forward, source),
     (None, Some(target)) => (LinkDirection::Reverse, target),
@@ -198,27 +244,29 @@ pub fn query(
     }
   };
 
-  let link_tag = match (full, starts_with, link_direction.clone()) {
-    (Some(full), None, LinkDirection::Forward) => Some(trust_atom_link_tag(
-      &LinkDirection::Forward,
-      vec![&full, &min_val.unwrap_or("".to_string())],
+  let link_tag = match (content_full, content_starts_with, value_starts_with) {
+    (Some(_content_full), Some(_content_starts_with), _) => {
+      return Err(WasmError::Guest("Only one of `content_full` or `content_starts_with` can be used".into()))
+    }
+    (_, Some(_content_starts_with), Some(_value_starts_with)) => {
+      return Err(WasmError::Guest(
+        "Cannot use `value_starts_with` and `content_starts_with` arguments together; maybe try `content_full` instead?".into(),
+      ))
+    }
+    (Some(content_full), None, Some(value_starts_with)) => Some(create_link_tag(
+      &link_direction,
+      &[Some(content_full), Some(value_starts_with)],
     )),
-    (Some(full), None, LinkDirection::Reverse) => Some(trust_atom_link_tag(
-      &LinkDirection::Reverse,
-      vec![&full, &min_val.unwrap_or("".to_string())],
+    (Some(content_full), None, None) => {
+      Some(create_link_tag_metal(&link_direction, vec![content_full, UNICODE_NUL_STR.to_string()]))
+    }
+    (None, Some(content_starts_with), None) => Some(create_link_tag(
+      &link_direction,
+      &[Some(content_starts_with)],
     )),
-    (None, Some(starts_with), LinkDirection::Forward) => Some(trust_atom_link_tag(
-      &LinkDirection::Forward,
-      vec![&starts_with],
-    )),
-    (None, Some(starts_with), LinkDirection::Reverse) => Some(trust_atom_link_tag(
-      &LinkDirection::Reverse,
-      vec![&starts_with],
-    )),
-    (Some(_full), Some(_starts_with), _) => None, // error handled earlier
-    (None, None, _) => None,
+    (None, None, Some(value_starts_with)) => Some(create_link_tag(&link_direction, &[Some(value_starts_with)])),
+    (None, None, None) => None,
   };
-
   let links = get_links(link_base.clone(), link_tag)?;
 
   let trust_atoms = convert_links_to_trust_atoms(links, &link_direction, &link_base)?;
@@ -269,43 +317,26 @@ fn convert_link_to_trust_atom(
       TrustAtom {
         source: link_base_b64.to_string(),
         target: link_target_b64.to_string(),
-        content,
-        value,
         source_entry_hash: link_base_b64,
         target_entry_hash: link_target_b64,
-        attributes: BTreeMap::new(), // TODO
+        content: Some(content),
+        value: Some(value),
+        extra: Some(BTreeMap::new()), // TODO
       }
     }
     LinkDirection::Reverse => {
       TrustAtom {
-        source: "".into(),   // TODO
-        target: "".into(),   // TODO
-        content: link_tag,   // TODO
-        value: "999".into(), // TODO
-        source_entry_hash: link_target_b64,
-        target_entry_hash: link_base.clone().into(),
-        attributes: BTreeMap::new(), // TODO
+        source: link_target_b64.to_string(), // flipped for Reverse direction
+        target: link_base_b64.to_string(),   // flipped for Reverse direction
+        source_entry_hash: link_target_b64,  // flipped for Reverse direction
+        target_entry_hash: link_base_b64,    // flipped for Reverse direction
+        content: Some(content),
+        value: Some(value),
+        extra: Some(BTreeMap::new()), // TODO
       }
     }
   };
   Ok(trust_atom)
-}
-
-pub fn create_string_target(input: String) -> ExternResult<EntryHash> {
-  let string_target = StringTarget(input);
-
-  create_entry(string_target.clone())?;
-
-  let target_entry_hash = hash_entry(string_target)?;
-  Ok(target_entry_hash)
-}
-
-#[derive(Serialize, Deserialize, Debug, SerializedBytes)]
-struct StringLinkTag(String);
-
-pub fn link_tag(tag: String) -> ExternResult<LinkTag> {
-  let serialized_bytes: SerializedBytes = StringLinkTag(tag).try_into()?;
-  Ok(LinkTag(serialized_bytes.bytes().clone()))
 }
 
 const fn tg_link_tag_header_length() -> usize {
@@ -335,7 +366,7 @@ mod tests {
     ];
 
     for value in valid_values {
-      normalize_value(value).unwrap();
+      normalize_value(Some(value.to_string())).unwrap();
     }
   }
 
@@ -354,7 +385,7 @@ mod tests {
 
     for value in out_of_range_values {
       let expected_error_message = "Value must be in the range -1..1";
-      let actual_error_message = normalize_value(value)
+      let actual_error_message = normalize_value(Some(value.to_string()))
         .expect_err(&format!("expected error for value `{}`, got", value))
         .to_string();
       assert!(
@@ -395,7 +426,7 @@ mod tests {
 
     for value in non_numeric_values {
       let expected_error_message = "Value could not be processed";
-      let actual_error_message = normalize_value(value)
+      let actual_error_message = normalize_value(Some(value.to_string()))
         .expect_err(&format!("expected error for value `{}`, got", value))
         .to_string();
       assert!(
@@ -409,35 +440,36 @@ mod tests {
 
   #[test]
   fn test_normalize_value() {
-    assert_eq!(normalize_value("-.9").unwrap(), "-.900000000");
-    assert_eq!(normalize_value("-.9000").unwrap(), "-.900000000");
-    assert_eq!(normalize_value("-.900000000").unwrap(), "-.900000000");
-    assert_eq!(normalize_value("-.9000000004").unwrap(), "-.900000000");
-    assert_eq!(normalize_value("-.9000000005").unwrap(), "-.900000001");
-    assert_eq!(normalize_value("-0.900000000").unwrap(), "-.900000000");
+    let input_and_expected = [
+      ["-.9", "-.900000000"],
+      ["-.9000", "-.900000000"],
+      ["-.900000000", "-.900000000"],
+      ["-.9000000004", "-.900000000"],
+      ["-.9000000005", "-.900000001"],
+      ["-0.900000000", "-.900000000"],
+      ["0.8999999995", ".900000000"],
+      ["0.7999999995", ".800000000"],
+      ["-0.8999999995", "-.900000000"],
+      ["-0.7999999995", "-.800000000"],
+      ["0.8999999994", ".899999999"],
+      ["0.7999999994", ".799999999"],
+      ["-0.8999999994", "-.899999999"],
+      ["-0.7999999994", "-.799999999"],
+      [".9", ".900000000"],
+      [".9000", ".900000000"],
+      [".900000000", ".900000000"],
+      ["0.900000000", ".900000000"],
+      //
+      ["1", ".999999999"],
+      ["1.0", ".999999999"],
+      ["-1", "-.999999999"],
+      ["-1.0", "-.999999999"],
+    ];
 
-    assert_eq!(normalize_value("0.8999999995").unwrap(), ".900000000");
-    assert_eq!(normalize_value("0.7999999995").unwrap(), ".800000000");
-    assert_eq!(normalize_value("-0.8999999995").unwrap(), "-.900000000");
-    assert_eq!(normalize_value("-0.7999999995").unwrap(), "-.800000000");
-
-    assert_eq!(normalize_value("0.8999999994").unwrap(), ".899999999");
-    assert_eq!(normalize_value("0.7999999994").unwrap(), ".799999999");
-    assert_eq!(normalize_value("-0.8999999994").unwrap(), "-.899999999");
-    assert_eq!(normalize_value("-0.7999999994").unwrap(), "-.799999999");
-
-    assert_eq!(normalize_value(".9").unwrap(), ".900000000");
-    assert_eq!(normalize_value(".9000").unwrap(), ".900000000");
-    assert_eq!(normalize_value(".900000000").unwrap(), ".900000000");
-    assert_eq!(normalize_value("0.900000000").unwrap(), ".900000000");
-
-    //
-
-    assert_eq!(normalize_value("1").unwrap(), ".999999999");
-    assert_eq!(normalize_value("1.0").unwrap(), ".999999999");
-
-    assert_eq!(normalize_value("-1").unwrap(), "-.999999999");
-    assert_eq!(normalize_value("-1.0").unwrap(), "-.999999999");
+    for [input, expected] in input_and_expected {
+      let normalized_value = normalize_value(Some(input.to_string())).unwrap().unwrap();
+      assert_eq!(normalized_value, expected.to_string());
+    }
   }
 
   #[test]
