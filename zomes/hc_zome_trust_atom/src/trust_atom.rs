@@ -47,17 +47,23 @@ pub fn create(
   target: EntryHash,
   content: &str,
   value: &str,
-  attributes: BTreeMap<String, String>,
+  _attributes: BTreeMap<String, String>,
 ) -> ExternResult<()> {
   let agent_info = agent_info()?;
   let agent_address: EntryHash = agent_info.agent_initial_pubkey.into();
 
   let normalized_value = normalize_value(value)?;
 
-  let forward_link_tag =
-    trust_atom_link_tag(&LinkDirection::Forward, vec![content, &normalized_value]);
-  let reverse_link_tag =
-    trust_atom_link_tag(&LinkDirection::Reverse, vec![content, &normalized_value]);
+  let bucket = create_bucket()?;
+
+  let forward_link_tag = trust_atom_link_tag(
+    &LinkDirection::Forward,
+    vec![content, &normalized_value, bucket.as_str()],
+  );
+  let reverse_link_tag = trust_atom_link_tag(
+    &LinkDirection::Reverse,
+    vec![content, &normalized_value, bucket.as_str()],
+  );
 
   create_link(agent_address.clone(), target.clone(), forward_link_tag)?;
   create_link(target, agent_address, reverse_link_tag)?;
@@ -109,12 +115,26 @@ fn trust_atom_link_tag(link_direction: &LinkDirection, mut chunks: Vec<&str>) ->
   let content = chunks.remove(0);
   link_tag_bytes.extend_from_slice(content.as_bytes());
 
-  for chunk in &chunks {
+  for chunk in chunks {
     link_tag_bytes.extend_from_slice(&UNICODE_NUL_BYTES);
     link_tag_bytes.extend_from_slice(chunk.as_bytes());
   }
 
   LinkTag(link_tag_bytes)
+}
+
+fn create_bucket() -> ExternResult<String> {
+  let bucket_bytes = random_bytes(9)?.into_vec();
+  Ok(create_bucket_string(&bucket_bytes))
+}
+
+fn create_bucket_string(bucket_bytes: &[u8]) -> String {
+  let mut bucket = String::new();
+  for chunk in bucket_bytes {
+    let val = chunk;
+    bucket += (val % 10).to_string().as_str();
+  }
+  bucket
 }
 
 pub fn query_mine(
@@ -418,5 +438,12 @@ mod tests {
 
     assert_eq!(normalize_value("-1").unwrap(), "-.999999999");
     assert_eq!(normalize_value("-1.0").unwrap(), "-.999999999");
+  }
+
+  #[test]
+  fn test_bucket_val() {
+    let bytes: [u8; 9] = [9, 10, 11, 12, 13, 14, 15, 16, 17];
+    let bucket = create_bucket_string(&bytes);
+    assert_eq!(bucket, "901234567".to_string());
   }
 }
