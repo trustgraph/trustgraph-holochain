@@ -69,6 +69,14 @@ test_metal () {
   shell "time cargo test -- --nocapture"
 }
 
+build_watch () {
+  shell "cargo watch -- bin/run build"
+}
+
+build_watch_clear () {
+  shell "cargo watch --clear -- bin/run build"
+}
+
 build () {
   run build_happ
 }
