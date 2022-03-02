@@ -15,7 +15,13 @@ in nixpkgs.mkShell {
   inputsFrom = [ holonix.main ];
   buildInputs = with nixpkgs; [
     binaryen
+<<<<<<< HEAD
     nodejs-16_x
     #    cargo-watch  # broke on M1
+=======
+    cargo-release
+    cargo-watch
+    nodejs-16_x
+>>>>>>> Add cargo-release to nix config
   ];
 }

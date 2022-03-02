@@ -15,7 +15,8 @@ in nixpkgs.mkShell {
   inputsFrom = [ holonix.main ];
   buildInputs = with nixpkgs; [
     binaryen
-    nodejs-16_x
+    cargo-release
     # cargo-watch # broken on M1
+    nodejs-16_x
   ];
 }
