@@ -3,7 +3,6 @@ resolver = "2"  # 2 is the default in 2021 edition
 members = [
   "zomes/hc_zome_trust_atom",
   "zomes/agent",
-  "zomes/graph"
 ]
 
 [profile.dev]
