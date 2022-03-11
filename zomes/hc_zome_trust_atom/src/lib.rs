@@ -10,12 +10,16 @@
 
 // #![warn(clippy::cargo)]
 
+use hdk::prelude::holo_hash::EntryHashB64;
 use hdk::prelude::*;
+
 use std::collections::BTreeMap;
 
 // public for sweettest; TODO can we fix this:
 pub mod trust_atom;
-pub use crate::trust_atom::*;
+pub use trust_atom::*;
+pub mod trust_graph;
+pub use trust_graph::*;
 pub mod test_helpers;
 pub use test_helpers::Test;
 
@@ -29,16 +33,21 @@ entry_defs![
 
 #[derive(Serialize, Deserialize, SerializedBytes, Debug, Clone)]
 pub struct TrustAtomInput {
-  pub target: AnyLinkableHash,
+pub prefix: Option<String>,
+pub target: AnyLinkableHash,
+  pub source: EntryHash, //// for testing purposes ////
   pub content: Option<String>,
   pub value: Option<String>,
-  pub extra: Option<BTreeMap<String, String>>,
+  pub extra: Option<BTreeMap<String, String>>, // TODO back to String -> String
+                                               // for rollups key is "rolled_up_trust_atoms"
+                                               // value is json: '["header hash of atom 1","header hash of atom 2"...]'
 }
 
 #[derive(Serialize, Deserialize, SerializedBytes, Debug, Clone)]
 pub struct QueryInput {
-  pub source: Option<AnyLinkableHash>,
-  pub target: Option<AnyLinkableHash>,
+pub source: Option<AnyLinkableHash>,
+pub target: Option<AnyLinkableHash>,
+  pub prefix: Option<String>,
   pub content_full: Option<String>,
   pub content_starts_with: Option<String>,
   pub value_starts_with: Option<String>,
@@ -46,7 +55,8 @@ pub struct QueryInput {
 
 #[derive(Serialize, Deserialize, SerializedBytes, Debug, Clone)]
 pub struct QueryMineInput {
-  pub target: Option<AnyLinkableHash>,
+pub target: Option<AnyLinkableHash>,
+  pub prefix: Option<String>,
   pub content_full: Option<String>,
   pub content_starts_with: Option<String>,
   pub value_starts_with: Option<String>,
@@ -55,22 +65,26 @@ pub struct QueryMineInput {
 // ZOME API FUNCTIONS
 
 #[hdk_extern]
+pub fn create_rollup_atoms(_: ()) -> ExternResult<Vec<TrustAtom>> {
+  trust_graph::create_rollup_atoms()
+}
+
+#[hdk_extern]
 pub fn create_trust_atom(input: TrustAtomInput) -> ExternResult<TrustAtom> {
-  let trust_atom = trust_atom::create(input.target, input.content, input.value, input.extra)?;
-  Ok(trust_atom)
+  trust_atom::create_trust_atom(
+    input.source,
+    input.target,
+    input.prefix,
+    input.content,
+    input.value,
+    input.extra,
+  )
 }
 
 #[hdk_extern]
 #[allow(clippy::needless_pass_by_value)]
 pub fn get_extra(entry_hash: EntryHash) -> ExternResult<Extra> {
-  let extra = trust_atom::get_extra(&entry_hash)?;
-  Ok(extra)
-}
-
-#[hdk_extern]
-pub fn calc_extra_hash(input: Extra) -> ExternResult<EntryHash> {
-  let hash = trust_atom::calc_extra_hash(input)?;
-  Ok(hash)
+  trust_atom::get_extra(&entry_hash)
 }
 
 #[hdk_extern]
@@ -78,6 +92,7 @@ pub fn query(input: QueryInput) -> ExternResult<Vec<TrustAtom>> {
   trust_atom::query(
     input.source,
     input.target,
+    input.prefix,
     input.content_full,
     input.content_starts_with,
     input.value_starts_with,
@@ -87,7 +102,7 @@ pub fn query(input: QueryInput) -> ExternResult<Vec<TrustAtom>> {
 #[hdk_extern]
 pub fn query_mine(input: QueryMineInput) -> ExternResult<Vec<TrustAtom>> {
   trust_atom::query_mine(
-    input.target,
+    input.prefix,
     input.content_full,
     input.content_starts_with,
     input.value_starts_with,
@@ -97,7 +112,7 @@ pub fn query_mine(input: QueryMineInput) -> ExternResult<Vec<TrustAtom>> {
 
 #[hdk_extern]
 pub fn create_string_target(input: String) -> ExternResult<EntryHash> {
-  crate::test_helpers::create_string_target(input)
+  test_helpers::create_string_target(input)
 }
 
 #[hdk_extern]
@@ -120,4 +135,9 @@ pub fn test_helper_list_links(
 #[hdk_extern]
 pub fn test_helper_list_links_for_base(base: AnyLinkableHash) -> ExternResult<Vec<Link>> {
   test_helpers::list_links_for_base(base)
+}
+
+#[hdk_extern]
+pub fn test_helper_calc_extra_hash(input: Extra) -> ExternResult<EntryHash> {
+  test_helpers::calc_extra_hash(input)
 }

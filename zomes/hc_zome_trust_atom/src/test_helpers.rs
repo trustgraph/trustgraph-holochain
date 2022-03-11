@@ -1,5 +1,6 @@
 #![allow(clippy::module_name_repetitions)]
 
+use crate::trust_atom::Extra;
 use hdk::prelude::*;
 
 #[derive(Serialize, Deserialize, Debug, SerializedBytes)]
@@ -79,4 +80,11 @@ fn get_element_by_header(
       header_hash
     ))),
   }
+pub fn calc_extra_hash(input: Extra) -> ExternResult<EntryHash> {
+  hash_entry(input)
+}
+
+fn link_tag(tag: String) -> ExternResult<LinkTag> {
+  let serialized_bytes: SerializedBytes = StringLinkTag(tag).try_into()?;
+  Ok(LinkTag(serialized_bytes.bytes().clone()))
 }

@@ -128,6 +128,7 @@ We encode TrustAtoms as links, with the following components:
 
 ```
 Ŧ→[0x00]prefix[0x00]sushi[0x00]0.999999999[0x00]892412523[0x00]uhCEk…UFnFF
+<<<<<<< HEAD
 Ŧ↩[0x00]prefix[0x00]sushi[0x00]0.999999999[0x00]892412523[0x00]uhCEk…UFnFF
 
 Ŧ→[0x00]rollup[0x00]content[0x00]0.800000000[0x00]087423432[0x00]uhCEk…qS5wc
@@ -135,6 +136,16 @@ We encode TrustAtoms as links, with the following components:
 
 Ŧ→[0x00]entry[0x00]spam[0x00]-0.999999999[0x00]328425615[0x00]uhCEk…VaaDd
 Ŧ→[0x00]agent[0x00]block[0x00]-0.999999999[0x00]837592944[0x00]uhCEk…VaaDd
+=======
+Ŧ→[0x00]sushi[0x00]0.999999999[0x00]892412523[0x00]uhCEk…UFnFF
+Ŧ↩[0x00]sushi[0x00]0.999999999[0x00]892412523[0x00]uhCEk…UFnFF
+
+Ŧ→[0x00]sushi[0x00]0.800000000[0x00]087423432[0x00]uhCEk…qS5wc
+Ŧ↩[0x00]sushi[0x00]0.800000000[0x00]087423432[0x00]uhCEk…qS5wc
+
+Ŧ→[0x00]spam[0x00]-0.999999999[0x00]328425615[0x00]uhCEk…VaaDd
+Ŧ→agent[0x00]block[0x00]-0.999999999[0x00]837592944[0x00]uhCEk…VaaDd
+>>>>>>> 5376c48 (add label (type) to TA)
 ```
 
 ## Roadmap
