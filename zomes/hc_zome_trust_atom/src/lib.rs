@@ -25,6 +25,7 @@ entry_defs![test_helpers::StringTarget::entry_def(), Extra::entry_def()];
 #[derive(Serialize, Deserialize, SerializedBytes, Debug, Clone)]
 pub struct TrustAtomInput {
   pub target: EntryHash, // TODO maybe target_entry_hash?
+  pub label: Option<String>,
   pub content: Option<String>,
   pub value: Option<String>,
   pub extra: Option<BTreeMap<String, String>>,
@@ -34,6 +35,7 @@ pub struct TrustAtomInput {
 pub struct QueryInput {
   pub source: Option<EntryHash>,
   pub target: Option<EntryHash>,
+  pub label: Option<String>,
   pub content_full: Option<String>,
   pub content_starts_with: Option<String>,
   pub value_starts_with: Option<String>,
@@ -42,6 +44,7 @@ pub struct QueryInput {
 #[derive(Serialize, Deserialize, SerializedBytes, Debug, Clone)]
 pub struct QueryMineInput {
   pub target: Option<EntryHash>,
+  pub label: Option<String>,
   pub content_full: Option<String>,
   pub content_starts_with: Option<String>,
   pub value_starts_with: Option<String>,
@@ -51,7 +54,7 @@ pub struct QueryMineInput {
 
 #[hdk_extern]
 pub fn create_trust_atom(input: TrustAtomInput) -> ExternResult<TrustAtom> {
-  let trust_atom = trust_atom::create(input.target, input.content, input.value, input.extra)?;
+  let trust_atom = trust_atom::create(input.target, input.label, input.content, input.value, input.extra)?;
   Ok(trust_atom)
 }
 
@@ -73,6 +76,7 @@ pub fn query(input: QueryInput) -> ExternResult<Vec<TrustAtom>> {
   trust_atom::query(
     input.source,
     input.target,
+    input.label,
     input.content_full,
     input.content_starts_with,
     input.value_starts_with,
@@ -83,6 +87,7 @@ pub fn query(input: QueryInput) -> ExternResult<Vec<TrustAtom>> {
 pub fn query_mine(input: QueryMineInput) -> ExternResult<Vec<TrustAtom>> {
   trust_atom::query_mine(
     input.target,
+    input.label,
     input.content_full,
     input.content_starts_with,
     input.value_starts_with,
