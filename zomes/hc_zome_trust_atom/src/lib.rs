@@ -16,7 +16,10 @@ use std::collections::BTreeMap;
 // public for sweettest; TODO can we fix this:
 pub mod trust_atom;
 pub use crate::trust_atom::*;
-pub mod test_helpers;
+pub mod trust_graph;
+pub use crate::trust_graph::*;
+pub(crate) mod utils;
+pub(crate) mod test_helpers;
 
 entry_defs![test_helpers::StringTarget::entry_def(), Extra::entry_def()];
 
@@ -25,6 +28,7 @@ entry_defs![test_helpers::StringTarget::entry_def(), Extra::entry_def()];
 #[derive(Serialize, Deserialize, SerializedBytes, Debug, Clone)]
 pub struct TrustAtomInput {
   pub target: EntryHash, // TODO maybe target_entry_hash?
+  pub prefix: Option<String>,
   pub content: Option<String>,
   pub value: Option<String>,
   pub extra: Option<BTreeMap<String, String>>,
@@ -34,6 +38,7 @@ pub struct TrustAtomInput {
 pub struct QueryInput {
   pub source: Option<EntryHash>,
   pub target: Option<EntryHash>,
+  pub prefix: Option<String>,
   pub content_full: Option<String>,
   pub content_starts_with: Option<String>,
   pub value_starts_with: Option<String>,
@@ -42,6 +47,7 @@ pub struct QueryInput {
 #[derive(Serialize, Deserialize, SerializedBytes, Debug, Clone)]
 pub struct QueryMineInput {
   pub target: Option<EntryHash>,
+  pub prefix: Option<String>,
   pub content_full: Option<String>,
   pub content_starts_with: Option<String>,
   pub value_starts_with: Option<String>,
@@ -50,8 +56,13 @@ pub struct QueryMineInput {
 // ZOME API FUNCTIONS
 
 #[hdk_extern]
+pub fn create_rollup(filter: Linktag) -> ExternResult<Vec<TrustAtom>> {
+
+}
+
+#[hdk_extern]
 pub fn create_trust_atom(input: TrustAtomInput) -> ExternResult<TrustAtom> {
-  let trust_atom = trust_atom::create(input.target, input.content, input.value, input.extra)?;
+  let trust_atom = trust_atom::create(input.target, input.prefix, input.content, input.value, input.extra)?;
   Ok(trust_atom)
 }
 
@@ -73,6 +84,7 @@ pub fn query(input: QueryInput) -> ExternResult<Vec<TrustAtom>> {
   trust_atom::query(
     input.source,
     input.target,
+    input.prefix,
     input.content_full,
     input.content_starts_with,
     input.value_starts_with,
@@ -83,6 +95,7 @@ pub fn query(input: QueryInput) -> ExternResult<Vec<TrustAtom>> {
 pub fn query_mine(input: QueryMineInput) -> ExternResult<Vec<TrustAtom>> {
   trust_atom::query_mine(
     input.target,
+    input.prefix,
     input.content_full,
     input.content_starts_with,
     input.value_starts_with,
@@ -92,7 +105,7 @@ pub fn query_mine(input: QueryMineInput) -> ExternResult<Vec<TrustAtom>> {
 
 #[hdk_extern]
 pub fn create_string_target(input: String) -> ExternResult<EntryHash> {
-  crate::test_helpers::create_string_target(input)
+  test_helpers::create_string_target(input)
 }
 
 #[hdk_extern]

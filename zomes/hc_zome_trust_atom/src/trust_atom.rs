@@ -5,21 +5,27 @@ use hdk::prelude::*;
 use rust_decimal::prelude::*;
 use std::collections::BTreeMap;
 
+use std::collections::hash_map::DefaultHasher;
+use std::hash::Hasher;
+
+use crate::utils::*;
+
 #[derive(Debug, Clone)]
-enum LinkDirection {
+pub enum LinkDirection {
   Forward,
   Reverse,
 }
 
 /// Client-facing representation of a Trust Atom
 /// We may support JSON in the future to allow for more complex data structures @TODO
-#[derive(Serialize, Deserialize, SerializedBytes, Debug, Clone, PartialEq)]
+#[derive(Serialize, Deserialize, SerializedBytes, Debug, Clone, PartialEq, Hash)]
 pub struct TrustAtom {
   pub id: u64,        //hash of source_entry_hash + target_entry_hash + random number
   pub source: String, // TODO source_name
   pub target: String,
-  pub source_entry_hash: EntryHashB64,
-  pub target_entry_hash: EntryHashB64,
+  pub source_entry_hash: EntryHash,
+  pub target_entry_hash: EntryHash,
+  pub prefix: Option<String>,
   pub content: Option<String>,
   pub value: Option<String>,
   pub extra: Option<BTreeMap<String, String>>,
@@ -38,6 +44,7 @@ pub struct Extra {
 
 pub fn create(
   target: EntryHash,
+  prefix: Option<String>,
   content: Option<String>,
   value: Option<String>,
   extra: Option<BTreeMap<String, String>>,
@@ -83,10 +90,12 @@ pub fn create(
   let agent_address_entry: EntryHash = agent_address;
 
   let trust_atom = TrustAtom {
+    id,
     source: agent_address_entry.to_string(),
     target: target.to_string(),
     source_entry_hash: agent_address_entry.into(),
     target_entry_hash: target.into(),
+    prefix,
     content,
     value,
     extra,
@@ -191,11 +200,11 @@ fn create_link_tag_metal(link_direction: &LinkDirection, chunks: Vec<String>) ->
 }
 
 pub fn get_extra(entry_hash: &EntryHash) -> ExternResult<Extra> {
-  let element = get_element(entry_hash, GetOptions::default())?;
+  let element = try_get_element(entry_hash, GetOptions::default())?;
   match element.entry() {
     element::ElementEntry::Present(entry) => {
       Extra::try_from(entry.clone()).or(Err(WasmError::Guest(format!(
-        "Couldn't convert Element entry {:?} into data type {}",
+        "Couldn't convert Element entry {:?} into data prefix {}",
         entry,
         std::any::type_name::<Extra>()
       ))))
@@ -207,18 +216,9 @@ pub fn get_extra(entry_hash: &EntryHash) -> ExternResult<Extra> {
   }
 }
 
-fn get_element(entry_hash: &EntryHash, get_options: GetOptions) -> ExternResult<Element> {
-  match get(entry_hash.clone(), get_options)? {
-    Some(element) => Ok(element),
-    None => Err(WasmError::Guest(format!(
-      "There is no element at the hash {}",
-      entry_hash
-    ))),
-  }
-}
-
 pub fn query_mine(
   target: Option<EntryHash>,
+  prefix: Option<String>,
   content_full: Option<String>,
   content_starts_with: Option<String>,
   value_starts_with: Option<String>,
@@ -228,6 +228,7 @@ pub fn query_mine(
   let result = query(
     Some(agent_address),
     target,
+    prefix,
     content_full,
     content_starts_with,
     value_starts_with,
@@ -243,6 +244,7 @@ pub fn query_mine(
 pub fn query(
   source: Option<EntryHash>,
   target: Option<EntryHash>,
+  prefix: Option<String>, //TODO: Add match for prefix ?
   content_full: Option<String>,
   content_starts_with: Option<String>,
   value_starts_with: Option<String>,
@@ -292,7 +294,7 @@ pub fn query(
   Ok(trust_atoms)
 }
 
-fn convert_links_to_trust_atoms(
+pub fn convert_links_to_trust_atoms(
   links: Vec<Link>,
   link_direction: &LinkDirection,
   link_base: &EntryHash,
@@ -307,7 +309,7 @@ fn convert_links_to_trust_atoms(
   //   Ok(trust_atoms.or_else(|_| WasmError::Guest("erro"))?)
 }
 
-fn convert_link_to_trust_atom(
+pub fn convert_link_to_trust_atom(
   link: Link,
   link_direction: &LinkDirection,
   link_base: &EntryHash,
@@ -324,33 +326,35 @@ fn convert_link_to_trust_atom(
   };
 
   let chunks: Vec<&str> = link_tag.split(UNICODE_NUL_STR).collect();
-  let content = chunks[0][tg_link_tag_header_length()..].to_string(); // drop leading "Ŧ→" or "Ŧ↩"
-  let value = chunks[1].to_string();
+  let prefix = chunks[0].to_string();
+  let content = chunks[1][tg_link_tag_header_length()..].to_string(); // drop leading "Ŧ→" or "Ŧ↩"
+  let value = chunks[2].to_string();
+  let extra = chunks[3].to_string();
 
   let link_base_b64 = EntryHashB64::from(link_base.clone());
   let link_target_b64 = EntryHashB64::from(link.target);
 
   let trust_atom = match link_direction {
-    LinkDirection::Forward => {
-      TrustAtom {
-        source: link_base_b64.to_string(),
-        target: link_target_b64.to_string(),
-        source_entry_hash: link_base_b64,
-        target_entry_hash: link_target_b64,
-        content: Some(content),
-        value: Some(value),
-        extra: Some(BTreeMap::new()), // TODO
-      }
-    }
+    LinkDirection::Forward => TrustAtom {
+      source: link_base_b64.to_string(),
+      target: link_target_b64.to_string(),
+      source_entry_hash: link_base_b64,
+      target_entry_hash: link_target_b64,
+      prefix: Some(prefix),
+      content: Some(content),
+      value: Some(value),
+      extra: Some(extra),
+    },
     LinkDirection::Reverse => {
       TrustAtom {
         source: link_target_b64.to_string(), // flipped for Reverse direction
         target: link_base_b64.to_string(),   // flipped for Reverse direction
         source_entry_hash: link_target_b64,  // flipped for Reverse direction
         target_entry_hash: link_base_b64,    // flipped for Reverse direction
+        prefix: Some(prefix),
         content: Some(content),
         value: Some(value),
-        extra: Some(BTreeMap::new()), // TODO
+        extra: Some(extra),
       }
     }
   };
