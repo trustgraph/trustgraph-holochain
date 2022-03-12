@@ -17,7 +17,7 @@ enum LinkDirection {
 /// Client-facing representation of a Trust Atom
 /// We may support JSON in the future to allow for more complex data structures @TODO
 #[derive(Serialize, Deserialize, SerializedBytes, Debug, Clone, PartialEq, Hash)]
-pub struct TrustAtom {
+pub struct TrustAtom<K, V> {
   pub id: u64, //hash of source_entry_hash + target_entry_hash + random number
   pub source: String, // TODO source_name
   pub target: String,
@@ -26,7 +26,7 @@ pub struct TrustAtom {
   pub label: Option<String>,
   pub content: Option<String>,
   pub value: Option<String>,
-  pub extra: Option<BTreeMap<String, String>>,
+  pub extra: Option<BTreeMap<K, V>>,
 }
 
 const UNICODE_NUL_STR: &str = "\u{0}"; // Unicode NUL character
