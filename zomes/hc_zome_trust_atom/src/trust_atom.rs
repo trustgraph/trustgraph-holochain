@@ -8,8 +8,10 @@ use std::collections::BTreeMap;
 use std::collections::hash_map::DefaultHasher;
 use std::hash::Hasher;
 
+use crate::utils::*;
+
 #[derive(Debug, Clone)]
-enum LinkDirection {
+pub enum LinkDirection {
   Forward,
   Reverse,
 }
@@ -17,7 +19,7 @@ enum LinkDirection {
 /// Client-facing representation of a Trust Atom
 /// We may support JSON in the future to allow for more complex data structures @TODO
 #[derive(Serialize, Deserialize, SerializedBytes, Debug, Clone, PartialEq, Hash)]
-pub struct TrustAtom<K, V> {
+pub struct TrustAtom {
   pub id: u64, //hash of source_entry_hash + target_entry_hash + random number
   pub source: String, // TODO source_name
   pub target: String,
@@ -26,7 +28,7 @@ pub struct TrustAtom<K, V> {
   pub label: Option<String>,
   pub content: Option<String>,
   pub value: Option<String>,
-  pub extra: Option<BTreeMap<K, V>>,
+  pub extra: Option<BTreeMap<String, String>>,
 }
 
 const UNICODE_NUL_STR: &str = "\u{0}"; // Unicode NUL character
@@ -189,7 +191,7 @@ fn create_link_tag_metal(link_direction: &LinkDirection, chunks: Vec<String>) ->
 }
 
 pub fn get_extra(entry_hash: &EntryHash) -> ExternResult<Extra> {
-  let element = get_element(entry_hash, GetOptions::default())?;
+  let element = try_get_element(entry_hash, GetOptions::default())?;
   match element.entry() {
     element::ElementEntry::Present(entry) => {
       Extra::try_from(entry.clone()).or(Err(WasmError::Guest(format!(
@@ -201,16 +203,6 @@ pub fn get_extra(entry_hash: &EntryHash) -> ExternResult<Extra> {
     _ => Err(WasmError::Guest(format!(
       "Element {:?} does not have an entry",
       element
-    ))),
-  }
-}
-
-fn get_element(entry_hash: &EntryHash, get_options: GetOptions) -> ExternResult<Element> {
-  match get(entry_hash.clone(), get_options)? {
-    Some(element) => Ok(element),
-    None => Err(WasmError::Guest(format!(
-      "There is no element at the hash {}",
-      entry_hash
     ))),
   }
 }
@@ -293,7 +285,7 @@ pub fn query(
   Ok(trust_atoms)
 }
 
-fn convert_links_to_trust_atoms(
+pub fn convert_links_to_trust_atoms(
   links: Vec<Link>,
   link_direction: &LinkDirection,
   link_base: &EntryHash,

@@ -16,11 +16,31 @@ use std::collections::BTreeMap;
 // public for sweettest; TODO can we fix this:
 pub mod trust_atom;
 pub use crate::trust_atom::*;
-pub mod test_helpers;
+pub mod trust_graph;
+pub use crate::trust_graph::*;
+pub(crate) mod agents;
+pub(crate) mod utils;
+pub(crate) mod test_helpers;
 
 entry_defs![test_helpers::StringTarget::entry_def(), Extra::entry_def()];
 
 // INPUT TYPES
+
+#[derive(Serialize, Deserialize, SerializedBytes, Debug, Clone)]
+pub enum HashType {
+  Agent(AgentPubKey),
+  Entry(AgentPubKey),
+  //Header(HeaderHash)
+    //Entity( //raw bytes hash )
+}
+
+#[derive(Serialize, Deserialize, SerializedBytes, Debug, Clone)]
+pub enum TrustGraphInput {
+  Mine(LinkTag), // my TrustGraph (list of all my Trust Atoms optionally filtered by tag)
+  MyRollup(LinkTag), // Mine + Rollup (other agents TG whom Ive given TAs)
+  //Agent(AgentPubKey, LinkTag) 
+  //AgentRollup(AgentPubKey, LinkTag) // another agent's TrustGraph + their Rollup
+}
 
 #[derive(Serialize, Deserialize, SerializedBytes, Debug, Clone)]
 pub struct TrustAtomInput {
@@ -51,6 +71,16 @@ pub struct QueryMineInput {
 }
 
 // ZOME API FUNCTIONS
+
+#[hdk_extern]
+pub fn create_trust_graph(choice: TrustGraphInput) -> ExternResult<Vec<TrustAtom>> {
+  match choice {
+    Mine(filter) => create_trust_graph_mine(filter)?,
+    MyRollup(filter) => create_trust_graph_plus_rollup(filter)?,
+    //Agent(pubkey) => trust_graph::create_trust_graph_agent(pubkey)?, // this is where traits come in handy
+    _ => WasmError::Guest("Error")
+  }
+}
 
 #[hdk_extern]
 pub fn create_trust_atom(input: TrustAtomInput) -> ExternResult<TrustAtom> {
@@ -97,7 +127,7 @@ pub fn query_mine(input: QueryMineInput) -> ExternResult<Vec<TrustAtom>> {
 
 #[hdk_extern]
 pub fn create_string_target(input: String) -> ExternResult<EntryHash> {
-  crate::test_helpers::create_string_target(input)
+  test_helpers::create_string_target(input)
 }
 
 #[hdk_extern]
