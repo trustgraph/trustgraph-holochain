@@ -60,11 +60,24 @@ fn create_rollup_atoms(registered_agents: EntryHash, filter: Option<LinkTag>) ->
 
     // gold:
     // rollup_gold: vec<TrustAtom>  = [
-        // source: me
-        // type: rollup
-        // target: HIA Entry hash:
-        // value: float
-        // content: holochain
+        // {
+        //   source: me
+        //   type: rollup
+        //   target: HIA Entry hash:
+        //   value: float
+        //   content: holochain
+        // }
     // ]
 
+    // for item in rollup_gold:
+    //      create_link for each
+
 // }
+
+
+// ALTERNATE STRATEGY (no agent registry, no ablity to identify whether entry is agentpubkey)
+
+// for TA in my TAs
+//   rollup_links = get_links(source: TA.target, type: "rollup")  // returns rollups from agents who have done rollups, but [] from non-agent entries
+//
+//
