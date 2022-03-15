@@ -10,7 +10,7 @@ pub fn create_trust_graph_plus_rollup(register: impl Fn(EntryHash) -> AgentRegis
     let mut trust_graph: Vec<TrustAtom> = create_trust_graph_mine(filter.clone())?;
     let mut rollup: Vec<TrustAtom> = create_rollup_atoms(register, filter)?;
     trust_graph.append(&mut rollup);
-    Ok(trust_graph) 
+    Ok(trust_graph)
 }
 
 pub fn create_trust_graph_mine(filter: Option<LinkTag>) -> ExternResult<Vec<TrustAtom>> {
@@ -20,7 +20,7 @@ pub fn create_trust_graph_mine(filter: Option<LinkTag>) -> ExternResult<Vec<Trus
     Ok(trust_atoms)
 }
 
-fn create_rollup_atoms(registered_agents: EntryHash, filter: Option<LinkTag>) -> ExternResult<Vec<TrustAtom>> { 
+fn create_rollup_atoms(registered_agents: EntryHash, filter: Option<LinkTag>) -> ExternResult<Vec<TrustAtom>> {
     let mut trust_atoms_collection: Vec<TrustAtom> = Vec::new();
     let agent_list = get_agent_registry(&registered_agents)?.rated.iter().map(|pk| pk.pubkey.EntryHash::from(pk.pubkey));
     for agent in agent_list.clone() {
@@ -30,16 +30,41 @@ fn create_rollup_atoms(registered_agents: EntryHash, filter: Option<LinkTag>) ->
         //FINISH: combine TAs with same target and calculate weight from agent.stats.score
         let sum;
         for ta in agent_trust_atoms {
-            if let Some(val) = ta.value {   
+            if let Some(val) = ta.value {
                 let float_val = val.parse()?;
                 if float_val > 0 {
                 sum += weight * float_val^1.618; // raised to PHI smooths out weights curve
                 }
             }
         }
-
     trust_atoms_collection.append(&mut algo );
     }
-
-
 }
+
+// fn create_rollup_atoms() {
+
+    // rollup_silver: map =
+    //     key = target  // of my TAs or the rollups of agents in my TG
+    //     value = vec of TA data + my rating of agent
+
+    // rollup_data: map = {
+        // HIA Entry hash: [
+            // {
+                // source: zippy
+                // value: float
+                // content: holochain
+                // agent_rating: float // my rating of zippy on `holochain`
+            // }
+        // ]
+    //
+
+    // gold:
+    // rollup_gold: vec<TrustAtom>  = [
+        // source: me
+        // type: rollup
+        // target: HIA Entry hash:
+        // value: float
+        // content: holochain
+    // ]
+
+// }
