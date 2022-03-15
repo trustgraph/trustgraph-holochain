@@ -1,5 +1,5 @@
 [workspace]
-resolver = "2"  # 2 is the default in 2021 edition
+resolver = "2" # 2 is the default in 2021 edition
 members = [
   "zomes/hc_zome_trust_atom",
   # "zomes/hc_zome_trust_graph",
@@ -7,16 +7,16 @@ members = [
 
 [profile.dev]
 opt-level = "z"
-split-debuginfo = "unpacked"  # see https://endler.dev/2020/rust-compile-times/#faster-incremental-debug-builds-on-macos
+split-debuginfo = "unpacked" # see https://endler.dev/2020/rust-compile-times/#faster-incremental-debug-builds-on-macos
 
 [profile.release]
 opt-level = "z"
-incremental = true  # see https://nnethercote.github.io/perf-book/compile-times.html#incremental-compilation
+incremental = true # see https://nnethercote.github.io/perf-book/compile-times.html#incremental-compilation
 
-[patch.crates-io]
+# [patch.crates-io]
 
-# TODO: remove these when holochain updates to a version of wasmer that fixes these issues
-# Link to branch: https://github.com/holochain/holochain-wasmer/compare/debug/v0.0.73-wasmer-build-error
-holochain_wasmer_host = { git = "https://github.com/holochain/holochain-wasmer.git", branch = "debug/v0.0.73-wasmer-build-error" }
-holochain_wasmer_guest = { git = "https://github.com/holochain/holochain-wasmer.git", branch = "debug/v0.0.73-wasmer-build-error" }
-holochain_wasmer_common = { git = "https://github.com/holochain/holochain-wasmer.git", branch = "debug/v0.0.73-wasmer-build-error" }
+# # TODO: remove these when holochain updates to a version of wasmer that fixes these issues
+# # Link to branch: https://github.com/holochain/holochain-wasmer/compare/debug/v0.0.73-wasmer-build-error
+# holochain_wasmer_host = { git = "https://github.com/holochain/holochain-wasmer.git", branch = "debug/v0.0.73-wasmer-build-error" }
+# holochain_wasmer_guest = { git = "https://github.com/holochain/holochain-wasmer.git", branch = "debug/v0.0.73-wasmer-build-error" }
+# holochain_wasmer_common = { git = "https://github.com/holochain/holochain-wasmer.git", branch = "debug/v0.0.73-wasmer-build-error" }

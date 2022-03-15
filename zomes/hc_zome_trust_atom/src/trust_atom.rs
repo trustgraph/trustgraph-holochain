@@ -1,6 +1,6 @@
 #![allow(clippy::module_name_repetitions)]
 
-use hdk::prelude::holo_hash::EntryHashB64;
+use holo_hash::EntryHashB64;
 use hdk::prelude::*;
 use rust_decimal::prelude::*;
 use std::collections::BTreeMap;

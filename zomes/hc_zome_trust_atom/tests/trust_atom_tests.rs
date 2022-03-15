@@ -4,14 +4,17 @@ use std::collections::BTreeMap;
 
 use futures::future;
 
-// use hc_zome_trust_atom::*;
-
-use hc_zome_trust_atom::*;
-use hdk::prelude::holo_hash::EntryHashB64;
-use hdk::prelude::*;
+use hdk::prelude::Link;
+use holochain::core::{AgentPubKey, EntryHash, EntryHashB64};
+// use hdk::prelude::*;
+// use holo_hash::{EntryHash, EntryHashB64};
+// use holochain::core::AgentPubKey;
+// use holochain::core::HoloHash;
 use holochain::sweettest::{
   SweetAgents, SweetAppBatch, SweetCell, SweetConductor, SweetConductorBatch, SweetDnaFile,
 };
+
+use hc_zome_trust_atom::*;
 
 const DNA_FILEPATH: &str = "../../workdir/dna/trust_atom.dna";
 
