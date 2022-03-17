@@ -1,49 +1,82 @@
 use hdk::prelude::*;
 
 use std::collections::BTreeMap;
+use itertools::Itertools;
 
 use crate::trust_atom::*;
 use crate::trust_atom::LinkDirection;
 
-
+struct RollupData {
+    target_hash: EntryHash,
+    value: f64,
+    rating: f64
+}
 
 fn create_rollup_atoms(filter: Option<LinkTag>) -> ExternResult<Vec<TrustAtom>> {
-    let mut rollup_silver = BTreeMap::new(); //store TA's where key is AgentPubKey (as EntryHash)
-    let mut agents = Vec::new();
+    let mut rollup_silver = BTreeMap::new(); // K: AgentPubKey (EntryHash), V: BTreeMap<Content, RollupData>
+    let mut agents: Vec<EntryHash> = Vec::new();
 
-    let my_trust_atoms = query_mine(filter)?; //TODO: change query calls
+    let my_trust_atoms = query_mine(filter.clone())?; //TODO: change query calls
     let mut categories = Vec::new();
+    let my_ratings = BTreeMap::new(); // K: Content, V: Float Value
 
     for ta in my_trust_atoms.clone() {
-        let rollup_links = get_links(ta.target.clone(), Some("rollup".as_bytes()))?;
-            let converted = convert_links_to_trust_atoms(rollup_links.clone(), &LinkDirection::Forward, &ta.target)?;
+        let rollup_links = get_links(ta.target_entry_hash.clone(), "rollup".into())?;
             if rollup_links.len() > 0 {
-                rollup_silver.insert(ta.target.clone(), converted);
-                categories.push(ta.content);
-                agents.push(ta.target)
+                agents.push(ta.target_entry_hash)
             }
-    }
-    categories.unique_by(|name| name); //get rid of duplicates
-    agents.unique_by(|name| name);
-    
-    let gold_rollup = Vec::new();
+            if let Some(val) = ta.value {
+                my_ratings.insert(ta.content, val.parse()?);
+            }
+    agents.iter().unique(); // get rid of duplicates   
 
-    for agent in rollup_silver.clone() {
+    for agent in agents {
+        let links = get_links(agent.clone(), filter)?;
+        let trust_atoms = convert_links_to_trust_atoms(links, &LinkDirection::Forward, &agent)?;
+        let rollup_collection = Vec::new();
+        for ta in trust_atoms {
+            if let Some(content) = ta.content.clone() {
+                categories.push(content);
+            }
+            let link_latest = get_latest(agent.clone(), ta.content.clone())?;
+            let trust_atom_latest = convert_link_to_trust_atom(link_latest, &LinkDirection::Forward, &agent)?;
+            categories.iter().unique();
 
-        let vec_ta = rollup_silver.get(agent.clone()).unique_by(|atom| atom);
-        if let Some(vec) = vec_ta {
-
-            let weigh = |val| String::from_utf8_lossy(weight * val); // TODO: algo for weights
-            let map = Vec::new();
-
-            for ta in vec {
-                let link_latest = get_latest(agent, ta.content);
-                let trust_atom_latest = convert_links_to_trust_atoms(content_latest, LinkDirection::Forward, agent)?;
+            let rating = { 
+                let i = 0;
+                while i < categories.len() {
+                    match trust_atom_latest.content {
+                        categories[i] => { trust_atom_latest.value,
+                                        break; },
+                        _ => { i += 1; }
+                    }
                 }
-                let trust_atom = create(trust_atom_latest.target, "rollup".to_string(), trust_atom_latest.content, weigh(trust_atom_latest.value), None)?;
-                rollup_gold.push(trust_atom);
+            };
+            let rollup_data = RollupData {
+                target_hash: trust_atom_latest.target_entry_hash, 
+                value: trust_atom_latest.value.parse()?,
+                rating: rating.parse()?
+            };
+            let map = BTreeMap::from(trust_atom_latest.content, rollup_data);
+            rollup_silver.insert(agent, map);
         }
     }
+    }
+    
+    let gold_rollup: Vec<TrustAtom> = Vec::new();
+
+        let amalgumation = BTreeMap::new(); // K: Content, V: Float Value
+
+    for agent in rollup_silver {
+        let rollups = get(agent).into_iter();
+
+            let weigh = |val| String::from_utf8_lossy(weight * val); 
+            let map = Vec::new();
+
+                let trust_atom_rolled = create(trust_atom_latest.target, "rollup".to_string(), trust_atom_latest.content, weigh(trust_atom_latest.value), None)?;
+                rollup_gold.push(trust_atom);
+        }
+
     Ok(gold_rollup)
 } 
 

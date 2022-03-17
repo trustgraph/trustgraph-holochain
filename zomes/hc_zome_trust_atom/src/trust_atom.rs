@@ -23,8 +23,13 @@ pub struct TrustAtom {
   pub id: u64, //hash of source_entry_hash + target_entry_hash + random number
   pub source: String, // TODO source_name
   pub target: String,
+<<<<<<< HEAD
   pub source_entry_hash: EntryHashB64,
   pub target_entry_hash: EntryHashB64,
+=======
+  pub source_entry_hash: EntryHash,
+  pub target_entry_hash: EntryHash,
+>>>>>>> alt strategy for agent, slver & gold rollup method
   pub prefix: Option<String>,
   pub content: Option<String>,
   pub value: Option<String>,
@@ -300,7 +305,7 @@ pub fn convert_links_to_trust_atoms(
   //   Ok(trust_atoms.or_else(|_| WasmError::Guest("erro"))?)
 }
 
-fn convert_link_to_trust_atom(
+pub fn convert_link_to_trust_atom(
   link: Link,
   link_direction: &LinkDirection,
   link_base: &EntryHash,
