@@ -67,9 +67,14 @@ fn create_rollup_atoms(filter: Option<LinkTag>) -> ExternResult<Vec<TrustAtom>> 
 
         let amalgumation = BTreeMap::new(); // K: Content, V: Float Value
 
-    for agent in rollup_silver {
-        let rollups = get(agent).into_iter();
+    for rollup in category { // TODO: calc category
 
+        let sum;
+        let weight = rollup.rating;
+        let algo = mine + (mine - rollup.value) * weight; 
+        sum += 1;
+
+        ////
             let weigh = |val| String::from_utf8_lossy(weight * val); 
             let map = Vec::new();
 
