@@ -1,45 +1,65 @@
 use hdk::prelude::*;
 
+use std::collections::BTreeMap;
+
 use crate::trust_atom::*;
 use crate::trust_atom::LinkDirection;
-use crate::agents::*;
-use crate::agents::*AgentRegistry;
 
-pub fn create_trust_graph_plus_rollup(register: impl Fn(EntryHash) -> AgentRegistry, filter: Option<LinkTag>) -> ExternResult<Vec<TrustAtom>> {
-    let base_address: EntryHash = agent_info()?.agent_latest_pubkey.into();
-    let mut trust_graph: Vec<TrustAtom> = create_trust_graph_mine(filter.clone())?;
-    let mut rollup: Vec<TrustAtom> = create_rollup_atoms(register, filter)?;
-    trust_graph.append(&mut rollup);
-    Ok(trust_graph)
-}
 
-pub fn create_trust_graph_mine(filter: Option<LinkTag>) -> ExternResult<Vec<TrustAtom>> {
-    let base_address: EntryHash = agent_info()?.agent_latest_pubkey.into();
-    let links: Vec<Link> = get_links(base_address.clone(), filter.clone())?;
-    let trust_atoms: Vec<TrustAtom> = convert_links_to_trust_atoms(links, &LinkDirection::Forward, &base_address)?;
-    Ok(trust_atoms)
-}
 
-fn create_rollup_atoms(registered_agents: EntryHash, filter: Option<LinkTag>) -> ExternResult<Vec<TrustAtom>> {
-    let mut trust_atoms_collection: Vec<TrustAtom> = Vec::new();
-    let agent_list = get_agent_registry(&registered_agents)?.rated.iter().map(|pk| pk.pubkey.EntryHash::from(pk.pubkey));
-    for agent in agent_list.clone() {
-        let algo;
-        let agent_links = get_links(agent.pubkey.clone(), filter)?;
-        let mut agent_trust_atoms = convert_links_to_trust_atoms(agent_links, &LinkDirection::Forward, &agent.pubkey)?;
-        //FINISH: combine TAs with same target and calculate weight from agent.stats.score
-        let sum;
-        for ta in agent_trust_atoms {
-            if let Some(val) = ta.value {
-                let float_val = val.parse()?;
-                if float_val > 0 {
-                sum += weight * float_val^1.618; // raised to PHI smooths out weights curve
-                }
+fn create_rollup_atoms(filter: Option<LinkTag>) -> ExternResult<Vec<TrustAtom>> {
+    let mut rollup_silver = BTreeMap::new(); //store TA's where key is AgentPubKey (as EntryHash)
+    let mut agents = Vec::new();
+
+    let my_trust_atoms = query_mine(filter)?; //TODO: change query calls
+    let mut categories = Vec::new();
+
+    for ta in my_trust_atoms.clone() {
+        let rollup_links = get_links(ta.target.clone(), Some("rollup".as_bytes()))?;
+            let converted = convert_links_to_trust_atoms(rollup_links.clone(), &LinkDirection::Forward, &ta.target)?;
+            if rollup_links.len() > 0 {
+                rollup_silver.insert(ta.target.clone(), converted);
+                categories.push(ta.content);
+                agents.push(ta.target)
             }
-        }
-    trust_atoms_collection.append(&mut algo );
     }
+    categories.unique_by(|name| name); //get rid of duplicates
+    agents.unique_by(|name| name);
+    
+    let gold_rollup = Vec::new();
+
+    for agent in rollup_silver.clone() {
+
+        let vec_ta = rollup_silver.get(agent.clone()).unique_by(|atom| atom);
+        if let Some(vec) = vec_ta {
+
+            let weigh = |val| String::from_utf8_lossy(weight * val); // TODO: algo for weights
+            let map = Vec::new();
+
+            for ta in vec {
+                let link_latest = get_latest(agent, ta.content);
+                let trust_atom_latest = convert_links_to_trust_atoms(content_latest, LinkDirection::Forward, agent)?;
+                }
+                let trust_atom = create(trust_atom_latest.target, "rollup".to_string(), trust_atom_latest.content, weigh(trust_atom_latest.value), None)?;
+                rollup_gold.push(trust_atom);
+        }
+    }
+    Ok(gold_rollup)
+} 
+
+fn get_latest(agent, content) -> ExternResult<Link> { 
+    let links = get_links(agent, Some("rollup".as_bytes().extend_from_slice(content.as_bytes()))?;
+    let timestamps = Vec::new();
+    for link in links {
+        timestamps.push(link.timestamp);
+    }
+    timestamps.sort_by(|a,b| a.cmp(b)); // ignoring nanoseconds 
+    let latest = timestamps.pop();
+    let latest_link = links.into_iter().filter(|x| latest).collect(); // should always be one
+    latest_link
 }
+
+
 
 // fn create_rollup_atoms() {
 

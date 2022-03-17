@@ -25,7 +25,7 @@ pub struct TrustAtom {
   pub target: String,
   pub source_entry_hash: EntryHashB64,
   pub target_entry_hash: EntryHashB64,
-  pub label: Option<String>,
+  pub prefix: Option<String>,
   pub content: Option<String>,
   pub value: Option<String>,
   pub extra: Option<BTreeMap<String, String>>,
@@ -44,7 +44,7 @@ pub struct Extra {
 
 pub fn create(
   target: EntryHash,
-  label: Option<String>,
+  prefix: Option<String>,
   content: Option<String>,
   value: Option<String>,
   extra: Option<BTreeMap<String, String>>,
@@ -86,7 +86,7 @@ pub fn create(
     target: target.to_string(),
     source_entry_hash: agent_address_entry.into(),
     target_entry_hash: target.into(),
-    label,
+    prefix,
     content,
     value,
     extra,
@@ -195,7 +195,7 @@ pub fn get_extra(entry_hash: &EntryHash) -> ExternResult<Extra> {
   match element.entry() {
     element::ElementEntry::Present(entry) => {
       Extra::try_from(entry.clone()).or(Err(WasmError::Guest(format!(
-        "Couldn't convert Element entry {:?} into data label {}",
+        "Couldn't convert Element entry {:?} into data prefix {}",
         entry,
         std::any::type_name::<Extra>()
       ))))
@@ -209,7 +209,7 @@ pub fn get_extra(entry_hash: &EntryHash) -> ExternResult<Extra> {
 
 pub fn query_mine(
   target: Option<EntryHash>,
-  label: Option<String>,
+  prefix: Option<String>,
   content_full: Option<String>,
   content_starts_with: Option<String>,
   value_starts_with: Option<String>,
@@ -219,7 +219,7 @@ pub fn query_mine(
   let result = query(
     Some(agent_address),
     target,
-    label,
+    prefix,
     content_full,
     content_starts_with,
     value_starts_with,
@@ -235,7 +235,7 @@ pub fn query_mine(
 pub fn query(
   source: Option<EntryHash>,
   target: Option<EntryHash>,
-  label: Option<String>, //TODO: Add match for label ?
+  prefix: Option<String>, //TODO: Add match for prefix ?
   content_full: Option<String>,
   content_starts_with: Option<String>,
   value_starts_with: Option<String>,
@@ -317,7 +317,7 @@ fn convert_link_to_trust_atom(
   };
 
   let chunks: Vec<&str> = link_tag.split(UNICODE_NUL_STR).collect();
-  let label = chunks[0].to_string();
+  let prefix = chunks[0].to_string();
   let content = chunks[1][tg_link_tag_header_length()..].to_string(); // drop leading "Ŧ→" or "Ŧ↩"
   let value = chunks[2].to_string();
   let extra = chunks[3].to_string();
@@ -332,7 +332,7 @@ fn convert_link_to_trust_atom(
         target: link_target_b64.to_string(),
         source_entry_hash: link_base_b64,
         target_entry_hash: link_target_b64,
-        label: Some(label),
+        prefix: Some(prefix),
         content: Some(content),
         value: Some(value),
         extra: Some(extra)
@@ -344,7 +344,7 @@ fn convert_link_to_trust_atom(
         target: link_base_b64.to_string(),   // flipped for Reverse direction
         source_entry_hash: link_target_b64,  // flipped for Reverse direction
         target_entry_hash: link_base_b64,    // flipped for Reverse direction
-        label: Some(label),
+        prefix: Some(prefix),
         content: Some(content),
         value: Some(value),
         extra: Some(extra)

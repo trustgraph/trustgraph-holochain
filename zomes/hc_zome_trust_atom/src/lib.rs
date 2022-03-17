@@ -18,7 +18,6 @@ pub mod trust_atom;
 pub use crate::trust_atom::*;
 pub mod trust_graph;
 pub use crate::trust_graph::*;
-pub(crate) mod agents;
 pub(crate) mod utils;
 pub(crate) mod test_helpers;
 
@@ -27,25 +26,9 @@ entry_defs![test_helpers::StringTarget::entry_def(), Extra::entry_def()];
 // INPUT TYPES
 
 #[derive(Serialize, Deserialize, SerializedBytes, Debug, Clone)]
-pub enum HashType {
-  Agent(AgentPubKey),
-  Entry(AgentPubKey),
-  //Header(HeaderHash)
-    //Entity( //raw bytes hash )
-}
-
-#[derive(Serialize, Deserialize, SerializedBytes, Debug, Clone)]
-pub enum TrustGraphInput {
-  Mine(LinkTag), // my TrustGraph (list of all my Trust Atoms optionally filtered by tag)
-  MyRollup(LinkTag), // Mine + Rollup (other agents TG whom Ive given TAs)
-  //Agent(AgentPubKey, LinkTag) 
-  //AgentRollup(AgentPubKey, LinkTag) // another agent's TrustGraph + their Rollup
-}
-
-#[derive(Serialize, Deserialize, SerializedBytes, Debug, Clone)]
 pub struct TrustAtomInput {
   pub target: EntryHash, // TODO maybe target_entry_hash?
-  pub label: Option<String>,
+  pub prefix: Option<String>,
   pub content: Option<String>,
   pub value: Option<String>,
   pub extra: Option<BTreeMap<String, String>>,
@@ -55,7 +38,7 @@ pub struct TrustAtomInput {
 pub struct QueryInput {
   pub source: Option<EntryHash>,
   pub target: Option<EntryHash>,
-  pub label: Option<String>,
+  pub prefix: Option<String>,
   pub content_full: Option<String>,
   pub content_starts_with: Option<String>,
   pub value_starts_with: Option<String>,
@@ -64,7 +47,7 @@ pub struct QueryInput {
 #[derive(Serialize, Deserialize, SerializedBytes, Debug, Clone)]
 pub struct QueryMineInput {
   pub target: Option<EntryHash>,
-  pub label: Option<String>,
+  pub prefix: Option<String>,
   pub content_full: Option<String>,
   pub content_starts_with: Option<String>,
   pub value_starts_with: Option<String>,
@@ -73,18 +56,13 @@ pub struct QueryMineInput {
 // ZOME API FUNCTIONS
 
 #[hdk_extern]
-pub fn create_trust_graph(choice: TrustGraphInput) -> ExternResult<Vec<TrustAtom>> {
-  match choice {
-    Mine(filter) => create_trust_graph_mine(filter)?,
-    MyRollup(filter) => create_trust_graph_plus_rollup(filter)?,
-    //Agent(pubkey) => trust_graph::create_trust_graph_agent(pubkey)?, // this is where traits come in handy
-    _ => WasmError::Guest("Error")
-  }
+pub fn create_rollup(filter: Linktag) -> ExternResult<Vec<TrustAtom>> {
+
 }
 
 #[hdk_extern]
 pub fn create_trust_atom(input: TrustAtomInput) -> ExternResult<TrustAtom> {
-  let trust_atom = trust_atom::create(input.target, input.label, input.content, input.value, input.extra)?;
+  let trust_atom = trust_atom::create(input.target, input.prefix, input.content, input.value, input.extra)?;
   Ok(trust_atom)
 }
 
@@ -106,7 +84,7 @@ pub fn query(input: QueryInput) -> ExternResult<Vec<TrustAtom>> {
   trust_atom::query(
     input.source,
     input.target,
-    input.label,
+    input.prefix,
     input.content_full,
     input.content_starts_with,
     input.value_starts_with,
@@ -117,7 +95,7 @@ pub fn query(input: QueryInput) -> ExternResult<Vec<TrustAtom>> {
 pub fn query_mine(input: QueryMineInput) -> ExternResult<Vec<TrustAtom>> {
   trust_atom::query_mine(
     input.target,
-    input.label,
+    input.prefix,
     input.content_full,
     input.content_starts_with,
     input.value_starts_with,
