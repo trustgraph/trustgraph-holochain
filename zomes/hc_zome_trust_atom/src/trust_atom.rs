@@ -20,11 +20,11 @@ pub enum LinkDirection {
 /// We may support JSON in the future to allow for more complex data structures @TODO
 #[derive(Serialize, Deserialize, SerializedBytes, Debug, Clone, PartialEq, Hash)]
 pub struct TrustAtom {
-  pub id: u64,        //hash of source_entry_hash + target_entry_hash + random number
+  // pub id: u64,        //hash of source_entry_hash + target_entry_hash + random number
   pub source: String, // TODO source_name
   pub target: String,
-  pub source_entry_hash: EntryHash,
-  pub target_entry_hash: EntryHash,
+  pub source_entry_hash: EntryHashB64,
+  pub target_entry_hash: EntryHashB64,
   pub prefix: Option<String>,
   pub content: Option<String>,
   pub value: Option<String>,
@@ -51,12 +51,13 @@ pub fn create(
 ) -> ExternResult<TrustAtom> {
   let agent_address: EntryHash = agent_info()?.agent_initial_pubkey.into();
 
-  let mut hasher = DefaultHasher::new();
-  hasher.write_u8(agent_address.clone().as_slice()); //need to convert
-  hasher.write_u8(target.clone());
-  let random = create_bucket()?;
-  hasher.write_u8(random);
-  let id = hasher.finish();
+  // let mut hasher = DefaultHasher::new();
+  // hasher.write_u8(agent_address.clone().as_slice()); //need to convert
+  // hasher.write_u8(target.clone());
+  // let random = create_bucket()?;
+  // hasher.write_u8(random);
+  // let id = hasher.finish();
+  let id = 12345; // TODO
 
   let bucket = create_bucket()?;
 
@@ -90,7 +91,7 @@ pub fn create(
   let agent_address_entry: EntryHash = agent_address;
 
   let trust_atom = TrustAtom {
-    id,
+    // id,
     source: agent_address_entry.to_string(),
     target: target.to_string(),
     source_entry_hash: agent_address_entry.into(),
@@ -343,7 +344,7 @@ pub fn convert_link_to_trust_atom(
       prefix: Some(prefix),
       content: Some(content),
       value: Some(value),
-      extra: Some(extra),
+      extra: None, // Some(extra), // TODO
     },
     LinkDirection::Reverse => {
       TrustAtom {
@@ -354,7 +355,7 @@ pub fn convert_link_to_trust_atom(
         prefix: Some(prefix),
         content: Some(content),
         value: Some(value),
-        extra: Some(extra),
+        extra: None, // Some(extra), // TODO
       }
     }
   };
