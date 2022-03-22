@@ -4,7 +4,6 @@
 
 let
   holonix = import (holonixPath) {
-    holochainVersionId = "v0_0_119";
     rustVersion = {
       track = "stable";
       version = "1.57.0";  # outside of nix = 1.58
