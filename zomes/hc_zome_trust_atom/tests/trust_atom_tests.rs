@@ -428,20 +428,87 @@ const DNA_FILEPATH: &str = "../../workdir/dna/trust_atom.dna";
 // }
 #[tokio::test(flavor = "multi_thread")]
 pub async fn test_create_trust_graph() {
-  let unicode_nul: &str = std::str::from_utf8(&[0]).unwrap();
-  let (conductor, agent, cell1) = setup_1_conductor().await;
+  let (conductors, agents, apps) = setup_conductors(3).await;
+  conductors.exchange_peer_info().await;
+
+  let agent_me = &agents[0];
+  let agent_zippy = &agents[1];
+  let agent_bob = &agents[2];
+
+  let conductor_me = &conductors[0];
+  let conductor_zippy = &conductors[1];
+  let conductor_bob = &conductors[2];
+
+  let cells = apps.cells_flattened();
+  let cell_me = cells[0];
+  let cell_zippy = cells[1];
+  let cell_bob = cells[2];
+
+  // eg : given TAs:
+  let data = [
+    // ("me", "holochain", "0.99", "zippy"),    // TODO
+    // ("me", "holochain", "0.80", "bob"),      // TODO
+    ((conductor_me, cell_me), "holochain", "0.99", "HIA"),
+    // ("me", "engineering", "0.88", "Telos"),
+    ((conductor_zippy, cell_zippy), "holochain", "0.99", "HIA"),
+    ((conductor_bob, cell_bob), "holochain", "-0.99", "HIA"),
+    // ("bob", "engineering", "0.99", "Ethereum"),
+  ];
+
+  let mut target_entry_hash: EntryHash = EntryHash::from(agent_me.clone()); // default to make compiler happy
+
+  for ((conductor, cell), content, value, target) in data {
+    // CREATE TARGET ENTRY
+    target_entry_hash = conductor
+      .call(&cell.zome("trust_atom"), "create_string_target", target)
+      .await;
+
+    // CREATE TRUST ATOM
+
+    let trust_atom_input = TrustAtomInput {
+      prefix: None,
+      target: target_entry_hash.clone(),
+      content: Some(content.to_string().clone()),
+      value: Some(value.to_string().clone()),
+      extra: None,
+    };
+
+    let _result: TrustAtom = conductor
+      .call(
+        &cell.zome("trust_atom"),
+        "create_trust_atom",
+        trust_atom_input,
+      )
+      .await;
+  }
 
   let filter: Option<LinkTag> = None;
-  let target_entry_hash: Vec<TrustAtom> = conductor
-    .call(&cell1.zome("trust_atom"), "create_rollup_atoms", filter)
+  let trust_atoms: Vec<TrustAtom> = conductor_me
+    .call(&cell_me.zome("trust_atom"), "create_rollup_atoms", filter)
     .await;
 
-  // let input = Input {
-  //   agents: tg_test_helpers::test_create_links().unwrap(),
-  //   tag_filter: None
-  // };
+  // then rollup atoms will be:
+  // me -[rollup, holochain, 0.98]-> HIA                  // actual value is TBD
+  // me -[rollup, engineering, 0.99]-> Ethereum     // actual value is TBD
+  // me -[rollup, engineering, 0.88]-> Telos            // actual value is TBD
 
-  // let test_graph = trust_graph::TrustGraph::create(input).unwrap();
+  let source_entry_hash_b64 = EntryHashB64::from(EntryHash::from(agent_me.clone()));
+
+  let target_entry_hash_b64 = EntryHashB64::from(target_entry_hash);
+
+  assert_eq!(
+    trust_atoms,
+    vec![TrustAtom {
+      source: source_entry_hash_b64.to_string(),
+      target: target_entry_hash_b64.to_string(),
+      prefix: Some("rollup".to_string()),
+      content: Some("HIA".to_string()),
+      value: Some(".980000000".to_string()), // YMMV
+      source_entry_hash: source_entry_hash_b64,
+      target_entry_hash: target_entry_hash_b64,
+      extra: Some(BTreeMap::new()),
+    }]
+  );
 }
 
 // TESTING UTILITY FUNCTIONS
