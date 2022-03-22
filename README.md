@@ -12,7 +12,6 @@
 
 </div>
 
-
 TrustGraph::Holochain is a Rust library, intended to allow for [Hololchain](https://www.holochain.org) developers to easily use the [Trust Graph](https://github.com/trustgraph/trustgraph) protocol in their Happs.
 
 _TrustGraph::Holochain is a very young codebase; **expect limited functionality**, and don’t use it in production just yet -- but do come collaborate and play as we develop it!_
@@ -39,6 +38,7 @@ HDK version correspondence:
 - TrustGraph::Holochain `v0.0.4` works with `hdk` version `0.0.116`
 - TrustGraph::Holochain `v0.0.5` works with `hdk` version `0.0.116`
 - TrustGraph::Holochain `v0.0.6` works with `hdk` version `0.0.116`
+- TrustGraph::Holochain `v0.0.7` works with `hdk` version `0.0.125`
 
 ## Usage
 
@@ -100,29 +100,30 @@ For more detailed usage, see also the tests: https://github.com/trustgraph/trust
 We encode TrustAtoms as links, with the following components:
 
 1. Holochain Link `base` == TrustAtom `source` - one of:
-    - creating agent (`AgentPubKeyB64`)
-    - TrustGraph (`EntryHashB64`)
+   - creating agent (`AgentPubKeyB64`)
+   - TrustGraph (`EntryHashB64`)
 1. Holochain Link `target` == TrustAtom `target` - entity being rated/reviewed/etc - one of:
-    - `EntryHashB64`
-    - `AgentPubKeyB64`
-1. Holochain Link `tag`* (max 999 bytes) - formatted as UTF-8 string
-  - TrustAtom header bytes: `[0xC5][0xA6]` (which together comprise the unicode character `Ŧ`) (required)
-  - Direction byte:
-      - `[0x21][0x92]` (unicode `→`) means: HC target = TA target
-      - `[0x21][0xA9]` (unicode `↩`) means: HC target = TA source
-  - TrustAtom `content` - semantic info (eg sushi) - max 900 bytes
-  - Separator: null byte `[0x00]`
-  - TrustAtom `value` - rating ( `"-0.999999999"` to `"0.999999999"`) - max 12 chars
-  - Separator: null byte `[0x00]`
-  - Random 9 characters for bucketing purposes
-  - Separator: null byte `[0x00]`
-  - Canonical data including additional attributes - `EntryHashB64`
-      - Entry contains attributes formatted in: `BTreeMap<String, String>`
-      - You will find full content here; if content exceeds link tag limts it ends with `…` as a hint
-      - If value is 1.0, we use "0.999999999" in link tag, but 1.0 here
-      - Entry hash is a sring version of EntryHashB64 for debugging purposes, not raw bytes
+   - `EntryHashB64`
+   - `AgentPubKeyB64`
+1. Holochain Link `tag`\* (max 999 bytes) - formatted as UTF-8 string
 
-*This format is designed to allow us to encode trust atoms as Holochain links, and search them by their tags.  Holochain can search for all links _starting_ with a given set of bytes (characters).
+- TrustAtom header bytes: `[0xC5][0xA6]` (which together comprise the unicode character `Ŧ`) (required)
+- Direction byte:
+  - `[0x21][0x92]` (unicode `→`) means: HC target = TA target
+  - `[0x21][0xA9]` (unicode `↩`) means: HC target = TA source
+- TrustAtom `content` - semantic info (eg sushi) - max 900 bytes
+- Separator: null byte `[0x00]`
+- TrustAtom `value` - rating ( `"-0.999999999"` to `"0.999999999"`) - max 12 chars
+- Separator: null byte `[0x00]`
+- Random 9 characters for bucketing purposes
+- Separator: null byte `[0x00]`
+- Canonical data including additional attributes - `EntryHashB64`
+  - Entry contains attributes formatted in: `BTreeMap<String, String>`
+  - You will find full content here; if content exceeds link tag limts it ends with `…` as a hint
+  - If value is 1.0, we use "0.999999999" in link tag, but 1.0 here
+  - Entry hash is a sring version of EntryHashB64 for debugging purposes, not raw bytes
+
+\*This format is designed to allow us to encode trust atoms as Holochain links, and search them by their tags. Holochain can search for all links _starting_ with a given set of bytes (characters).
 
 ### Full Example Link Tags
 
@@ -151,8 +152,8 @@ We encode TrustAtoms as links, with the following components:
 
 👤 **Harlan T Wood (https://github.com/harlantwood)**
 
-* Website: https://trustgraph.net
-* Github: [@trustgraph](https://github.com/trustgraph)
+- Website: https://trustgraph.net
+- Github: [@trustgraph](https://github.com/trustgraph)
 
 ## 🤝 Contributing
 
@@ -170,7 +171,7 @@ Give a ⭐️ if you like the project!
 
 ## Dev
 
-If you're new to holochain dev, start here: <https://developer.holochain.org/install>.  Then, from a terminal in the root of this repo:
+If you're new to holochain dev, start here: <https://developer.holochain.org/install>. Then, from a terminal in the root of this repo:
 
 ```
 nix-shell
