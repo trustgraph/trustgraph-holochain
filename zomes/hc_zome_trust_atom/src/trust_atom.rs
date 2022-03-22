@@ -20,16 +20,11 @@ pub enum LinkDirection {
 /// We may support JSON in the future to allow for more complex data structures @TODO
 #[derive(Serialize, Deserialize, SerializedBytes, Debug, Clone, PartialEq, Hash)]
 pub struct TrustAtom {
-  pub id: u64, //hash of source_entry_hash + target_entry_hash + random number
+  pub id: u64,        //hash of source_entry_hash + target_entry_hash + random number
   pub source: String, // TODO source_name
   pub target: String,
-<<<<<<< HEAD
-  pub source_entry_hash: EntryHashB64,
-  pub target_entry_hash: EntryHashB64,
-=======
   pub source_entry_hash: EntryHash,
   pub target_entry_hash: EntryHash,
->>>>>>> alt strategy for agent, slver & gold rollup method
   pub prefix: Option<String>,
   pub content: Option<String>,
   pub value: Option<String>,
@@ -54,7 +49,6 @@ pub fn create(
   value: Option<String>,
   extra: Option<BTreeMap<String, String>>,
 ) -> ExternResult<TrustAtom> {
-
   let agent_address: EntryHash = agent_info()?.agent_initial_pubkey.into();
 
   let mut hasher = DefaultHasher::new();
@@ -341,18 +335,16 @@ pub fn convert_link_to_trust_atom(
   let link_target_b64 = EntryHashB64::from(link.target);
 
   let trust_atom = match link_direction {
-    LinkDirection::Forward => {
-      TrustAtom {
-        source: link_base_b64.to_string(),
-        target: link_target_b64.to_string(),
-        source_entry_hash: link_base_b64,
-        target_entry_hash: link_target_b64,
-        prefix: Some(prefix),
-        content: Some(content),
-        value: Some(value),
-        extra: Some(extra)
-      }
-    }
+    LinkDirection::Forward => TrustAtom {
+      source: link_base_b64.to_string(),
+      target: link_target_b64.to_string(),
+      source_entry_hash: link_base_b64,
+      target_entry_hash: link_target_b64,
+      prefix: Some(prefix),
+      content: Some(content),
+      value: Some(value),
+      extra: Some(extra),
+    },
     LinkDirection::Reverse => {
       TrustAtom {
         source: link_target_b64.to_string(), // flipped for Reverse direction
@@ -362,7 +354,7 @@ pub fn convert_link_to_trust_atom(
         prefix: Some(prefix),
         content: Some(content),
         value: Some(value),
-        extra: Some(extra)
+        extra: Some(extra),
       }
     }
   };
