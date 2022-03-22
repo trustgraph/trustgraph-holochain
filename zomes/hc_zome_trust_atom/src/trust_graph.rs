@@ -14,6 +14,7 @@ struct RollupData {
 
 fn create_rollup_atoms(filter: Option<LinkTag>) -> ExternResult<Vec<TrustAtom>> {
     let mut rollup_silver = BTreeMap::new(); // K: AgentPubKey (EntryHash), V: BTreeMap<Content, RollupData>
+                                                                       // suggest: top level key is the target hash; see also silver/gold notes
     let mut agents: Vec<EntryHash> = Vec::new();
 
     let my_trust_atoms = query_mine(filter.clone())?; //TODO: change query calls
@@ -26,9 +27,11 @@ fn create_rollup_atoms(filter: Option<LinkTag>) -> ExternResult<Vec<TrustAtom>> 
                 agents.push(ta.target_entry_hash)
             }
             if let Some(val) = ta.value {
-                my_ratings.insert(ta.content, val.parse()?);
+                my_ratings.insert(ta.content, val.parse()?);  // maybe get latest rating, if conflict?
             }
-    agents.iter().unique(); // get rid of duplicates   
+        }
+
+    agents.iter().unique(); // get rid of duplicates  // TODO does this edit agents in place?
 
     for agent in agents {
         let links = get_links(agent.clone(), filter)?;
@@ -36,13 +39,13 @@ fn create_rollup_atoms(filter: Option<LinkTag>) -> ExternResult<Vec<TrustAtom>> 
         let rollup_collection = Vec::new();
         for ta in trust_atoms {
             if let Some(content) = ta.content.clone() {
-                categories.push(content);
+                categories.push(content); // (optional) could be a map, then push in map[key] = true, then you have a list of unique keys
             }
             let link_latest = get_latest(agent.clone(), ta.content.clone())?;
             let trust_atom_latest = convert_link_to_trust_atom(link_latest, &LinkDirection::Forward, &agent)?;
             categories.iter().unique();
 
-            let rating = { 
+            let rating = {
                 let i = 0;
                 while i < categories.len() {
                     match trust_atom_latest.content {
@@ -53,7 +56,7 @@ fn create_rollup_atoms(filter: Option<LinkTag>) -> ExternResult<Vec<TrustAtom>> 
                 }
             };
             let rollup_data = RollupData {
-                target_hash: trust_atom_latest.target_entry_hash, 
+                target_hash: trust_atom_latest.target_entry_hash,
                 value: trust_atom_latest.value.parse()?,
                 rating: rating.parse()?
             };
@@ -62,20 +65,20 @@ fn create_rollup_atoms(filter: Option<LinkTag>) -> ExternResult<Vec<TrustAtom>> 
         }
     }
     }
-    
+
     let gold_rollup: Vec<TrustAtom> = Vec::new();
 
-        let amalgumation = BTreeMap::new(); // K: Content, V: Float Value
+        let amalgamation = BTreeMap::new(); // K: Content, V: Float Value
 
     for rollup in category { // TODO: calc category
 
         let sum;
         let weight = rollup.rating;
-        let algo = mine + (mine - rollup.value) * weight; 
+        let algo = mine + (mine - rollup.value) * weight;
         sum += 1;
 
         ////
-            let weigh = |val| String::from_utf8_lossy(weight * val); 
+            let weigh = |val| String::from_utf8_lossy(weight * val);
             let map = Vec::new();
 
                 let trust_atom_rolled = create(trust_atom_latest.target, "rollup".to_string(), trust_atom_latest.content, weigh(trust_atom_latest.value), None)?;
@@ -83,15 +86,15 @@ fn create_rollup_atoms(filter: Option<LinkTag>) -> ExternResult<Vec<TrustAtom>> 
         }
 
     Ok(gold_rollup)
-} 
+}
 
-fn get_latest(agent, content) -> ExternResult<Link> { 
+fn get_latest(agent, content) -> ExternResult<Link> {
     let links = get_links(agent, Some("rollup".as_bytes().extend_from_slice(content.as_bytes()))?;
     let timestamps = Vec::new();
     for link in links {
         timestamps.push(link.timestamp);
     }
-    timestamps.sort_by(|a,b| a.cmp(b)); // ignoring nanoseconds 
+    timestamps.sort_by(|a,b| a.cmp(b)); // ignoring nanoseconds
     let latest = timestamps.pop();
     let latest_link = links.into_iter().filter(|x| latest).collect(); // should always be one
     latest_link
@@ -101,30 +104,46 @@ fn get_latest(agent, content) -> ExternResult<Link> {
 
 // fn create_rollup_atoms() {
 
-    // rollup_silver: map =
-    //     key = target  // of my TAs or the rollups of agents in my TG
-    //     value = vec of TA data + my rating of agent
-
-    // rollup_data: map = {
-        // HIA Entry hash: [
-            // {
-                // source: zippy
-                // value: float
-                // content: holochain
-                // agent_rating: float // my rating of zippy on `holochain`
-            // }
-        // ]
+    // rollup_bronze: map = {
+    //     HIA Entry hash (target): [  // target from my TAs or the rollups of agents in my TG
     //
+    //         {
+    //             // trust atom:
+    //             source: zippy
+    //             value: float
+    //             content: holochain
+
+    //            // plus my rating of the "source" agent
+    //             agent_rating: float // my rating of zippy on `holochain`
+    //         }
+    //     ]
+    //  }
+
+    // rollup_silver: map = {
+    //     HIA Entry hash (target): [  // target from my TAs or the rollups of agents in my TG
+    //         {
+    //             content: [
+    //                 // latest rating by given agent:
+    //                  {
+    //                     source: zippy
+    //                     value: float
+    //                     // plus my rating of the "source" agent:
+    //                     agent_rating: float // my rating of zippy on `holochain`
+    //               }
+    //           ]
+    //        }
+    //     ]
+    //  }
 
     // gold:
     // rollup_gold: vec<TrustAtom>  = [
-        // {
-        //   source: me
-        //   type: rollup
-        //   target: HIA Entry hash:
-        //   value: float
-        //   content: holochain
-        // }
+    //     {
+    //       source: me
+    //       type: rollup
+    //       target: HIA Entry hash:
+    //       value: float
+    //       content: holochain
+    //     }
     // ]
 
     // for item in rollup_gold:
