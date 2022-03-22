@@ -53,6 +53,7 @@ pub async fn test_create_trust_atom() {
   let trust_atom_input = TrustAtomInput {
     target: target_entry_hash.clone(),
     content: Some(content.clone()),
+    prefix: None,
     value: Some(value.clone()),
     extra: Some(extra.clone()),
   };
@@ -338,7 +339,6 @@ pub async fn test_query_mine_with_content_full() {
   );
 }
 
-
 #[tokio::test(flavor = "multi_thread")]
 pub async fn test_get_extra() {
   let (conductor, _agent, cell1) = setup_1_conductor().await;
@@ -421,19 +421,15 @@ pub async fn test_create_trust_graph() {
   let (conductor, agent, cell1) = setup_1_conductor().await;
 
   let target_entry_hash: EntryHash = conductor
-    .call(
-      &cell1.zome("trust_graph"),
-      "create_trust_graph",
-      "Harlan",
-    )
+    .call(&cell1.zome("trust_graph"), "create_trust_graph", "Harlan")
     .await;
 
-  let input = Input {
-    agents: tg_test_helpers::test_create_links().unwrap(),
-    tag_filter: None
-  };
+  // let input = Input {
+  //   agents: tg_test_helpers::test_create_links().unwrap(),
+  //   tag_filter: None
+  // };
 
-  let test_graph = trust_graph::TrustGraph::create(input).unwrap();
+  // let test_graph = trust_graph::TrustGraph::create(input).unwrap();
 }
 
 // TESTING UTILITY FUNCTIONS
@@ -473,4 +469,3 @@ pub async fn setup_conductors(n: usize) -> (SweetConductorBatch, Vec<AgentPubKey
   conductors.exchange_peer_info().await;
   (conductors, all_agents, apps)
 }
-

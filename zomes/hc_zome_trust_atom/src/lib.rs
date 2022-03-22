@@ -18,8 +18,8 @@ pub mod trust_atom;
 pub use crate::trust_atom::*;
 pub mod trust_graph;
 pub use crate::trust_graph::*;
-pub(crate) mod utils;
 pub(crate) mod test_helpers;
+pub(crate) mod utils;
 
 entry_defs![test_helpers::StringTarget::entry_def(), Extra::entry_def()];
 
@@ -56,13 +56,19 @@ pub struct QueryMineInput {
 // ZOME API FUNCTIONS
 
 #[hdk_extern]
-pub fn create_rollup(filter: Linktag) -> ExternResult<Vec<TrustAtom>> {
-
+pub fn create_rollup_atoms(filter: Option<LinkTag>) -> ExternResult<Vec<TrustAtom>> {
+  trust_graph::create_rollup_atoms(filter)
 }
 
 #[hdk_extern]
 pub fn create_trust_atom(input: TrustAtomInput) -> ExternResult<TrustAtom> {
-  let trust_atom = trust_atom::create(input.target, input.prefix, input.content, input.value, input.extra)?;
+  let trust_atom = trust_atom::create(
+    input.target,
+    input.prefix,
+    input.content,
+    input.value,
+    input.extra,
+  )?;
   Ok(trust_atom)
 }
 
