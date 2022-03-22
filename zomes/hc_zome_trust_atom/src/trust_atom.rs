@@ -1,6 +1,6 @@
 #![allow(clippy::module_name_repetitions)]
 
-use hdk::prelude::holo_hash::EntryHashB64;
+use ::holo_hash::EntryHashB64;
 use hdk::prelude::*;
 use rust_decimal::prelude::*;
 use std::collections::BTreeMap;
@@ -59,8 +59,18 @@ pub fn create(
   let forward_link_tag = create_link_tag(&LinkDirection::Forward, &chunks);
   let reverse_link_tag = create_link_tag(&LinkDirection::Reverse, &chunks);
 
-  create_link(agent_address.clone(), target.clone(), forward_link_tag)?;
-  create_link(target.clone(), agent_address.clone(), reverse_link_tag)?;
+  create_link(
+    agent_address.clone(),
+    target.clone(),
+    HdkLinkType::Any,
+    forward_link_tag,
+  )?;
+  create_link(
+    target.clone(),
+    agent_address.clone(),
+    HdkLinkType::Any,
+    reverse_link_tag,
+  )?;
 
   let agent_address_entry: EntryHash = agent_address;
 
