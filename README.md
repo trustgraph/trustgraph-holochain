@@ -46,15 +46,15 @@ HDK version correspondence:
 
 ```rs
 pub struct TrustAtomInput {
-    pub target: EntryHash,
-    pub content: String,
-    pub value: String,
-    pub attributes: BTreeMap<String, String>,
+  pub target: EntryHash,
+  pub prefix: Option<String>,
+  pub content: Option<String>,
+  pub value: Option<String>,
+  pub extra: Option<BTreeMap<String, String>>,
 }
 
-
 #[hdk_extern]
-pub fn create(input: TrustAtomInput) -> ExternResult<()> {
+pub fn create_trust_atom(input: TrustAtomInput) -> ExternResult<TrustAtom> {
     // ...
 }
 ```
@@ -63,11 +63,12 @@ pub fn create(input: TrustAtomInput) -> ExternResult<()> {
 
 ```rs
 pub struct QueryInput {
-    pub source: Option<EntryHash>,
-    pub target: Option<EntryHash>,
-    pub content_starts_with: Option<String>,
-    pub min_value: Option<String>,
-    pub max_value: Option<String>,
+  pub source: Option<EntryHash>,
+  pub target: Option<EntryHash>,
+  pub prefix: Option<String>,
+  pub content_full: Option<String>,
+  pub content_starts_with: Option<String>,
+  pub value_starts_with: Option<String>,
 }
 
 #[hdk_extern]
@@ -83,13 +84,13 @@ Client-facing representation of a Trust Atom (this is what is returned to client
 
 ```rs
 pub struct TrustAtom {
-    pub source: String,
-    pub target: String,
-    pub content: String,
-    pub value: String,
-    pub source_entry_hash: EntryHashB64,
-    pub target_entry_hash: EntryHashB64,
-    pub attributes: BTreeMap<String, String>,
+  pub source: String,
+  pub target: String,
+  pub source_entry_hash: EntryHashB64,
+  pub target_entry_hash: EntryHashB64,
+  pub content: Option<String>,
+  pub value: Option<String>,
+  pub extra: Option<BTreeMap<String, String>>,
 }
 ```
 
@@ -142,10 +143,8 @@ We encode TrustAtoms as links, with the following components:
 
 - [x] Create TrustAtoms as paired Holochain links
 - [x] Fetch TrustAtoms by content leading bytes
-- [ ] Fetch TrustAtoms by content and amount
-- [ ] Create a TrustGraph seeded from TrustAtoms
+- [x] Fetch TrustAtoms by content and value
 - [ ] Roll up a TrustGraph by crawling TrustAtoms (2 levels deep)
-- [ ] Search across a TrustGraph by content and amount
 - [ ] Integration into holochain example projects, eg [Clutter](https://github.com/artbrock/clutter)
 
 ## Author
