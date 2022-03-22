@@ -431,9 +431,10 @@ pub async fn test_create_trust_graph() {
   let unicode_nul: &str = std::str::from_utf8(&[0]).unwrap();
   let (conductor, agent, cell1) = setup_1_conductor().await;
 
-  // let target_entry_hash: EntryHash = conductor
-  //   .call(&cell1.zome("trust_graph"), "create_trust_graph", "Harlan")
-  //   .await;
+  let filter: Option<LinkTag> = None;
+  let target_entry_hash: Vec<TrustAtom> = conductor
+    .call(&cell1.zome("trust_atom"), "create_rollup_atoms", filter)
+    .await;
 
   // let input = Input {
   //   agents: tg_test_helpers::test_create_links().unwrap(),
