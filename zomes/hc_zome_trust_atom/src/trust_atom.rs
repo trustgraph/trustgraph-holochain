@@ -15,6 +15,7 @@ enum LinkDirection {
 /// We may support JSON in the future to allow for more complex data structures @TODO
 #[derive(Serialize, Deserialize, SerializedBytes, Debug, Clone, PartialEq)]
 pub struct TrustAtom {
+  pub id: u64,        //hash of source_entry_hash + target_entry_hash + random number
   pub source: String, // TODO source_name
   pub target: String,
   pub source_entry_hash: EntryHashB64,
@@ -42,6 +43,13 @@ pub fn create(
   extra: Option<BTreeMap<String, String>>,
 ) -> ExternResult<TrustAtom> {
   let agent_address: EntryHash = agent_info()?.agent_initial_pubkey.into();
+
+  let mut hasher = DefaultHasher::new();
+  hasher.write_u8(agent_address.clone().as_slice()); //need to convert
+  hasher.write_u8(target.clone());
+  let random = create_bucket()?;
+  hasher.write_u8(random);
+  let id = hasher.finish();
 
   let bucket = create_bucket()?;
 
