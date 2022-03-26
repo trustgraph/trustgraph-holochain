@@ -38,7 +38,7 @@ pub struct Extra {
   pub fields: BTreeMap<String, String>, // extra content
 }
 
-pub fn create(
+pub fn create_trust_atom(
   target: EntryHash,
   prefix: Option<String>,
   content: Option<String>,
