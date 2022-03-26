@@ -5,9 +5,6 @@ use hdk::prelude::*;
 use rust_decimal::prelude::*;
 use std::collections::BTreeMap;
 
-use std::collections::hash_map::DefaultHasher;
-use std::hash::Hasher;
-
 use crate::utils::*;
 
 #[derive(Debug, Clone)]
@@ -20,9 +17,8 @@ pub enum LinkDirection {
 /// We may support JSON in the future to allow for more complex data structures @TODO
 #[derive(Serialize, Deserialize, SerializedBytes, Debug, Clone, PartialEq, Hash)]
 pub struct TrustAtom {
-  // pub id: u64,        //hash of source_entry_hash + target_entry_hash + random number
-  pub source: String, // TODO source_name
-  pub target: String,
+  // pub source: String, // TODO source_name
+  // pub target: String,
   pub source_entry_hash: EntryHashB64,
   pub target_entry_hash: EntryHashB64,
   pub prefix: Option<String>,
@@ -50,14 +46,6 @@ pub fn create(
   extra: Option<BTreeMap<String, String>>,
 ) -> ExternResult<TrustAtom> {
   let agent_address: EntryHash = agent_info()?.agent_initial_pubkey.into();
-
-  // let mut hasher = DefaultHasher::new();
-  // hasher.write_u8(agent_address.clone().as_slice()); //need to convert
-  // hasher.write_u8(target.clone());
-  // let random = create_bucket()?;
-  // hasher.write_u8(random);
-  // let id = hasher.finish();
-  let id = 12345; // TODO
 
   let bucket = create_bucket()?;
 
@@ -91,9 +79,8 @@ pub fn create(
   let agent_address_entry: EntryHash = agent_address;
 
   let trust_atom = TrustAtom {
-    // id,
-    source: agent_address_entry.to_string(),
-    target: target.to_string(),
+    // source: agent_address_entry.to_string(),
+    // target: target.to_string(),
     source_entry_hash: agent_address_entry.into(),
     target_entry_hash: target.into(),
     prefix,
@@ -337,8 +324,8 @@ pub fn convert_link_to_trust_atom(
 
   let trust_atom = match link_direction {
     LinkDirection::Forward => TrustAtom {
-      source: link_base_b64.to_string(),
-      target: link_target_b64.to_string(),
+      // source: link_base_b64.to_string(),
+      // target: link_target_b64.to_string(),
       source_entry_hash: link_base_b64,
       target_entry_hash: link_target_b64,
       prefix: Some(prefix),
@@ -348,8 +335,8 @@ pub fn convert_link_to_trust_atom(
     },
     LinkDirection::Reverse => {
       TrustAtom {
-        source: link_target_b64.to_string(), // flipped for Reverse direction
-        target: link_base_b64.to_string(),   // flipped for Reverse direction
+        //source: link_target_b64.to_string(), // flipped for Reverse direction
+        //target: link_base_b64.to_string(),   // flipped for Reverse direction
         source_entry_hash: link_target_b64,  // flipped for Reverse direction
         target_entry_hash: link_base_b64,    // flipped for Reverse direction
         prefix: Some(prefix),
