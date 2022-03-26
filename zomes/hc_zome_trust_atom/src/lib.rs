@@ -18,8 +18,10 @@ pub mod trust_atom;
 pub use crate::trust_atom::*;
 pub mod trust_graph;
 pub use crate::trust_graph::*;
-pub(crate) mod test_helpers;
-pub(crate) mod utils;
+pub mod test_helpers;
+pub use crate::test_helpers::*;
+pub mod utils;
+pub use crate::utils::*;
 
 entry_defs![test_helpers::StringTarget::entry_def(), Extra::entry_def()];
 

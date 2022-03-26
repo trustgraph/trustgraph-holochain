@@ -1,105 +1,118 @@
 use hdk::prelude::*;
 
-// use itertools::Itertools;
 use std::collections::BTreeMap;
 
 use crate::trust_atom::LinkDirection;
 use crate::trust_atom::*;
 
+#[derive(Clone)]
 struct RollupData {
-  target_hash: EntryHash,
-  value: f64,
-  rating: f64,
+  target_entry_hash: EntryHash,
+  value: Option<String>,
+  agent_rating: Option<String>,
 }
 
-pub(crate) fn create_rollup_atoms(filter: Option<LinkTag>) -> ExternResult<Vec<TrustAtom>> {
-  Ok(vec![])
-  // let mut rollup_silver = BTreeMap::new(); // K: AgentPubKey (EntryHash), V: BTreeMap<Content, RollupData>
-  //                                                                    // suggest: top level key is the target hash; see also silver/gold notes
-  // let mut agents: Vec<EntryHash> = Vec::new();
+pub fn create_rollup_atoms(filter: Option<LinkTag>) -> ExternResult<Vec<TrustAtom>> {
+  let me: EntryHash = EntryHash::from(agent_info()?.agent_latest_pubkey);
+  
+  let mut rollup_silver = BTreeMap::new(); // K: Content (String), V: BTreeMap<Agent, RollupData>                                                   
 
-  // let my_trust_atoms = query_mine(filter.clone())?; //TODO: change query calls
-  // let mut categories = Vec::new();
-  // let my_ratings = BTreeMap::new(); // K: Content, V: Float Value
+  let my_trust_atoms: Vec<TrustAtom> = query_mine(filter.clone())?; //TODO: change query calls
+  let mut categories = Vec::new(); // list of unique contents
+  let mut agents = Vec::new();
+  let mut my_ratings_by_content = BTreeMap::new(); // K: Content, V: Float Value
 
-  // for ta in my_trust_atoms.clone() {
-  //     let rollup_links = get_links(ta.target_entry_hash.clone(), "rollup".into())?;
-  //         if rollup_links.len() > 0 {
-  //             agents.push(ta.target_entry_hash)
-  //         }
-  //         if let Some(val) = ta.value {
-  //             my_ratings.insert(ta.content, val.parse()?);  // maybe get latest rating, if conflict?
-  //         }
-  //     }
+  for ta in my_trust_atoms.clone() {
+      let target_entry_hash = EntryHash::from(ta.target_entry_hash);
+      let rollup_links = get_links(target_entry_hash.clone(), Some(LinkTag::from("rollup")))?; // FIX: convert rollup str into LinkTag type
+          if rollup_links.len() > 0 {
+            for agent in agents { 
+                match agent {               // prevent duplicates
+                    target_entry_hash => break,
+                    _ => { agents.push(ta.target_entry_hash); }
+                }
+            }
+          }
+        let link_latest = get_latest(me, ta.content.clone())?;
+        let trust_atom_latest = convert_link_to_trust_atom(link_latest, &LinkDirection::Forward, &me)?;
+          if let Some(val) = trust_atom_latest.value {
+            my_ratings_by_content.insert(trust_atom_latest.content, val.parse()?); 
+          }
+    }
 
-  // agents.iter().unique(); // get rid of duplicates  // TODO does this edit agents in place?
+  for agent in agents {
+      let agent = EntryHash::from(agent);
+      let links = get_links(agent.clone(), filter)?; 
+      let trust_atoms = convert_links_to_trust_atoms(links, &LinkDirection::Forward, &agent)?; 
 
-  // for agent in agents {
-  //     let links = get_links(agent.clone(), filter)?;
-  //     let trust_atoms = convert_links_to_trust_atoms(links, &LinkDirection::Forward, &agent)?;
-  //     let rollup_collection = Vec::new();
-  //     for ta in trust_atoms {
-  //         if let Some(content) = ta.content.clone() {
-  //             categories.push(content); // (optional) could be a map, then push in map[key] = true, then you have a list of unique keys
-  //         }
-  //         let link_latest = get_latest(agent.clone(), ta.content.clone())?;
-  //         let trust_atom_latest = convert_link_to_trust_atom(link_latest, &LinkDirection::Forward, &agent)?;
-  //         categories.iter().unique();
+      for ta in trust_atoms {
+          if let Some(content) = ta.content.clone() {
+              for category in categories {  
+                  match category {      // prevent duplicates 
+                      content => break,
+                      _ => categories.push(ta.content)
+                  }
+          }
+          let link_latest = get_latest(agent.clone(), ta.content.clone())?;
+          let trust_atom_latest = convert_link_to_trust_atom(link_latest, &LinkDirection::Forward, &agent)?;
 
-  //         let rating = {
-  //             let i = 0;
-  //             while i < categories.len() {
-  //                 match trust_atom_latest.content {
-  //                     categories[i] => { trust_atom_latest.value,
-  //                                     break; },
-  //                     _ => { i += 1; }
-  //                 }
-  //             }
-  //         };
-  //         let rollup_data = RollupData {
-  //             target_hash: trust_atom_latest.target_entry_hash,
-  //             value: trust_atom_latest.value.parse()?,
-  //             rating: rating.parse()?
-  //         };
-  //         let map = BTreeMap::from(trust_atom_latest.content, rollup_data);
-  //         rollup_silver.insert(agent, map);
-  //     }
-  // }
-  // }
+          let rating: Option<String> = {
+              for category in categories {
+                  match category {
+                      trust_atom_latest.content => return trust_atom_latest.value,
+                      _ => None
+                  }
+                }
+            };
+          let rollup_data = RollupData {
+              target_entry_hash: EntryHash::from(trust_atom_latest.target_entry_hash),
+              value: trust_atom_latest.value,
+              agent_rating: rating
+          };
+          let map = BTreeMap::from([(agent, rollup_data)]);
+          rollup_silver.insert(trust_atom_latest.content, map);
+      }
+    }
+  }
 
-  // let gold_rollup: Vec<TrustAtom> = Vec::new();
+  let gold_rollup: Vec<TrustAtom> = Vec::new();
 
-  //     let amalgamation = BTreeMap::new(); // K: Content, V: Float Value
+  for category in rollup_silver.clone() {
+      let sourced_trust_atoms = Vec::new(); // collect to input for rollup extra field
+      let accumulator = Vec::new(); // gather weighted values
+        for agent in category.clone() {
+            let rollup_data = get(agent.clone());
+            let rating_sum = rollup_data.clone().len();
+                if let Some(rating) = rollup_data.rating { 
+                        if let Some(val) = rollup_data.value {
+                            let calc = rating / rating_sum * val.parse()?; // calculate weight
+                            accumulator.push(calc);
+                        }
+                }
+            let sourced_atom_latest = convert_link_to_trust_atom(get_latest(agent, category)?, &LinkDirection::Forward, &agent)?;    
+            sourced_trust_atoms.push(sourced_atom_latest);
+        }
+        // self weight is 80%
+        let my_rating = my_ratings_by_content.get(category.clone());
+        let algo = my_rating * .80 + accumulator.iter().sum() * .20;
+        let rollup_atom = create(rollup_data.target_entry_hash, "rollup".to_string(), category, algo, sourced_trust_atoms)?;
+        gold_rollup.push(rollup_atom);
+      }
 
-  // for rollup in category { // TODO: calc category
-
-  //     let sum;
-  //     let weight = rollup.rating;
-  //     let algo = mine + (mine - rollup.value) * weight;
-  //     sum += 1;
-
-  //     ////
-  //         let weigh = |val| String::from_utf8_lossy(weight * val);
-  //         let map = Vec::new();
-
-  //             let trust_atom_rolled = create(trust_atom_latest.target, "rollup".to_string(), trust_atom_latest.content, weigh(trust_atom_latest.value), None)?;
-  //             rollup_gold.push(trust_atom);
-  //     }
-
-  // Ok(gold_rollup)
+  Ok(gold_rollup)
 }
 
-// fn get_latest(agent, content) -> ExternResult<Link> {
-//     let links = get_links(agent, Some("rollup".as_bytes().extend_from_slice(content.as_bytes()))?;
-//     let timestamps = Vec::new();
-//     for link in links {
-//         timestamps.push(link.timestamp);
-//     }
-//     timestamps.sort_by(|a,b| a.cmp(b)); // ignoring nanoseconds
-//     let latest = timestamps.pop();
-//     let latest_link = links.into_iter().filter(|x| latest).collect(); // should always be one
-//     latest_link
-// }
+fn get_latest(agent, content) -> ExternResult<Link> {
+    let links = get_links(agent, content)?;
+    let timestamps = Vec::new();
+    for link in links {
+        timestamps.push(link.timestamp);
+    }
+    timestamps.sort_by(|a,b| a.cmp(b)); // ignoring nanoseconds
+    let latest = timestamps.pop();
+    let latest_link = links.into_iter().filter(|x| latest).collect(); // should always be one
+    latest_link
+}
 
 // fn create_rollup_atoms() {
 
