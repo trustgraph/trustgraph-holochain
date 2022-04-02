@@ -11,17 +11,19 @@
 // #![warn(clippy::cargo)]
 
 use hdk::prelude::*;
+use hdk::prelude::holo_hash::EntryHashB64;
+
 use std::collections::BTreeMap;
 
 // public for sweettest; TODO can we fix this:
 pub mod trust_atom;
-pub use crate::trust_atom::*;
+pub use trust_atom::*;
 pub mod trust_graph;
-pub use crate::trust_graph::*;
+pub use trust_graph::*;
 pub mod test_helpers;
-pub use crate::test_helpers::*;
+pub use test_helpers::*;
 pub mod utils;
-pub use crate::utils::*;
+pub use utils::*;
 
 entry_defs![test_helpers::StringTarget::entry_def(), Extra::entry_def()];
 
@@ -29,11 +31,12 @@ entry_defs![test_helpers::StringTarget::entry_def(), Extra::entry_def()];
 
 #[derive(Serialize, Deserialize, SerializedBytes, Debug, Clone)]
 pub struct TrustAtomInput {
+  pub source: EntryHash, //// for testing purposes ////
   pub target: EntryHash, // TODO maybe target_entry_hash?
   pub prefix: Option<String>,
   pub content: Option<String>,
   pub value: Option<String>,
-  pub extra: Option<BTreeMap<String, String>>,
+  pub extra: Option<BTreeMap<EntryHashB64, TrustAtom>>, //// map types modified for tests ////
 }
 
 #[derive(Serialize, Deserialize, SerializedBytes, Debug, Clone)]
@@ -58,13 +61,14 @@ pub struct QueryMineInput {
 // ZOME API FUNCTIONS
 
 #[hdk_extern]
-pub fn create_rollup_atoms(filter: Option<LinkTag>) -> ExternResult<Vec<TrustAtom>> {
-  trust_graph::create_rollup_atoms(filter)
+pub fn create_rollup_atoms(_: ()) -> ExternResult<Vec<TrustAtom>> {
+  trust_graph::create_rollup_atoms()
 }
 
 #[hdk_extern]
 pub fn create_trust_atom(input: TrustAtomInput) -> ExternResult<TrustAtom> {
-  let trust_atom = trust_atom::create(
+  let trust_atom = trust_atom::create_trust_atom(
+    input.source,
     input.target,
     input.prefix,
     input.content,
@@ -102,7 +106,6 @@ pub fn query(input: QueryInput) -> ExternResult<Vec<TrustAtom>> {
 #[hdk_extern]
 pub fn query_mine(input: QueryMineInput) -> ExternResult<Vec<TrustAtom>> {
   trust_atom::query_mine(
-    input.target,
     input.prefix,
     input.content_full,
     input.content_starts_with,
