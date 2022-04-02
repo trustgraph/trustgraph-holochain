@@ -24,7 +24,7 @@ pub struct TrustAtom {
   pub prefix: Option<String>,
   pub content: Option<String>,
   pub value: Option<String>,
-  pub extra: Option<BTreeMap<String, String>>,
+  pub extra: Option<BTreeMap<EntryHashB64, TrustAtom>>, // ?TODO: make generic    //// map types modified for tests ////
 }
 
 const UNICODE_NUL_STR: &str = "\u{0}"; // Unicode NUL character
@@ -35,17 +35,20 @@ const LINK_TAG_ARROW_REVERSE: [u8; 3] = [226, 134, 169]; // Unicode "↩" // hex
 #[hdk_entry(id = "extra", visibility = "public")]
 #[derive(Clone)]
 pub struct Extra {
-  pub fields: BTreeMap<String, String>, // extra content
+  pub fields: BTreeMap<EntryHashB64, TrustAtom>, //// map types modified for tests ////
 }
 
 pub fn create_trust_atom(
+  source: EntryHash, //// for tests ////
   target: EntryHash,
   prefix: Option<String>,
   content: Option<String>,
   value: Option<String>,
-  extra: Option<BTreeMap<String, String>>,
+  extra: Option<BTreeMap<EntryHashB64, TrustAtom>>, //// map types modified for tests ///
 ) -> ExternResult<TrustAtom> {
-  let agent_address: EntryHash = agent_info()?.agent_initial_pubkey.into();
+  let agent_address = source; //// modified for testing purposes ////
+
+  //let agent_address: EntryHash = agent_info()?.agent_initial_pubkey.into();
 
   let bucket = create_bucket()?;
 
@@ -55,6 +58,7 @@ pub fn create_trust_atom(
   };
 
   let chunks = [
+    prefix.clone(),
     content.clone(),
     normalize_value(value.clone())?,
     Some(bucket),
@@ -105,7 +109,7 @@ fn create_bucket_string(bucket_bytes: &[u8]) -> String {
   bucket
 }
 
-fn create_extra(input: BTreeMap<String, String>) -> ExternResult<String> {
+fn create_extra(input: BTreeMap<EntryHashB64, TrustAtom>) -> ExternResult<String> { //// map types modified for tests ///
   let entry = Extra { fields: input };
 
   create_entry(entry.clone())?;
@@ -154,7 +158,7 @@ fn normalize_value(value_str: Option<String>) -> ExternResult<Option<String>> {
   }
 }
 
-fn create_link_tag(link_direction: &LinkDirection, chunk_options: &[Option<String>]) -> LinkTag {
+pub fn create_link_tag(link_direction: &LinkDirection, chunk_options: &[Option<String>]) -> LinkTag {
   let mut chunks: Vec<String> = vec![];
 
   for i in 0..chunk_options.len() {
@@ -165,7 +169,6 @@ fn create_link_tag(link_direction: &LinkDirection, chunk_options: &[Option<Strin
       }
     }
   }
-
   create_link_tag_metal(link_direction, chunks)
 }
 
@@ -205,7 +208,6 @@ pub fn get_extra(entry_hash: &EntryHash) -> ExternResult<Extra> {
 }
 
 pub fn query_mine(
-  target: Option<EntryHash>,
   prefix: Option<String>,
   content_full: Option<String>,
   content_starts_with: Option<String>,
@@ -215,7 +217,7 @@ pub fn query_mine(
 
   let result = query(
     Some(agent_address),
-    target,
+    None,
     prefix,
     content_full,
     content_starts_with,

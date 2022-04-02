@@ -4,10 +4,10 @@ use std::collections::BTreeMap;
 
 use futures::future;
 
-// use hc_zome_trust_atom::*;
-
 use hc_zome_trust_atom::*;
+use hdk::prelude::holo_hash::EntryHash;
 use hdk::prelude::holo_hash::EntryHashB64;
+use hdk::prelude::holo_hash::AgentPubKey;
 use hdk::prelude::*;
 use holochain::sweettest::{
   SweetAgents, SweetAppBatch, SweetCell, SweetConductor, SweetConductorBatch, SweetDnaFile,
@@ -446,45 +446,121 @@ pub async fn test_create_trust_graph() {
 
   // eg : given TAs:
   let data = [
-    // ("me", "holochain", "0.99", "zippy"),    // TODO
-    // ("me", "holochain", "0.80", "bob"),      // TODO
-    ((conductor_me, cell_me), "holochain", "0.99", "HIA"),
-    // ("me", "engineering", "0.88", "Telos"),
-    ((conductor_zippy, cell_zippy), "holochain", "0.99", "HIA"),
-    ((conductor_bob, cell_bob), "holochain", "-0.99", "HIA"),
-    // ("bob", "engineering", "0.99", "Ethereum"),
+    ((agent_me, conductor_me, cell_me), "holochain", "0.99", "zippy"),    
+    ((agent_me, conductor_me, cell_me), "holochain", "0.80", "bob"),     
+    ((agent_me, conductor_me, cell_me), "holochain", "0.99", "HIA"),
+    ((agent_me, conductor_me, cell_me), "engineering", "0.88", "Telos"),
+    ((agent_zippy, conductor_zippy, cell_zippy), "holochain", "0.99", "HIA"),
+    ((agent_bob, conductor_bob, cell_bob), "holochain", "-0.99", "HIA"),
+    ((agent_bob, conductor_bob, cell_bob), "engineering", "0.99", "Ethereum"),
   ];
 
   let mut target_entry_hash: EntryHash = EntryHash::from(agent_me.clone()); // default to make compiler happy
 
-  for ((conductor, cell), content, value, target) in data {
+    // CREATE TEST ENTRIES
+
+  let fake1_entry_hash: EntryHash = conductor_me
+      .call(&cell_me.zome("trust_atom"), "create_string_target", "fake1")
+      .await;
+  
+  let fake2_entry_hash: EntryHash = conductor_me
+      .call(&cell_me.zome("trust_atom"), "create_string_target", "fake2")
+      .await;
+
+    // CREATE TEST AGENT ROLLUPS  // helps to identify the agents for algorithm
+
+  let zippy_mock_rollup_atom_input = TrustAtomInput {
+      source: EntryHash::from(agent_zippy.clone()),
+      target: fake1_entry_hash.clone(),
+      prefix: Some("rollup".to_string()),
+      content: None,
+      value: None,
+      extra: None,
+    };
+
+    let _zippy_mock_rollup_atom: TrustAtom = conductor_zippy
+      .call(
+        &cell_zippy.zome("trust_atom"),
+        "create_trust_atom",
+        zippy_mock_rollup_atom_input,
+      )
+      .await;
+    
+    let bob_mock1_rollup_atom_input = TrustAtomInput {
+      source: EntryHash::from(agent_bob.clone()),
+      target: fake1_entry_hash.clone(),
+      prefix: Some("rollup".to_string()),
+      content: None,
+      value: None,
+      extra: None,
+    };
+
+    let _bob_mock1_rollup_atom: TrustAtom = conductor_bob
+      .call(
+        &cell_bob.zome("trust_atom"),
+        "create_trust_atom",
+        bob_mock1_rollup_atom_input,
+      )
+      .await;
+    
+    let bob_mock2_rollup_atom_input = TrustAtomInput {
+      source: EntryHash::from(agent_bob.clone()),
+      target: fake2_entry_hash.clone(),
+      prefix: Some("rollup".to_string()),
+      content: None,
+      value: None,
+      extra: None,
+    };
+
+    let _bob_mock2_rollup_atom: TrustAtom = conductor_bob
+      .call(
+        &cell_bob.zome("trust_atom"),
+        "create_trust_atom",
+        bob_mock2_rollup_atom_input,
+      )
+      .await;
+
+  let mut hia_sourced_atoms: BTreeMap<EntryHashB64, TrustAtom> = BTreeMap::new();
+  let mut eth_sourced_atoms: BTreeMap<EntryHashB64, TrustAtom> = BTreeMap::new();
+  let mut telo_sourced_atoms: BTreeMap<EntryHashB64, TrustAtom> = BTreeMap::new();
+
+  for ((agent, conductor, cell), content, value, target) in data {
     // CREATE TARGET ENTRY
     target_entry_hash = conductor
-      .call(&cell.zome("trust_atom"), "create_string_target", target)
+      .call(&cell.zome("trust_atom"), "create_string_target", target.clone())
       .await;
 
     // CREATE TRUST ATOM
 
     let trust_atom_input = TrustAtomInput {
+      source: EntryHash::from(agent.clone()),
       prefix: None,
       target: target_entry_hash.clone(),
-      content: Some(content.to_string().clone()),
-      value: Some(value.to_string().clone()),
+      content: Some(content.to_string()),
+      value: Some(value.to_string()),
       extra: None,
     };
 
-    let _result: TrustAtom = conductor
+    let trust_atom: TrustAtom = conductor
       .call(
         &cell.zome("trust_atom"),
         "create_trust_atom",
         trust_atom_input,
       )
       .await;
-  }
 
-  let filter: Option<LinkTag> = None;
+    if agent != agent_me {  
+      match target {
+        "HIA" => { hia_sourced_atoms.insert(EntryHashB64::from(target_entry_hash.clone()), trust_atom); }
+        "eth" => { eth_sourced_atoms.insert(EntryHashB64::from(target_entry_hash.clone()), trust_atom); }
+        "telo" => { telo_sourced_atoms.insert(EntryHashB64::from(target_entry_hash.clone()), trust_atom); }
+        _ => {}
+      }
+    }
+  }
+  let any = String::new();
   let trust_atoms: Vec<TrustAtom> = conductor_me
-    .call(&cell_me.zome("trust_atom"), "create_rollup_atoms", filter)
+    .call(&cell_me.zome("trust_atom"), "create_rollup_atoms", any)
     .await;
 
   // then rollup atoms will be:
@@ -493,20 +569,33 @@ pub async fn test_create_trust_graph() {
   // me -[rollup, engineering, 0.88]-> Telos            // actual value is TBD
 
   let source_entry_hash_b64 = EntryHashB64::from(EntryHash::from(agent_me.clone()));
-
-  let target_entry_hash_b64 = EntryHashB64::from(target_entry_hash);
+  let target_entry_hash_b64 = EntryHashB64::from(target_entry_hash.clone());
 
   assert_eq!(
     trust_atoms,
     vec![TrustAtom {
-      source: source_entry_hash_b64.to_string(),
-      target: target_entry_hash_b64.to_string(),
+      source_entry_hash: source_entry_hash_b64.clone(),
+      target_entry_hash: target_entry_hash_b64.clone(),
       prefix: Some("rollup".to_string()),
       content: Some("HIA".to_string()),
       value: Some(".980000000".to_string()), // YMMV
-      source_entry_hash: source_entry_hash_b64,
-      target_entry_hash: target_entry_hash_b64,
-      extra: Some(BTreeMap::new()),
+      extra: Some(hia_sourced_atoms),
+    },
+    TrustAtom {
+      source_entry_hash: source_entry_hash_b64.clone(),
+      target_entry_hash: target_entry_hash_b64.clone(),
+      prefix: Some("rollup".to_string()),
+      content: Some("Ethereum".to_string()),
+      value: Some(".990000000".to_string()), // YMMV
+      extra: Some(eth_sourced_atoms),
+    },
+    TrustAtom {
+      source_entry_hash: source_entry_hash_b64.clone(),
+      target_entry_hash: target_entry_hash_b64.clone(),
+      prefix: Some("rollup".to_string()),
+      content: Some("Telos".to_string()),
+      value: Some(".880000000".to_string()), // YMMV
+      extra: Some(telo_sourced_atoms),
     }]
   );
 }
