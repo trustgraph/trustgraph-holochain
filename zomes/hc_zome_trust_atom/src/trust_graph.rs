@@ -5,7 +5,7 @@ use std::collections::BTreeMap;
 
 use crate::*;
 
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 struct RollupData {
   content: String,
   value: String,
@@ -19,6 +19,7 @@ pub fn create_rollup_atoms() -> ExternResult<Vec<TrustAtom>> {
   // TODO: feature: general agent rating for all things (not just for specific content)
 
   let rollup_silver = build_rollup_silver(agents, &me)?;
+  debug!("{:?}", rollup_silver);
   let rollup_gold = build_rollup_gold(rollup_silver, me)?;
   Ok(rollup_gold)
 }
@@ -31,14 +32,19 @@ fn build_agent_list() -> ExternResult<Vec<HoloHash<holo_hash::hash_type::Entry>>
     let chunks = [Some("rollup".to_string())];
     let filter = create_link_tag(&LinkDirection::Forward, &chunks);
     let rollup_links: Vec<Link> = get_links(target_entry_hash.clone(), Some(filter))?; // Note: Agent must have done at least one rollup
+
+    // for link in links {
+    //   let latest = get_latest(agent.clone(), link.target, None)?;
+    //   if links_latest.contains(&latest) {
+    //     continue;
+    //   }
+    //   links_latest.push(latest);
+    // }
+
     if rollup_links.len() > 0 {
       for agent in agents.clone() {
-        match agent {
-          // prevent duplicates
-          target_entry_hash => break,
-          _ => {
-            agents.push(target_entry_hash.clone());
-          }
+        if !agents.contains(&agent) {
+          agents.push(agent);
         }
       }
     }
@@ -51,8 +57,8 @@ fn build_rollup_silver(
   me: &HoloHash<holo_hash::hash_type::Entry>,
 ) -> ExternResult<BTreeMap<EntryHash, BTreeMap<EntryHash, RollupData>>> {
   let mut rollup_silver: BTreeMap<EntryHash, BTreeMap<EntryHash, RollupData>> = BTreeMap::new(); // K: Target (EntryHash) V: BTreeMap<Agent, RollupData>
-  let mut categories: Vec<String> = Vec::new(); // list of unique content~paths
 
+  debug!("agents: {:?}", agents);
   for agent in agents {
     let links = get_links(agent.clone(), None)?;
 
@@ -74,13 +80,6 @@ fn build_rollup_silver(
         if let Some(value) = ta.value {
           // ignore content without a rating
 
-          for category in categories.clone() {
-            match category {
-              // prevent duplicates
-              content => break,
-              _ => categories.push(content.clone()),
-            }
-          }
           let chunks = [
             None, // ?TODO: agent prefix
             Some(content.clone()),
@@ -134,7 +133,7 @@ fn build_rollup_gold(
       );
     }
 
-    for (agent, rollup_data) in map.clone() {
+    for (_agent, rollup_data) in map.clone() {
       if let Some(rating) = rollup_data.agent_rating {
         let calc: f64 = (rating.parse::<f64>().expect("Parse Error") / rating_sum)
           * rollup_data.value.parse::<f64>().expect("Parse Error");
@@ -193,11 +192,11 @@ fn get_latest(
   let links = get_links(base, tag_filter)?;
   let mut timestamps = Vec::new();
   for link in links.clone() {
-    match link.target {
-      target => timestamps.push(link.timestamp),
-      _ => {}
+    if link.target == target {
+      timestamps.push(link.timestamp);
     }
   }
+
   timestamps.sort_by(|a, b| a.cmp(b)); // ignoring nanoseconds
   let latest = timestamps.pop().expect("Error");
   let mut latest_link: Vec<Link> = links
