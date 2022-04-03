@@ -10,8 +10,8 @@
 
 // #![warn(clippy::cargo)]
 
-use hdk::prelude::*;
 use hdk::prelude::holo_hash::EntryHashB64;
+use hdk::prelude::*;
 
 use std::collections::BTreeMap;
 
@@ -62,7 +62,8 @@ pub struct QueryMineInput {
 
 #[hdk_extern]
 pub fn create_rollup_atoms(_: ()) -> ExternResult<Vec<TrustAtom>> {
-  trust_graph::create_rollup_atoms()
+  let trust_graph = trust_graph::create_rollup_atoms()?;
+  Ok(trust_graph)
 }
 
 #[hdk_extern]
