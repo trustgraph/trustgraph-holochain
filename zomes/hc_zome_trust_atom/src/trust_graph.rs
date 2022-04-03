@@ -31,17 +31,27 @@ fn build_agent_list() -> ExternResult<Vec<HoloHash<holo_hash::hash_type::Entry>>
     let target_entry_hash = EntryHash::from(ta.target_entry_hash);
     let chunks = [Some("rollup".to_string())];
     let filter = create_link_tag(&LinkDirection::Forward, &chunks);
-    let rollup_links: Vec<Link> = get_links(target_entry_hash.clone(), Some(filter))?; // Note: Agent must have done at least one rollup
 
-    // for link in links {
-    //   let latest = get_latest(agent.clone(), link.target, None)?;
-    //   if links_latest.contains(&latest) {
-    //     continue;
-    //   }
-    //   links_latest.push(latest);
-    // }
+    // debug!(
+    //   "filter: {:?}",
+    //   String::from_utf8_lossy(&filter.clone().into_inner())
+    // );
+
+    let rollup_links: Vec<Link> = get_links(
+      target_entry_hash.clone(),
+      // Some(filter)
+      None,
+    )?; // Note: Agent must have done at least one rollup
 
     if rollup_links.len() > 0 {
+      for rollup_link in rollup_links {
+        // debug!("rollup_link: {:?}", rollup_links);
+        debug!(
+          "rollup_link.tag: {:?}",
+          String::from_utf8_lossy(&rollup_link.tag.clone().into_inner())
+        );
+      }
+
       for agent in agents.clone() {
         if !agents.contains(&agent) {
           agents.push(agent);

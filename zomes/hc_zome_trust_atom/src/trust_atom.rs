@@ -67,6 +67,11 @@ pub fn create_trust_atom(
   let forward_link_tag = create_link_tag(&LinkDirection::Forward, &chunks);
   let reverse_link_tag = create_link_tag(&LinkDirection::Reverse, &chunks);
 
+  debug!(
+    "forward_link_tag: {:?}",
+    String::from_utf8_lossy(&forward_link_tag.clone().into_inner())
+  );
+
   create_link(
     agent_address.clone(),
     target.clone(),
