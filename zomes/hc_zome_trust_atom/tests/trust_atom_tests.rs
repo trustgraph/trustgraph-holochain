@@ -15,15 +15,15 @@ use holochain::sweettest::{
 
 const DNA_FILEPATH: &str = "../../workdir/dna/trust_atom.dna";
 
-// #[tokio::test]
-// pub async fn test_unicode_null() {
-//   let unicode_nul: &str = std::str::from_utf8(&[0]).unwrap();
-//   assert_eq!(
-//     unicode_nul.as_bytes(),
-//     &[0] // '\u{00}' // .to_string() // .replace("\u{00}", "�")
-//          // .as_str()
-//   );
-// }
+#[tokio::test]
+pub async fn test_unicode_null() {
+  let unicode_nul: &str = std::str::from_utf8(&[0]).unwrap();
+  assert_eq!(
+    unicode_nul.as_bytes(),
+    &[0] // '\u{00}' // .to_string() // .replace("\u{00}", "�")
+         // .as_str()
+  );
+}
 
 // #[tokio::test(flavor = "multi_thread")]
 // pub async fn test_create_trust_atom() {
@@ -513,13 +513,15 @@ pub async fn test_create_trust_graph() {
     extra: None,
   };
 
-  let _zippy_mock_rollup_atom: TrustAtom = conductor_zippy
+  let zippy_mock_rollup_atom: TrustAtom = conductor_zippy
     .call(
       &cell_zippy.zome("trust_atom"),
       "create_trust_atom",
       zippy_mock_rollup_atom_input,
     )
     .await;
+
+  println!("zippy_mock_rollup_atom: {:?}", zippy_mock_rollup_atom);
 
   let bob_mock1_rollup_atom_input = TrustAtomInput {
     source: EntryHash::from(agent_bob.clone()),
