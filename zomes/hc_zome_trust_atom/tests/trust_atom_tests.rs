@@ -562,7 +562,6 @@ pub async fn test_create_trust_graph() {
   //   value: their rollup atom
   let mut hia_sourced_atoms: BTreeMap<EntryHashB64, TrustAtom> = BTreeMap::new();
   let mut eth_sourced_atoms: BTreeMap<EntryHashB64, TrustAtom> = BTreeMap::new();
-  let mut telo_sourced_atoms: BTreeMap<EntryHashB64, TrustAtom> = BTreeMap::new();
 
   for ((agent, conductor, cell), content, value, target) in data {
     // CREATE TARGET ENTRY
@@ -645,7 +644,7 @@ pub async fn test_create_trust_graph() {
         prefix: Some("rollup".to_string()),
         content: Some("Telos".to_string()),
         value: Some(".880000000".to_string()), // YMMV
-        extra: Some(telo_sourced_atoms),
+        extra: None,
       }
     ]
   );

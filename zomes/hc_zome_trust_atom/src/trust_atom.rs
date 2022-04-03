@@ -109,7 +109,8 @@ fn create_bucket_string(bucket_bytes: &[u8]) -> String {
   bucket
 }
 
-fn create_extra(input: BTreeMap<EntryHashB64, TrustAtom>) -> ExternResult<String> { //// map types modified for tests ///
+fn create_extra(input: BTreeMap<EntryHashB64, TrustAtom>) -> ExternResult<String> {
+  //// map types modified for tests ///
   let entry = Extra { fields: input };
 
   create_entry(entry.clone())?;
@@ -158,7 +159,10 @@ fn normalize_value(value_str: Option<String>) -> ExternResult<Option<String>> {
   }
 }
 
-pub fn create_link_tag(link_direction: &LinkDirection, chunk_options: &[Option<String>]) -> LinkTag {
+pub fn create_link_tag(
+  link_direction: &LinkDirection,
+  chunk_options: &[Option<String>],
+) -> LinkTag {
   let mut chunks: Vec<String> = vec![];
 
   for i in 0..chunk_options.len() {
@@ -234,7 +238,7 @@ pub fn query_mine(
 pub fn query(
   source: Option<EntryHash>,
   target: Option<EntryHash>,
-  prefix: Option<String>, //TODO: Add match for prefix ?
+  _prefix: Option<String>, //TODO: Add match for prefix ?
   content_full: Option<String>,
   content_starts_with: Option<String>,
   value_starts_with: Option<String>,
@@ -319,7 +323,7 @@ pub fn convert_link_to_trust_atom(
   let prefix = chunks[0].to_string();
   let content = chunks[1][tg_link_tag_header_length()..].to_string(); // drop leading "Ŧ→" or "Ŧ↩"
   let value = chunks[2].to_string();
-  let extra = chunks[3].to_string();
+  let _extra = chunks[3].to_string();
 
   let link_base_b64 = EntryHashB64::from(link_base.clone());
   let link_target_b64 = EntryHashB64::from(link.target);
@@ -339,8 +343,8 @@ pub fn convert_link_to_trust_atom(
       TrustAtom {
         //source: link_target_b64.to_string(), // flipped for Reverse direction
         //target: link_base_b64.to_string(),   // flipped for Reverse direction
-        source_entry_hash: link_target_b64,  // flipped for Reverse direction
-        target_entry_hash: link_base_b64,    // flipped for Reverse direction
+        source_entry_hash: link_target_b64, // flipped for Reverse direction
+        target_entry_hash: link_base_b64,   // flipped for Reverse direction
         prefix: Some(prefix),
         content: Some(content),
         value: Some(value),
