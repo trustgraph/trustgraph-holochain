@@ -14,11 +14,18 @@ struct RollupData {
 
 pub fn create_rollup_atoms() -> ExternResult<Vec<TrustAtom>> {
   let me: EntryHash = EntryHash::from(agent_info()?.agent_latest_pubkey);
+  let agents = build_agent_list()?;
 
+  // TODO: feature: general agent rating for all things (not just for specific content)
+
+  let rollup_silver = build_rollup_silver(agents, &me)?;
+  let rollup_gold = build_rollup_gold(rollup_silver, me)?;
+  Ok(rollup_gold)
+}
+
+fn build_agent_list() -> ExternResult<Vec<HoloHash<holo_hash::hash_type::Entry>>> {
   let my_trust_atoms: Vec<TrustAtom> = query_mine(None, None, None, None)?;
-  let mut categories: Vec<String> = Vec::new(); // list of unique content~paths
-  let mut agents: Vec<EntryHash> = Vec::new(); // all agents placed with TA
-
+  let mut agents: Vec<EntryHash> = Vec::new();
   for ta in my_trust_atoms.clone() {
     let target_entry_hash = EntryHash::from(ta.target_entry_hash);
     let chunks = [Some("rollup".to_string())];
@@ -36,15 +43,67 @@ pub fn create_rollup_atoms() -> ExternResult<Vec<TrustAtom>> {
       }
     }
   }
+  Ok(agents)
+}
 
-  // TODO: feature: general agent rating for all things
+fn build_rollup_silver(
+  agents: Vec<HoloHash<holo_hash::hash_type::Entry>>,
+  me: &HoloHash<holo_hash::hash_type::Entry>,
+) -> ExternResult<BTreeMap<EntryHash, BTreeMap<EntryHash, RollupData>>> {
+  let mut rollup_silver: BTreeMap<EntryHash, BTreeMap<EntryHash, RollupData>> = BTreeMap::new(); // K: Target (EntryHash) V: BTreeMap<Agent, RollupData>
+  let mut categories: Vec<String> = Vec::new(); // list of unique content~paths
 
-  let rollup_silver = build_rollup_silver(agents, categories, &me)?;
+  for agent in agents {
+    let links = get_links(agent.clone(), None)?;
 
-  let rollup_gold = build_rollup_gold(rollup_silver, me)?;
+    let mut links_latest = Vec::new();
 
-  //*my_ratings_by_content.get(&target).expect("Panic"); // should always have key or else something went wrong
-  Ok(rollup_gold)
+    for link in links {
+      let latest = get_latest(agent.clone(), link.target, None)?;
+      if links_latest.contains(&latest) {
+        continue;
+      }
+      links_latest.push(latest);
+    }
+    let trust_atoms_latest =
+      convert_links_to_trust_atoms(links_latest, &LinkDirection::Forward, &agent)?;
+
+    for ta in trust_atoms_latest {
+      let target_entry_hash = EntryHash::from(ta.target_entry_hash);
+      if let Some(content) = ta.content {
+        if let Some(value) = ta.value {
+          // ignore content without a rating
+
+          for category in categories.clone() {
+            match category {
+              // prevent duplicates
+              content => break,
+              _ => categories.push(content.clone()),
+            }
+          }
+          let chunks = [
+            None, // ?TODO: agent prefix
+            Some(content.clone()),
+          ];
+          let filter = create_link_tag(&LinkDirection::Forward, &chunks);
+          let agent_rating: String = get_rating(me.clone(), agent.clone(), Some(filter))?
+            .expect("Should have rating present");
+          if agent_rating.parse::<f64>().unwrap() > 0.0 {
+            // retain only positively rated agents
+            let rollup_data = RollupData {
+              content,
+              value,
+              agent_rating: Some(agent_rating),
+            };
+            let map: BTreeMap<EntryHash, RollupData> =
+              BTreeMap::from([(agent.clone(), rollup_data)]);
+            rollup_silver.insert(target_entry_hash, map);
+          }
+        }
+      }
+    }
+  }
+  Ok(rollup_silver)
 }
 
 fn build_rollup_gold(
@@ -114,66 +173,6 @@ fn build_rollup_gold(
     }
   }
   Ok(rollup_gold)
-}
-
-fn build_rollup_silver(
-  agents: Vec<HoloHash<holo_hash::hash_type::Entry>>,
-  mut categories: Vec<String>,
-  me: &HoloHash<holo_hash::hash_type::Entry>,
-) -> ExternResult<BTreeMap<EntryHash, BTreeMap<EntryHash, RollupData>>> {
-  let mut rollup_silver: BTreeMap<EntryHash, BTreeMap<EntryHash, RollupData>> = BTreeMap::new(); // K: Target (EntryHash) V: BTreeMap<Agent, RollupData>
-
-  for agent in agents {
-    let links = get_links(agent.clone(), None)?;
-
-    let mut links_latest = Vec::new();
-
-    for link in links {
-      let latest = get_latest(agent.clone(), link.target, None)?;
-      if links_latest.contains(&latest) {
-        continue;
-      }
-      links_latest.push(latest);
-    }
-    let trust_atoms_latest =
-      convert_links_to_trust_atoms(links_latest, &LinkDirection::Forward, &agent)?;
-
-    for ta in trust_atoms_latest {
-      let target_entry_hash = EntryHash::from(ta.target_entry_hash);
-      if let Some(content) = ta.content {
-        if let Some(value) = ta.value {
-          // ignore content without a rating
-
-          for category in categories.clone() {
-            match category {
-              // prevent duplicates
-              content => break,
-              _ => categories.push(content.clone()),
-            }
-          }
-          let chunks = [
-            None, // ?TODO: agent prefix
-            Some(content.clone()),
-          ];
-          let filter = create_link_tag(&LinkDirection::Forward, &chunks);
-          let agent_rating: String = get_rating(me.clone(), agent.clone(), Some(filter))?
-            .expect("Should have rating present");
-          if agent_rating.parse::<f64>().unwrap() > 0.0 {
-            // retain only positively rated agents
-            let rollup_data = RollupData {
-              content,
-              value,
-              agent_rating: Some(agent_rating),
-            };
-            let map: BTreeMap<EntryHash, RollupData> =
-              BTreeMap::from([(agent.clone(), rollup_data)]);
-            rollup_silver.insert(target_entry_hash, map);
-          }
-        }
-      }
-    }
-  }
-  Ok(rollup_silver)
 }
 
 fn get_rating(
