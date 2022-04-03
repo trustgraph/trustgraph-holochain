@@ -41,8 +41,20 @@ pub fn create_rollup_atoms() -> ExternResult<Vec<TrustAtom>> {
 
   let rollup_silver = build_rollup_silver(agents, categories, &me)?;
 
-  let mut gold_rollup: Vec<TrustAtom> = Vec::new();
+  let rollup_gold = build_rollup_gold(rollup_silver, me)?;
 
+  //*my_ratings_by_content.get(&target).expect("Panic"); // should always have key or else something went wrong
+  Ok(rollup_gold)
+}
+
+fn build_rollup_gold(
+  rollup_silver: BTreeMap<
+    HoloHash<holo_hash::hash_type::Entry>,
+    BTreeMap<HoloHash<holo_hash::hash_type::Entry>, RollupData>,
+  >,
+  me: HoloHash<holo_hash::hash_type::Entry>,
+) -> ExternResult<Vec<TrustAtom>> {
+  let mut rollup_gold: Vec<TrustAtom> = Vec::new();
   for (target, map) in rollup_silver.clone() {
     let mut sourced_trust_atoms: BTreeMap<EntryHashB64, TrustAtom> = BTreeMap::new(); // collect to input for rollup extra field
     let mut accumulator: Vec<f64> = Vec::new(); // gather weighted values
@@ -84,7 +96,7 @@ pub fn create_rollup_atoms() -> ExternResult<Vec<TrustAtom>> {
           Some(algo.to_string()),
           Some(sourced_trust_atoms.clone()),
         )?;
-        gold_rollup.push(rollup_atom);
+        rollup_gold.push(rollup_atom);
       } else {
         // if no self rating for target then avg the other agents weighted values
         let total = accumulator.len() as f64;
@@ -97,13 +109,11 @@ pub fn create_rollup_atoms() -> ExternResult<Vec<TrustAtom>> {
           Some(algo.to_string()),
           Some(sourced_trust_atoms.clone()),
         )?;
-        gold_rollup.push(rollup_atom);
+        rollup_gold.push(rollup_atom);
       }
     }
   }
-
-  //*my_ratings_by_content.get(&target).expect("Panic"); // should always have key or else something went wrong
-  Ok(gold_rollup)
+  Ok(rollup_gold)
 }
 
 fn build_rollup_silver(
