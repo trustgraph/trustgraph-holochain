@@ -67,10 +67,10 @@ pub fn create_trust_atom(
   let forward_link_tag = create_link_tag(&LinkDirection::Forward, &chunks);
   let reverse_link_tag = create_link_tag(&LinkDirection::Reverse, &chunks);
 
-  debug!(
-    "forward_link_tag: {:?}",
-    String::from_utf8_lossy(&forward_link_tag.clone().into_inner())
-  );
+  // debug!(
+  //   "forward_link_tag: {:?}",
+  //   String::from_utf8_lossy(&forward_link_tag.clone().into_inner())
+  // );
 
   create_link(
     agent_address.clone(),
@@ -97,6 +97,7 @@ pub fn create_trust_atom(
     value,
     extra,
   };
+  debug!("atom: {:?}", trust_atom);
   Ok(trust_atom)
 }
 
@@ -364,139 +365,139 @@ const fn tg_link_tag_header_length() -> usize {
   LINK_TAG_HEADER.len() + LINK_TAG_ARROW_FORWARD.len()
 }
 
-#[cfg(test)]
-#[allow(clippy::unwrap_used)]
-#[allow(non_snake_case)]
-mod tests {
+// #[cfg(test)]
+// #[allow(clippy::unwrap_used)]
+// #[allow(non_snake_case)]
+// mod tests {
 
-  use super::*; // allows testing of private functions
+//   use super::*; // allows testing of private functions
 
-  #[test]
-  fn test_normalize_value__valid_value() {
-    let valid_values = [
-      "1.0",
-      "1.000000000000000000000000000",
-      "1",
-      "0.534857395723489529357489283",
-      "0.0",
-      "0.000000000000000000000000000",
-      "0",
-      "-1.0",
-      "-1",
-      "-1.00000000000000000000000000",
-    ];
+//   #[test]
+//   fn test_normalize_value__valid_value() {
+//     let valid_values = [
+//       "1.0",
+//       "1.000000000000000000000000000",
+//       "1",
+//       "0.534857395723489529357489283",
+//       "0.0",
+//       "0.000000000000000000000000000",
+//       "0",
+//       "-1.0",
+//       "-1",
+//       "-1.00000000000000000000000000",
+//     ];
 
-    for value in valid_values {
-      normalize_value(Some(value.to_string())).unwrap();
-    }
-  }
+//     for value in valid_values {
+//       normalize_value(Some(value.to_string())).unwrap();
+//     }
+//   }
 
-  #[test]
-  fn test_normalize_value__values_out_of_range() {
-    let out_of_range_values = [
-      "100000000000000000",
-      "-100000000000000000",
-      "2",
-      "1.000000005",
-      "1.00000001",
-      "-1.00000001",
-      "-1.000000005",
-      "-2",
-    ];
+//   #[test]
+//   fn test_normalize_value__values_out_of_range() {
+//     let out_of_range_values = [
+//       "100000000000000000",
+//       "-100000000000000000",
+//       "2",
+//       "1.000000005",
+//       "1.00000001",
+//       "-1.00000001",
+//       "-1.000000005",
+//       "-2",
+//     ];
 
-    for value in out_of_range_values {
-      let expected_error_message = "Value must be in the range -1..1";
-      let actual_error_message = normalize_value(Some(value.to_string()))
-        .expect_err(&format!("expected error for value `{}`, got", value))
-        .to_string();
-      assert!(
-        actual_error_message.contains(expected_error_message),
-        "Expected error message: `...{}...`, but got: `{}`",
-        expected_error_message,
-        actual_error_message
-      );
-    }
-  }
+//     for value in out_of_range_values {
+//       let expected_error_message = "Value must be in the range -1..1";
+//       let actual_error_message = normalize_value(Some(value.to_string()))
+//         .expect_err(&format!("expected error for value `{}`, got", value))
+//         .to_string();
+//       assert!(
+//         actual_error_message.contains(expected_error_message),
+//         "Expected error message: `...{}...`, but got: `{}`",
+//         expected_error_message,
+//         actual_error_message
+//       );
+//     }
+//   }
 
-  #[test]
-  fn test_normalize_value__values_not_numeric() {
-    #[rustfmt::skip]
-    let non_numeric_values = [
-      " ",
-      " 0 ",
-      " 0",
-      "-.",
-      "-",
-      "-100000000000000000000000000000.0",
-      "-1e",
-      "-1e0",
-      "-e0",
-      "!",
-      ".",
-      "",
-      "",
-      "\u{1f9d0}",
-      "0 ",
-      "100000000000000000000000000000.0",
-      "1e",
-      "1e0",
-      "e",
-      "e0",
-      "foo",
-     ];
+//   #[test]
+//   fn test_normalize_value__values_not_numeric() {
+//     #[rustfmt::skip]
+//     let non_numeric_values = [
+//       " ",
+//       " 0 ",
+//       " 0",
+//       "-.",
+//       "-",
+//       "-100000000000000000000000000000.0",
+//       "-1e",
+//       "-1e0",
+//       "-e0",
+//       "!",
+//       ".",
+//       "",
+//       "",
+//       "\u{1f9d0}",
+//       "0 ",
+//       "100000000000000000000000000000.0",
+//       "1e",
+//       "1e0",
+//       "e",
+//       "e0",
+//       "foo",
+//      ];
 
-    for value in non_numeric_values {
-      let expected_error_message = "Value could not be processed";
-      let actual_error_message = normalize_value(Some(value.to_string()))
-        .expect_err(&format!("expected error for value `{}`, got", value))
-        .to_string();
-      assert!(
-        actual_error_message.contains(expected_error_message),
-        "Expected error message: `...{}...`, but got: `{}`",
-        expected_error_message,
-        actual_error_message
-      );
-    }
-  }
+//     for value in non_numeric_values {
+//       let expected_error_message = "Value could not be processed";
+//       let actual_error_message = normalize_value(Some(value.to_string()))
+//         .expect_err(&format!("expected error for value `{}`, got", value))
+//         .to_string();
+//       assert!(
+//         actual_error_message.contains(expected_error_message),
+//         "Expected error message: `...{}...`, but got: `{}`",
+//         expected_error_message,
+//         actual_error_message
+//       );
+//     }
+//   }
 
-  #[test]
-  fn test_normalize_value() {
-    let input_and_expected = [
-      ["-.9", "-.900000000"],
-      ["-.9000", "-.900000000"],
-      ["-.900000000", "-.900000000"],
-      ["-.9000000004", "-.900000000"],
-      ["-.9000000005", "-.900000001"],
-      ["-0.900000000", "-.900000000"],
-      ["0.8999999995", ".900000000"],
-      ["0.7999999995", ".800000000"],
-      ["-0.8999999995", "-.900000000"],
-      ["-0.7999999995", "-.800000000"],
-      ["0.8999999994", ".899999999"],
-      ["0.7999999994", ".799999999"],
-      ["-0.8999999994", "-.899999999"],
-      ["-0.7999999994", "-.799999999"],
-      [".9", ".900000000"],
-      [".9000", ".900000000"],
-      [".900000000", ".900000000"],
-      ["0.900000000", ".900000000"],
-      //
-      ["1", ".999999999"],
-      ["1.0", ".999999999"],
-      ["-1", "-.999999999"],
-      ["-1.0", "-.999999999"],
-    ];
+//   #[test]
+//   fn test_normalize_value() {
+//     let input_and_expected = [
+//       ["-.9", "-.900000000"],
+//       ["-.9000", "-.900000000"],
+//       ["-.900000000", "-.900000000"],
+//       ["-.9000000004", "-.900000000"],
+//       ["-.9000000005", "-.900000001"],
+//       ["-0.900000000", "-.900000000"],
+//       ["0.8999999995", ".900000000"],
+//       ["0.7999999995", ".800000000"],
+//       ["-0.8999999995", "-.900000000"],
+//       ["-0.7999999995", "-.800000000"],
+//       ["0.8999999994", ".899999999"],
+//       ["0.7999999994", ".799999999"],
+//       ["-0.8999999994", "-.899999999"],
+//       ["-0.7999999994", "-.799999999"],
+//       [".9", ".900000000"],
+//       [".9000", ".900000000"],
+//       [".900000000", ".900000000"],
+//       ["0.900000000", ".900000000"],
+//       //
+//       ["1", ".999999999"],
+//       ["1.0", ".999999999"],
+//       ["-1", "-.999999999"],
+//       ["-1.0", "-.999999999"],
+//     ];
 
-    for [input, expected] in input_and_expected {
-      let normalized_value = normalize_value(Some(input.to_string())).unwrap().unwrap();
-      assert_eq!(normalized_value, expected.to_string());
-    }
-  }
+//     for [input, expected] in input_and_expected {
+//       let normalized_value = normalize_value(Some(input.to_string())).unwrap().unwrap();
+//       assert_eq!(normalized_value, expected.to_string());
+//     }
+//   }
 
-  #[test]
-  fn test_bucket_val() {
-    let bytes: [u8; 9] = [9, 10, 11, 12, 13, 14, 15, 16, 17];
-    let bucket = create_bucket_string(&bytes);
-    assert_eq!(bucket, "901234567".to_string());
-  }
-}
+//   #[test]
+//   fn test_bucket_val() {
+//     let bytes: [u8; 9] = [9, 10, 11, 12, 13, 14, 15, 16, 17];
+//     let bucket = create_bucket_string(&bytes);
+//     assert_eq!(bucket, "901234567".to_string());
+//   }
+// }

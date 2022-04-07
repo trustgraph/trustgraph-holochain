@@ -19,7 +19,7 @@ pub fn create_rollup_atoms() -> ExternResult<Vec<TrustAtom>> {
   // TODO: feature: general agent rating for all things (not just for specific content)
 
   let rollup_silver = build_rollup_silver(agents, &me)?;
-  debug!("{:?}", rollup_silver);
+  println!("{:?}", rollup_silver);
   let rollup_gold = build_rollup_gold(rollup_silver, me)?;
   Ok(rollup_gold)
 }
@@ -32,10 +32,10 @@ fn build_agent_list() -> ExternResult<Vec<HoloHash<holo_hash::hash_type::Entry>>
     let chunks = [Some("rollup".to_string())];
     let filter = create_link_tag(&LinkDirection::Forward, &chunks);
 
-    // debug!(
-    //   "filter: {:?}",
-    //   String::from_utf8_lossy(&filter.clone().into_inner())
-    // );
+    debug!(
+      "filter: {:?}",
+      String::from_utf8_lossy(&filter.clone().into_inner())
+    );
 
     let rollup_links: Vec<Link> = get_links(
       target_entry_hash.clone(),
@@ -46,7 +46,7 @@ fn build_agent_list() -> ExternResult<Vec<HoloHash<holo_hash::hash_type::Entry>>
     if rollup_links.len() > 0 {
       for rollup_link in rollup_links {
         // debug!("rollup_link: {:?}", rollup_links);
-        debug!(
+        println!(
           "rollup_link.tag: {:?}",
           String::from_utf8_lossy(&rollup_link.tag.clone().into_inner())
         );
@@ -59,6 +59,7 @@ fn build_agent_list() -> ExternResult<Vec<HoloHash<holo_hash::hash_type::Entry>>
       }
     }
   }
+  debug!("agents: {:?}", agents);
   Ok(agents)
 }
 
@@ -68,7 +69,6 @@ fn build_rollup_silver(
 ) -> ExternResult<BTreeMap<EntryHash, BTreeMap<EntryHash, RollupData>>> {
   let mut rollup_silver: BTreeMap<EntryHash, BTreeMap<EntryHash, RollupData>> = BTreeMap::new(); // K: Target (EntryHash) V: BTreeMap<Agent, RollupData>
 
-  debug!("agents: {:?}", agents);
   for agent in agents {
     let links = get_links(agent.clone(), None)?;
 
@@ -181,6 +181,7 @@ fn build_rollup_gold(
       }
     }
   }
+  debug!("gold: {:?}", rollup_gold);
   Ok(rollup_gold)
 }
 

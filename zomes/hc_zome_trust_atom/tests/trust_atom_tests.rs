@@ -15,15 +15,15 @@ use holochain::sweettest::{
 
 const DNA_FILEPATH: &str = "../../workdir/dna/trust_atom.dna";
 
-#[tokio::test]
-pub async fn test_unicode_null() {
-  let unicode_nul: &str = std::str::from_utf8(&[0]).unwrap();
-  assert_eq!(
-    unicode_nul.as_bytes(),
-    &[0] // '\u{00}' // .to_string() // .replace("\u{00}", "�")
-         // .as_str()
-  );
-}
+// #[tokio::test]
+// pub async fn test_unicode_null() {
+//   let unicode_nul: &str = std::str::from_utf8(&[0]).unwrap();
+//   assert_eq!(
+//     unicode_nul.as_bytes(),
+//     &[0] // '\u{00}' // .to_string() // .replace("\u{00}", "�")
+//          // .as_str()
+//   );
+// }
 
 // #[tokio::test(flavor = "multi_thread")]
 // pub async fn test_create_trust_atom() {
@@ -51,11 +51,12 @@ pub async fn test_unicode_null() {
 //   )]);
 
 //   let trust_atom_input = TrustAtomInput {
+//     source: EntryHash::from(agent.clone()),
 //     prefix: None,
 //     target: target_entry_hash.clone(),
 //     content: Some(content.clone()),
 //     value: Some(value.clone()),
-//     extra: Some(extra.clone()),
+//     extra: None,
 //   };
 
 //   let _result: TrustAtom = conductor
@@ -100,7 +101,7 @@ pub async fn test_unicode_null() {
 
 //   let expected_entry_hash = "uhCEkto76kYgGIZMzU6AbEzCx1HMRNzurwPaOdF2utJaP-33mdcdN";
 //   let expected_link_tag_string = format!(
-//     "{}{}{}{}{}{}{}{}{}",
+//     "{}{}{}{}{}{}{}{}",
 //     "Ŧ",
 //     "→",
 //     "sushi",
@@ -133,7 +134,7 @@ pub async fn test_unicode_null() {
 //   let relevant_link_bytes = link_tag_bytes.to_vec();
 //   let relevant_link_string = String::from_utf8(relevant_link_bytes).unwrap();
 //   let expected_link_tag_string = format!(
-//     "{}{}{}{}{}{}{}{}{}",
+//     "{}{}{}{}{}{}{}{}",
 //     "Ŧ",
 //     "↩",
 //     "sushi",
