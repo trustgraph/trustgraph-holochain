@@ -580,8 +580,8 @@ pub async fn test_create_trust_graph() {
 
     let trust_atom_input = TrustAtomInput {
       source: EntryHash::from(agent.clone()),
-      prefix: None,
       target: target_entry_hash.clone(),
+      prefix: None,
       content: Some(content.to_string()),
       value: Some(value.to_string()),
       extra: None,

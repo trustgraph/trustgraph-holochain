@@ -25,6 +25,7 @@ pub fn create_rollup_atoms() -> ExternResult<Vec<TrustAtom>> {
 
 fn build_agent_list() -> ExternResult<Vec<HoloHash<holo_hash::hash_type::Entry>>> {
   let my_trust_atoms: Vec<TrustAtom> = query_mine(None, None, None, None)?;
+  debug!("my_atoms: {:#?}", my_trust_atoms);
   let mut agents: Vec<EntryHash> = Vec::new();
   for ta in my_trust_atoms.clone() {
     let agent_entry_hash = EntryHash::from(ta.target_entry_hash);
@@ -38,22 +39,22 @@ fn build_agent_list() -> ExternResult<Vec<HoloHash<holo_hash::hash_type::Entry>>
 
     let rollup_links: Vec<Link> = get_links(
       agent_entry_hash.clone(),
-      //Some(filter),
-      None
+      Some(filter),
     )?; // Note: Agent must have done at least one rollup
 
+    debug!("rollup_links: {:?}", rollup_links);
     if rollup_links.len() > 0 {
-        // debug!("rollup_link: {:?}", rollup_links);
-        // debug!(
-        //   "rollup_link.tag: {:?}",
-        //   String::from_utf8_lossy(&rollup_link.tag.clone().into_inner())
-        // );
+        
+        debug!(
+          "rollup_link.tag: {:?}",
+          String::from_utf8_lossy(&rollup_links[0].tag.clone().into_inner())
+        );
         if !agents.contains(&agent_entry_hash) {
           agents.push(agent_entry_hash);
         }
       }
     }
-  // debug!("agents: {:?}", agents);
+  debug!("agents: {:?}", agents);
   Ok(agents)
 }
 
@@ -188,6 +189,7 @@ fn get_rating(
 ) -> ExternResult<Option<String>> {
   let link_latest = get_latest(base.clone(), target, tag_filter)?;
   let trust_atom_latest = convert_link_to_trust_atom(link_latest, &LinkDirection::Forward, &base)?;
+  debug!("latest rating: {:?}", trust_atom_latest.value);
   Ok(trust_atom_latest.value)
 }
 
@@ -197,6 +199,7 @@ fn get_latest(
   tag_filter: Option<LinkTag>,
 ) -> ExternResult<Link> {
   let links = get_links(base, tag_filter)?;
+  debug!("links: {:?}", links);
   let mut timestamps = Vec::new();
   for link in links.clone() {
     if link.target == target {
@@ -205,6 +208,7 @@ fn get_latest(
   }
 
   timestamps.sort_by(|a, b| a.cmp(b)); // ignoring nanoseconds
+  debug!("timestamps: {:?}", timestamps);
   let latest = timestamps.pop().expect("Error");
   let mut latest_link: Vec<Link> = links
     .into_iter()

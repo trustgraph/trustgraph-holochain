@@ -67,10 +67,10 @@ pub fn create_trust_atom(
   let forward_link_tag = create_link_tag(&LinkDirection::Forward, &chunks);
   let reverse_link_tag = create_link_tag(&LinkDirection::Reverse, &chunks);
 
-  // debug!(
-  //   "forward_link_tag: {:?}",
-  //   String::from_utf8_lossy(&forward_link_tag.clone().into_inner())
-  // );
+  debug!(
+    "forward_link_tag: {:?}",
+    String::from_utf8_lossy(&forward_link_tag.clone().into_inner())
+  );
 
   create_link(
     agent_address.clone(),
@@ -97,7 +97,7 @@ pub fn create_trust_atom(
     value,
     extra,
   };
-
+  // debug!("atoms: {:?}", trust_atom);
   Ok(trust_atom)
 }
 
@@ -244,7 +244,7 @@ pub fn query_mine(
 pub fn query(
   source: Option<EntryHash>,
   target: Option<EntryHash>,
-  _prefix: Option<String>, //TODO: Add match for prefix ?
+  prefix: Option<String>,
   content_full: Option<String>,
   content_starts_with: Option<String>,
   value_starts_with: Option<String>,
@@ -264,7 +264,34 @@ pub fn query(
     }
   };
 
-  let link_tag = match (content_full, content_starts_with, value_starts_with) {
+  let link_tag = match prefix {
+    Some(prefix) => {
+     match (content_full, content_starts_with, value_starts_with) {
+    (Some(_content_full), Some(_content_starts_with), _) => {
+      return Err(WasmError::Guest("Only one of `content_full` or `content_starts_with` can be used".into()))
+    }
+    (_, Some(_content_starts_with), Some(_value_starts_with)) => {
+      return Err(WasmError::Guest(
+        "Cannot use `value_starts_with` and `content_starts_with` arguments together; maybe try `content_full` instead?".into(),
+      ))
+    }
+    (Some(content_full), None, Some(value_starts_with)) => Some(create_link_tag(
+      &link_direction,
+      &[Some(prefix), Some(content_full), Some(value_starts_with)],
+    )),
+    (Some(content_full), None, None) => {
+      Some(create_link_tag(&link_direction, &[Some(prefix), Some(content_full)]))
+    }
+    (None, Some(content_starts_with), None) => Some(create_link_tag(
+      &link_direction,
+      &[Some(prefix), Some(content_starts_with)],
+    )),
+    (None, None, Some(value_starts_with)) => Some(create_link_tag(&link_direction, &[Some(prefix), Some(value_starts_with)])),
+    (None, None, None) => Some(create_link_tag(&link_direction, &[Some(prefix)])), 
+    }
+    }
+    None => {
+    match (content_full, content_starts_with, value_starts_with) {
     (Some(_content_full), Some(_content_starts_with), _) => {
       return Err(WasmError::Guest("Only one of `content_full` or `content_starts_with` can be used".into()))
     }
@@ -278,7 +305,7 @@ pub fn query(
       &[Some(content_full), Some(value_starts_with)],
     )),
     (Some(content_full), None, None) => {
-      Some(create_link_tag_metal(&link_direction, vec![content_full, UNICODE_NUL_STR.to_string()]))
+      Some(create_link_tag(&link_direction, &[Some(content_full)]))
     }
     (None, Some(content_starts_with), None) => Some(create_link_tag(
       &link_direction,
@@ -286,11 +313,13 @@ pub fn query(
     )),
     (None, None, Some(value_starts_with)) => Some(create_link_tag(&link_direction, &[Some(value_starts_with)])),
     (None, None, None) => None,
+    }
+    }
   };
   let links = get_links(link_base.clone(), link_tag)?;
 
   let trust_atoms = convert_links_to_trust_atoms(links, &link_direction, &link_base)?;
-
+  // debug!("query_atoms: {:#?}", trust_atoms);
   Ok(trust_atoms)
 }
 
@@ -304,6 +333,7 @@ pub fn convert_links_to_trust_atoms(
     .map(|link| convert_link_to_trust_atom(link, link_direction, link_base))
     .collect();
   let trust_atoms = trust_atoms_result?;
+  // debug!("converted_TAs: {:?}", trust_atoms);
   Ok(trust_atoms)
   // .ok_or_else(|_| WasmError::Guest("Failure in converting links to trust atoms".to_string()))?;
   //   Ok(trust_atoms.or_else(|_| WasmError::Guest("erro"))?)
@@ -326,8 +356,8 @@ pub fn convert_link_to_trust_atom(
   };
 
   let chunks: Vec<&str> = link_tag.split(UNICODE_NUL_STR).collect();
-  let prefix = chunks[0].to_string();
-  let content = chunks[1][tg_link_tag_header_length()..].to_string(); // drop leading "Ŧ→" or "Ŧ↩"
+  let prefix = chunks[0][tg_link_tag_header_length()..].to_string(); // drop leading "Ŧ→" or "Ŧ↩"
+  let content = chunks[1].to_string(); 
   let value = chunks[2].to_string();
   let _extra = chunks[3].to_string();
 
@@ -358,6 +388,7 @@ pub fn convert_link_to_trust_atom(
       }
     }
   };
+  // debug!("converted_link: {:?}", trust_atom);
   Ok(trust_atom)
 }
 
