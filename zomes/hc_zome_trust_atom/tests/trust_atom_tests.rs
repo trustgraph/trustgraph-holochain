@@ -522,7 +522,7 @@ pub async fn test_create_trust_graph() {
     )
     .await;
 
-  println!("zippy_mock_rollup_atom: {:?}", zippy_mock_rollup_atom);
+  debug!("zippy_mock_rollup_atom: {:?}", zippy_mock_rollup_atom);
 
   let bob_mock1_rollup_atom_input = TrustAtomInput {
     source: EntryHash::from(agent_bob.clone()),

@@ -19,7 +19,6 @@ pub fn create_rollup_atoms() -> ExternResult<Vec<TrustAtom>> {
   // TODO: feature: general agent rating for all things (not just for specific content)
 
   let rollup_silver = build_rollup_silver(agents, &me)?;
-  println!("{:?}", rollup_silver);
   let rollup_gold = build_rollup_gold(rollup_silver, me)?;
   Ok(rollup_gold)
 }
@@ -28,38 +27,33 @@ fn build_agent_list() -> ExternResult<Vec<HoloHash<holo_hash::hash_type::Entry>>
   let my_trust_atoms: Vec<TrustAtom> = query_mine(None, None, None, None)?;
   let mut agents: Vec<EntryHash> = Vec::new();
   for ta in my_trust_atoms.clone() {
-    let target_entry_hash = EntryHash::from(ta.target_entry_hash);
+    let agent_entry_hash = EntryHash::from(ta.target_entry_hash);
     let chunks = [Some("rollup".to_string())];
     let filter = create_link_tag(&LinkDirection::Forward, &chunks);
 
-    debug!(
-      "filter: {:?}",
-      String::from_utf8_lossy(&filter.clone().into_inner())
-    );
+    // debug!(
+    //   "filter: {:?}",
+    //   String::from_utf8_lossy(&filter.clone().into_inner())
+    // );
 
     let rollup_links: Vec<Link> = get_links(
-      target_entry_hash.clone(),
-      // Some(filter)
-      None,
+      agent_entry_hash.clone(),
+      //Some(filter),
+      None
     )?; // Note: Agent must have done at least one rollup
 
     if rollup_links.len() > 0 {
-      for rollup_link in rollup_links {
         // debug!("rollup_link: {:?}", rollup_links);
-        println!(
-          "rollup_link.tag: {:?}",
-          String::from_utf8_lossy(&rollup_link.tag.clone().into_inner())
-        );
-      }
-
-      for agent in agents.clone() {
-        if !agents.contains(&agent) {
-          agents.push(agent);
+        // debug!(
+        //   "rollup_link.tag: {:?}",
+        //   String::from_utf8_lossy(&rollup_link.tag.clone().into_inner())
+        // );
+        if !agents.contains(&agent_entry_hash) {
+          agents.push(agent_entry_hash);
         }
       }
     }
-  }
-  debug!("agents: {:?}", agents);
+  // debug!("agents: {:?}", agents);
   Ok(agents)
 }
 
@@ -76,10 +70,9 @@ fn build_rollup_silver(
 
     for link in links {
       let latest = get_latest(agent.clone(), link.target, None)?;
-      if links_latest.contains(&latest) {
-        continue;
-      }
+      if !links_latest.contains(&latest) {
       links_latest.push(latest);
+      }
     }
     let trust_atoms_latest =
       convert_links_to_trust_atoms(links_latest, &LinkDirection::Forward, &agent)?;
@@ -95,23 +88,26 @@ fn build_rollup_silver(
             Some(content.clone()),
           ];
           let filter = create_link_tag(&LinkDirection::Forward, &chunks);
-          let agent_rating: String = get_rating(me.clone(), agent.clone(), Some(filter))?
-            .expect("Should have rating present");
-          if agent_rating.parse::<f64>().unwrap() > 0.0 {
-            // retain only positively rated agents
-            let rollup_data = RollupData {
-              content,
-              value,
-              agent_rating: Some(agent_rating),
-            };
-            let map: BTreeMap<EntryHash, RollupData> =
-              BTreeMap::from([(agent.clone(), rollup_data)]);
-            rollup_silver.insert(target_entry_hash, map);
+          let agent_rating: Option<String> = get_rating(me.clone(), agent.clone(), Some(filter))?;
+
+          if let Some(rating) = agent_rating {
+            if rating.parse::<f64>().unwrap() > 0.0 {
+              // retain only positively rated agents
+              let rollup_data = RollupData {
+                content,
+                value,
+                agent_rating: Some(rating),
+              };
+              let map: BTreeMap<EntryHash, RollupData> =
+                BTreeMap::from([(agent.clone(), rollup_data)]);
+              rollup_silver.insert(target_entry_hash, map);
+            }
           }
         }
       }
     }
   }
+  debug!("silver: {:?}", rollup_silver);
   Ok(rollup_silver)
 }
 
@@ -181,7 +177,7 @@ fn build_rollup_gold(
       }
     }
   }
-  debug!("gold: {:?}", rollup_gold);
+  // debug!("gold: {:?}", rollup_gold);
   Ok(rollup_gold)
 }
 

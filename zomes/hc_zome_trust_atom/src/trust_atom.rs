@@ -97,7 +97,7 @@ pub fn create_trust_atom(
     value,
     extra,
   };
-  debug!("atom: {:?}", trust_atom);
+
   Ok(trust_atom)
 }
 
