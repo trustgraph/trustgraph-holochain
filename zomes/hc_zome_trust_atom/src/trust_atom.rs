@@ -24,7 +24,7 @@ pub struct TrustAtom {
   pub prefix: Option<String>,
   pub content: Option<String>,
   pub value: Option<String>,
-  pub extra: Option<BTreeMap<EntryHashB64, TrustAtom>>, // ?TODO: make generic    //// map types modified for tests ////
+  pub extra: Option<String>, // stringified HeaderHash of the associated extra entry
 }
 
 const UNICODE_NUL_STR: &str = "\u{0}"; // Unicode NUL character
@@ -35,7 +35,9 @@ const LINK_TAG_ARROW_REVERSE: [u8; 3] = [226, 134, 169]; // Unicode "↩" // hex
 #[hdk_entry(id = "extra", visibility = "public")]
 #[derive(Clone)]
 pub struct Extra {
-  pub fields: BTreeMap<EntryHashB64, TrustAtom>, //// map types modified for tests ////
+  //pub content_overflow: Option<String>,
+  pub sourced_atoms: Option<BTreeMap<EntryHashB64, TrustAtom>>,
+  //pub attributes: Option<BTreeMap<String, String>>
 }
 
 pub fn create_trust_atom(
@@ -44,7 +46,7 @@ pub fn create_trust_atom(
   prefix: Option<String>,
   content: Option<String>,
   value: Option<String>,
-  extra: Option<BTreeMap<EntryHashB64, TrustAtom>>, //// map types modified for tests ///
+  extra: Option<BTreeMap<EntryHashB64, TrustAtom>>, // ?TODO: make generic
 ) -> ExternResult<TrustAtom> {
   let agent_address = source; //// modified for testing purposes ////
 
@@ -56,21 +58,20 @@ pub fn create_trust_atom(
     Some(x) => Some(create_extra(x)?),
     None => None,
   };
-
   let chunks = [
     prefix.clone(),
     content.clone(),
     normalize_value(value.clone())?,
     Some(bucket),
-    extra_entry_hash_string,
+    extra_entry_hash_string.clone(),
   ];
   let forward_link_tag = create_link_tag(&LinkDirection::Forward, &chunks);
   let reverse_link_tag = create_link_tag(&LinkDirection::Reverse, &chunks);
 
-  debug!(
-    "forward_link_tag: {:?}",
-    String::from_utf8_lossy(&forward_link_tag.clone().into_inner())
-  );
+  // debug!(
+  //   "forward_link_tag: {:?}",
+  //   String::from_utf8_lossy(&forward_link_tag.clone().into_inner())
+  // );
 
   create_link(
     agent_address.clone(),
@@ -95,7 +96,7 @@ pub fn create_trust_atom(
     prefix,
     content,
     value,
-    extra,
+    extra: extra_entry_hash_string,
   };
   // debug!("atoms: {:?}", trust_atom);
   Ok(trust_atom)
@@ -115,20 +116,14 @@ fn create_bucket_string(bucket_bytes: &[u8]) -> String {
   bucket
 }
 
-fn create_extra(input: BTreeMap<EntryHashB64, TrustAtom>) -> ExternResult<String> {
-  //// map types modified for tests ///
-  let entry = Extra { fields: input };
+pub fn create_extra(input: BTreeMap<EntryHashB64, TrustAtom>) -> ExternResult<String> {
 
-  create_entry(entry.clone())?;
+  let entry = Extra { sourced_atoms: Some(input) };
 
-  let entry_hash_string = calc_extra_hash(entry)?.to_string();
+  let entry_hash_string = create_entry(entry.clone())?.to_string();
   Ok(entry_hash_string)
 }
 
-pub fn calc_extra_hash(input: Extra) -> ExternResult<EntryHash> {
-  let hash = hash_entry(input)?;
-  Ok(hash)
-}
 
 fn normalize_value(value_str: Option<String>) -> ExternResult<Option<String>> {
   match value_str {
@@ -173,10 +168,10 @@ pub fn create_link_tag(
 
   for i in 0..chunk_options.len() {
     if let Some(chunk) = chunk_options[i].clone() {
-      chunks.push(chunk);
-      if i < chunk_options.len() - 1 {
-        chunks.push(UNICODE_NUL_STR.to_string());
-      }
+      chunks.push(chunk); 
+    }
+    if i < chunk_options.len() - 1 {
+                  chunks.push(UNICODE_NUL_STR.to_string());
     }
   }
   create_link_tag_metal(link_direction, chunks)
@@ -359,7 +354,8 @@ pub fn convert_link_to_trust_atom(
   let prefix = chunks[0][tg_link_tag_header_length()..].to_string(); // drop leading "Ŧ→" or "Ŧ↩"
   let content = chunks[1].to_string(); 
   let value = chunks[2].to_string();
-  let _extra = chunks[3].to_string();
+  // bucket is chunk 3
+  let extra = chunks[4].to_string();
 
   let link_base_b64 = EntryHashB64::from(link_base.clone());
   let link_target_b64 = EntryHashB64::from(link.target);
@@ -373,7 +369,7 @@ pub fn convert_link_to_trust_atom(
       prefix: Some(prefix),
       content: Some(content),
       value: Some(value),
-      extra: None, // Some(extra), // TODO
+      extra: Some(extra), 
     },
     LinkDirection::Reverse => {
       TrustAtom {
@@ -384,7 +380,7 @@ pub fn convert_link_to_trust_atom(
         prefix: Some(prefix),
         content: Some(content),
         value: Some(value),
-        extra: None, // Some(extra), // TODO
+        extra: Some(extra),
       }
     }
   };
