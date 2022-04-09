@@ -36,7 +36,7 @@ pub struct TrustAtomInput {
   pub prefix: Option<String>,
   pub content: Option<String>,
   pub value: Option<String>,
-  pub extra: Option<BTreeMap<EntryHashB64, TrustAtom>>, //// map types modified for tests ////
+  pub extra: Option<BTreeMap<EntryHashB64, TrustAtom>>,
 }
 
 #[derive(Serialize, Deserialize, SerializedBytes, Debug, Clone)]
@@ -84,12 +84,6 @@ pub fn create_trust_atom(input: TrustAtomInput) -> ExternResult<TrustAtom> {
 pub fn get_extra(entry_hash: EntryHash) -> ExternResult<Extra> {
   let extra = trust_atom::get_extra(&entry_hash)?;
   Ok(extra)
-}
-
-#[hdk_extern]
-pub fn calc_extra_hash(input: Extra) -> ExternResult<EntryHash> {
-  let hash = trust_atom::calc_extra_hash(input)?;
-  Ok(hash)
 }
 
 #[hdk_extern]

@@ -14,21 +14,22 @@ struct RollupData {
 
 pub fn create_rollup_atoms() -> ExternResult<Vec<TrustAtom>> {
   let me: EntryHash = EntryHash::from(agent_info()?.agent_latest_pubkey);
-  let agents = build_agent_list()?;
-
+  let my_atoms: Vec<TrustAtom> = query_mine(None, None, None, None)?;
+  debug!("my_atoms: {:#?}", my_atoms);
+  let agents = build_agent_list(my_atoms.clone())?;
+  
   // TODO: feature: general agent rating for all things (not just for specific content)
 
-  let rollup_silver = build_rollup_silver(agents, &me)?;
+  let rollup_silver = build_rollup_silver(&me, my_atoms, agents)?;
   let rollup_gold = build_rollup_gold(rollup_silver, me)?;
   Ok(rollup_gold)
 }
 
-fn build_agent_list() -> ExternResult<Vec<HoloHash<holo_hash::hash_type::Entry>>> {
-  let my_trust_atoms: Vec<TrustAtom> = query_mine(None, None, None, None)?;
-  debug!("my_atoms: {:#?}", my_trust_atoms);
+fn build_agent_list(atoms: Vec<TrustAtom>) -> ExternResult<Vec<HoloHash<holo_hash::hash_type::Entry>>> {
+  
   let mut agents: Vec<EntryHash> = Vec::new();
-  for ta in my_trust_atoms.clone() {
-    let agent_entry_hash = EntryHash::from(ta.target_entry_hash);
+  for ta in atoms {
+    let entry_hash = EntryHash::from(ta.target_entry_hash);
     let chunks = [Some("rollup".to_string())];
     let filter = create_link_tag(&LinkDirection::Forward, &chunks);
 
@@ -38,48 +39,53 @@ fn build_agent_list() -> ExternResult<Vec<HoloHash<holo_hash::hash_type::Entry>>
     // );
 
     let rollup_links: Vec<Link> = get_links(
-      agent_entry_hash.clone(),
+      entry_hash.clone(),
       Some(filter),
+      //None,
     )?; // Note: Agent must have done at least one rollup
 
-    debug!("rollup_links: {:?}", rollup_links);
+    // debug!("rollup_links: {:?}", rollup_links);
     if rollup_links.len() > 0 {
-        
-        debug!(
-          "rollup_link.tag: {:?}",
-          String::from_utf8_lossy(&rollup_links[0].tag.clone().into_inner())
-        );
-        if !agents.contains(&agent_entry_hash) {
-          agents.push(agent_entry_hash);
+        for link in rollup_links {
+        // debug!(
+        //   "rollup_link.tag: {:?}",
+        //   String::from_utf8_lossy(&link.tag.clone().into_inner())
+        // );
+        }
+        if !agents.contains(&entry_hash) {
+          agents.push(entry_hash);
         }
       }
     }
-  debug!("agents: {:?}", agents);
+  // debug!("agents: {:?}", agents);
   Ok(agents)
 }
 
 fn build_rollup_silver(
-  agents: Vec<HoloHash<holo_hash::hash_type::Entry>>,
   me: &HoloHash<holo_hash::hash_type::Entry>,
+  atoms: Vec<TrustAtom>,
+  agents: Vec<HoloHash<holo_hash::hash_type::Entry>>,
 ) -> ExternResult<BTreeMap<EntryHash, BTreeMap<EntryHash, RollupData>>> {
   let mut rollup_silver: BTreeMap<EntryHash, BTreeMap<EntryHash, RollupData>> = BTreeMap::new(); // K: Target (EntryHash) V: BTreeMap<Agent, RollupData>
+  let targets: Vec<EntryHash> = atoms.into_iter().map(|x| EntryHash::from(x.target_entry_hash)).collect();
 
-  for agent in agents {
-    let links = get_links(agent.clone(), None)?;
-
-    let mut links_latest = Vec::new();
-
-    for link in links {
-      let latest = get_latest(agent.clone(), link.target, None)?;
-      if !links_latest.contains(&latest) {
-      links_latest.push(latest);
+  for target in targets {
+    if !agents.contains(&target) {
+      let links = get_links(target.clone(), None)?;
+      let mut links_latest = Vec::new();
+      
+      for link in links {
+        let latest = get_latest(target.clone(), link.target, None)?;
+        if !links_latest.contains(&latest) {
+        links_latest.push(latest);
+        }
       }
-    }
     let trust_atoms_latest =
-      convert_links_to_trust_atoms(links_latest, &LinkDirection::Forward, &agent)?;
+      convert_links_to_trust_atoms(links_latest, &LinkDirection::Reverse, &target)?;
+    let mut map = BTreeMap::new();
 
     for ta in trust_atoms_latest {
-      let target_entry_hash = EntryHash::from(ta.target_entry_hash);
+
       if let Some(content) = ta.content {
         if let Some(value) = ta.value {
           // ignore content without a rating
@@ -88,9 +94,11 @@ fn build_rollup_silver(
             None, // ?TODO: agent prefix
             Some(content.clone()),
           ];
+          let source = EntryHash::from(ta.source_entry_hash);
           let filter = create_link_tag(&LinkDirection::Forward, &chunks);
-          let agent_rating: Option<String> = get_rating(me.clone(), agent.clone(), Some(filter))?;
-
+          debug!("tag_filter: {:?}", String::from_utf8_lossy(&filter.clone().into_inner()));
+          let agent_rating: Option<String> = get_rating(me.clone(), source.clone(), Some(filter))?;
+          debug!("agent_rating: {:?}", agent_rating);
           if let Some(rating) = agent_rating {
             if rating.parse::<f64>().unwrap() > 0.0 {
               // retain only positively rated agents
@@ -99,16 +107,16 @@ fn build_rollup_silver(
                 value,
                 agent_rating: Some(rating),
               };
-              let map: BTreeMap<EntryHash, RollupData> =
-                BTreeMap::from([(agent.clone(), rollup_data)]);
-              rollup_silver.insert(target_entry_hash, map);
+              map.insert(source, rollup_data);
             }
           }
         }
       }
     }
+    rollup_silver.insert(target, map);
   }
-  debug!("silver: {:?}", rollup_silver);
+  }
+  debug!("silver: {:#?}", rollup_silver);
   Ok(rollup_silver)
 }
 
@@ -140,6 +148,13 @@ fn build_rollup_gold(
       );
     }
 
+    let sourced_atoms: Option<BTreeMap<EntryHashB64, TrustAtom>> = {
+      if sourced_trust_atoms.len() > 0 {
+        Some(sourced_trust_atoms)
+      }
+      else { None }
+    };
+
     for (_agent, rollup_data) in map.clone() {
       if let Some(rating) = rollup_data.agent_rating {
         let calc: f64 = (rating.parse::<f64>().expect("Parse Error") / rating_sum)
@@ -159,27 +174,29 @@ fn build_rollup_gold(
           Some("rollup".to_string()),
           Some(rollup_data.content),
           Some(algo.to_string()),
-          Some(sourced_trust_atoms.clone()),
+          sourced_atoms.clone(),
         )?;
         rollup_gold.push(rollup_atom);
-      } else {
-        // if no self rating for target then avg the other agents weighted values
-        let total = accumulator.len() as f64;
-        let algo: f64 = sum / total;
-        let rollup_atom = create_trust_atom(
-          me.clone(),
-          target.clone(),
-          Some("rollup".to_string()),
-          Some(rollup_data.content),
-          Some(algo.to_string()),
-          Some(sourced_trust_atoms.clone()),
-        )?;
-        rollup_gold.push(rollup_atom);
-      }
+      // } else {
+      //   // if no self rating for target then avg the other agents weighted values
+      //   let total = accumulator.len() as f64;
+      //   let algo: f64 = sum / total;
+      //   let rollup_atom = create_trust_atom(
+      //     me.clone(),
+      //     target.clone(),
+      //     Some("rollup".to_string()),
+      //     Some(rollup_data.content),
+      //     Some(algo.to_string()),
+      //     sourced_atoms.clone(),
+      //   )?;
+      //   rollup_gold.push(rollup_atom);
+      // }
     }
   }
-  // debug!("gold: {:?}", rollup_gold);
+}
+  debug!("gold: {:#?}", rollup_gold);
   Ok(rollup_gold)
+
 }
 
 fn get_rating(
@@ -189,7 +206,7 @@ fn get_rating(
 ) -> ExternResult<Option<String>> {
   let link_latest = get_latest(base.clone(), target, tag_filter)?;
   let trust_atom_latest = convert_link_to_trust_atom(link_latest, &LinkDirection::Forward, &base)?;
-  debug!("latest rating: {:?}", trust_atom_latest.value);
+  // debug!("latest rating: {:?}", trust_atom_latest.value);
   Ok(trust_atom_latest.value)
 }
 
@@ -199,7 +216,7 @@ fn get_latest(
   tag_filter: Option<LinkTag>,
 ) -> ExternResult<Link> {
   let links = get_links(base, tag_filter)?;
-  debug!("links: {:?}", links);
+  // debug!("links: {:?}", links);
   let mut timestamps = Vec::new();
   for link in links.clone() {
     if link.target == target {
@@ -208,7 +225,7 @@ fn get_latest(
   }
 
   timestamps.sort_by(|a, b| a.cmp(b)); // ignoring nanoseconds
-  debug!("timestamps: {:?}", timestamps);
+  // debug!("timestamps: {:?}", timestamps);
   let latest = timestamps.pop().expect("Error");
   let mut latest_link: Vec<Link> = links
     .into_iter()
