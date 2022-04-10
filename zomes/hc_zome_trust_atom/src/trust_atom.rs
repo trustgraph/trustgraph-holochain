@@ -339,7 +339,7 @@ pub fn convert_link_to_trust_atom(
   link_direction: &LinkDirection,
   link_base: &EntryHash,
 ) -> ExternResult<TrustAtom> {
-  let link_tag_bytes = link.tag.clone().into_inner();
+  let link_tag_bytes = link.tag.clone().into_inner().split_off(tg_link_tag_header_length()); // drop leading "Ŧ→" or "Ŧ↩"
   let link_tag = match String::from_utf8(link_tag_bytes) {
     Ok(link_tag) => link_tag,
     Err(_) => {
@@ -351,12 +351,28 @@ pub fn convert_link_to_trust_atom(
   };
 
   let chunks: Vec<&str> = link_tag.split(UNICODE_NUL_STR).collect();
-  let prefix = chunks[0][tg_link_tag_header_length()..].to_string(); // drop leading "Ŧ→" or "Ŧ↩"
-  let content = chunks[1].to_string(); 
-  let value = chunks[2].to_string();
-  // bucket is chunk 3
-  let extra = chunks[4].to_string();
+  // debug!("chunks: {:?}", chunks);
 
+  let prefix = { if chunks[0].is_empty() {
+                                    None }
+                                else { Some(chunks[0].to_string()) }  
+                              }; 
+
+  let content = { if chunks[1].is_empty() {
+                                    None }
+                                else { Some(chunks[1].to_string()) }  
+                              }; 
+  
+  let value = { if chunks[2].is_empty() {
+                                    None }
+                                else { Some(chunks[2].to_string()) }  
+                              }; 
+  // bucket is chunk 3
+  let extra = { if chunks[4].is_empty() {
+                                    None }
+                                else { Some(chunks[4].to_string()) }  
+                              }; 
+                           
   let link_base_b64 = EntryHashB64::from(link_base.clone());
   let link_target_b64 = EntryHashB64::from(link.target);
 
@@ -366,10 +382,10 @@ pub fn convert_link_to_trust_atom(
       // target: link_target_b64.to_string(),
       source_entry_hash: link_base_b64,
       target_entry_hash: link_target_b64,
-      prefix: Some(prefix),
-      content: Some(content),
-      value: Some(value),
-      extra: Some(extra), 
+      prefix: prefix,
+      content: content,
+      value: value,
+      extra: extra, 
     },
     LinkDirection::Reverse => {
       TrustAtom {
@@ -377,10 +393,10 @@ pub fn convert_link_to_trust_atom(
         //target: link_base_b64.to_string(),   // flipped for Reverse direction
         source_entry_hash: link_target_b64, // flipped for Reverse direction
         target_entry_hash: link_base_b64,   // flipped for Reverse direction
-        prefix: Some(prefix),
-        content: Some(content),
-        value: Some(value),
-        extra: Some(extra),
+        prefix: prefix,
+        content: content,
+        value: value,
+        extra: extra,
       }
     }
   };
