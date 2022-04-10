@@ -17,6 +17,20 @@ pub fn create_rollup_atoms() -> ExternResult<Vec<TrustAtom>> {
   let my_atoms: Vec<TrustAtom> = query_mine(None, None, None, None)?;
   debug!("my_atoms: {:#?}", my_atoms);
   let agents = build_agent_list(my_atoms.clone())?;
+  //// for tests only ////
+  let mut vec = Vec::new();
+  for agent in &agents {
+    let mut vec2 = Vec::new();
+    let links = get_links(agent.clone(), None)?;
+    for link in links {
+      let bytes = link.tag.into_inner();
+      let tag: Option<String> = String::from_utf8(bytes.clone()).ok();
+      vec2.push(tag);
+    }
+    vec.push(vec2);
+  }
+  debug!("agent_links: {:#?}", vec);
+  ////////
   
   // TODO: feature: general agent rating for all things (not just for specific content)
 
@@ -28,36 +42,35 @@ pub fn create_rollup_atoms() -> ExternResult<Vec<TrustAtom>> {
 fn build_agent_list(atoms: Vec<TrustAtom>) -> ExternResult<Vec<HoloHash<holo_hash::hash_type::Entry>>> {
   
   let mut agents: Vec<EntryHash> = Vec::new();
-  for ta in atoms {
-    let entry_hash = EntryHash::from(ta.target_entry_hash);
-    let chunks = [Some("rollup".to_string())];
-    let filter = create_link_tag(&LinkDirection::Forward, &chunks);
 
+  let chunks = [Some("rollup".to_string())];
+    let filter = create_link_tag(&LinkDirection::Forward, &chunks);
     // debug!(
     //   "filter: {:?}",
     //   String::from_utf8_lossy(&filter.clone().into_inner())
     // );
+  for ta in atoms {
+    let entry_hash = EntryHash::from(ta.target_entry_hash);
 
     let rollup_links: Vec<Link> = get_links(
       entry_hash.clone(),
-      Some(filter),
-      //None,
-    )?; // Note: Agent must have done at least one rollup
+      Some(filter.clone()),
+    )?; // NOTE: Agent must have done at least one rollup
 
     // debug!("rollup_links: {:?}", rollup_links);
     if rollup_links.len() > 0 {
-        for link in rollup_links {
+        // for link in rollup_links {
         // debug!(
         //   "rollup_link.tag: {:?}",
         //   String::from_utf8_lossy(&link.tag.clone().into_inner())
         // );
-        }
-        if !agents.contains(&entry_hash) {
+        // }
+        if !agents.contains(&entry_hash) { // prevent duplicates
           agents.push(entry_hash);
         }
       }
     }
-  // debug!("agents: {:?}", agents);
+  debug!("agents: {:?}", agents);
   Ok(agents)
 }
 
@@ -68,53 +81,59 @@ fn build_rollup_silver(
 ) -> ExternResult<BTreeMap<EntryHash, BTreeMap<EntryHash, RollupData>>> {
   let mut rollup_silver: BTreeMap<EntryHash, BTreeMap<EntryHash, RollupData>> = BTreeMap::new(); // K: Target (EntryHash) V: BTreeMap<Agent, RollupData>
   let targets: Vec<EntryHash> = atoms.into_iter().map(|x| EntryHash::from(x.target_entry_hash)).collect();
-
+  debug!("targets: {:?}", targets);
   for target in targets {
-    if !agents.contains(&target) {
-      let links = get_links(target.clone(), None)?;
+    if &target != me && !agents.contains(&target) {
+      let links = get_links(target.clone(), None)?; // OPTION1: filter_map by agent list
       let mut links_latest = Vec::new();
-      
+      debug!("target_links: {:?}", links);
       for link in links {
         let latest = get_latest(target.clone(), link.target, None)?;
-        if !links_latest.contains(&latest) {
-        links_latest.push(latest);
+        if let Some(latest) = latest {
+          if !links_latest.contains(&latest) {
+          links_latest.push(latest);
+          }
         }
       }
+      // debug!("links_latest: {:?}", links_latest);
     let trust_atoms_latest =
       convert_links_to_trust_atoms(links_latest, &LinkDirection::Reverse, &target)?;
-    let mut map = BTreeMap::new();
-
+    let mut map: BTreeMap<EntryHash, RollupData> = BTreeMap::new();
+      debug!("TA latest: {:?}", trust_atoms_latest);
     for ta in trust_atoms_latest {
+      let source = EntryHash::from(ta.source_entry_hash);
+      if agents.contains(&source) { // OPTION2: get only Agent TAs
+        if let Some(content) = ta.content {
+          if let Some(value) = ta.value {
+            // ignore content without a rating
 
-      if let Some(content) = ta.content {
-        if let Some(value) = ta.value {
-          // ignore content without a rating
+            let chunks = [
+              None, // ?TODO: agent prefix
+              Some(content.clone()),
+            ]; 
 
-          let chunks = [
-            None, // ?TODO: agent prefix
-            Some(content.clone()),
-          ];
-          let source = EntryHash::from(ta.source_entry_hash);
-          let filter = create_link_tag(&LinkDirection::Forward, &chunks);
-          debug!("tag_filter: {:?}", String::from_utf8_lossy(&filter.clone().into_inner()));
-          let agent_rating: Option<String> = get_rating(me.clone(), source.clone(), Some(filter))?;
-          debug!("agent_rating: {:?}", agent_rating);
-          if let Some(rating) = agent_rating {
-            if rating.parse::<f64>().unwrap() > 0.0 {
-              // retain only positively rated agents
-              let rollup_data = RollupData {
-                content,
-                value,
-                agent_rating: Some(rating),
-              };
-              map.insert(source, rollup_data);
+            let filter = create_link_tag(&LinkDirection::Forward, &chunks); // NOTE: filter by content broken if mislabeled
+            debug!("tag_filter: {:?}", String::from_utf8_lossy(&filter.clone().into_inner()));
+            let agent_rating: Option<String> = get_rating(me.clone(), source.clone(), Some(filter))?; 
+            debug!("agent_rating: {:?}", agent_rating);
+            if let Some(rating) = agent_rating {
+              if rating.parse::<f64>().unwrap() > 0.0 {
+                // retain only positively rated agents
+                let rollup_data = RollupData {
+                  content,
+                  value,
+                  agent_rating: Some(rating),
+                };
+                map.insert(target.clone(), rollup_data);
+              }
             }
           }
         }
       }
     }
     rollup_silver.insert(target, map);
-  }
+    }
+    
   }
   debug!("silver: {:#?}", rollup_silver);
   Ok(rollup_silver)
@@ -137,15 +156,18 @@ fn build_rollup_gold(
       if let Some(rating) = rollup_data.agent_rating {
         rating_sum += rating.parse::<f64>().expect("Parse Error");
       }
-      let sourced_atom_latest = convert_link_to_trust_atom(
-        get_latest(agent.clone(), target.clone(), None)?,
-        &LinkDirection::Forward,
-        &agent,
-      )?;
-      sourced_trust_atoms.insert(
-        sourced_atom_latest.source_entry_hash.clone(),
-        sourced_atom_latest.clone(),
-      );
+      let link_latest = get_latest(agent.clone(), target.clone(), None)?;
+        if let Some(latest) = link_latest {
+        let sourced_atom_latest = convert_link_to_trust_atom(
+          latest,
+          &LinkDirection::Forward,
+          &agent,
+        )?;
+        sourced_trust_atoms.insert(
+          sourced_atom_latest.source_entry_hash.clone(),
+          sourced_atom_latest.clone(),
+        );
+      }
     }
 
     let sourced_atoms: Option<BTreeMap<EntryHashB64, TrustAtom>> = {
@@ -177,26 +199,24 @@ fn build_rollup_gold(
           sourced_atoms.clone(),
         )?;
         rollup_gold.push(rollup_atom);
-      // } else {
-      //   // if no self rating for target then avg the other agents weighted values
-      //   let total = accumulator.len() as f64;
-      //   let algo: f64 = sum / total;
-      //   let rollup_atom = create_trust_atom(
-      //     me.clone(),
-      //     target.clone(),
-      //     Some("rollup".to_string()),
-      //     Some(rollup_data.content),
-      //     Some(algo.to_string()),
-      //     sourced_atoms.clone(),
-      //   )?;
-      //   rollup_gold.push(rollup_atom);
-      // }
+      } else {
+        // if no self rating for target then avg the other agents weighted values
+        let total = accumulator.len() as f64;
+        let algo: f64 = sum / total;
+        let rollup_atom = create_trust_atom(
+          me.clone(),
+          target.clone(),
+          Some("rollup".to_string()),
+          Some(rollup_data.content),
+          Some(algo.to_string()),
+          sourced_atoms.clone(),
+        )?;
+        rollup_gold.push(rollup_atom);
+      }
     }
   }
-}
   debug!("gold: {:#?}", rollup_gold);
   Ok(rollup_gold)
-
 }
 
 fn get_rating(
@@ -205,40 +225,49 @@ fn get_rating(
   tag_filter: Option<LinkTag>,
 ) -> ExternResult<Option<String>> {
   let link_latest = get_latest(base.clone(), target, tag_filter)?;
-  let trust_atom_latest = convert_link_to_trust_atom(link_latest, &LinkDirection::Forward, &base)?;
-  // debug!("latest rating: {:?}", trust_atom_latest.value);
-  Ok(trust_atom_latest.value)
+  if let Some(latest) = link_latest {
+    let trust_atom_latest = convert_link_to_trust_atom(latest, &LinkDirection::Forward, &base)?;
+    debug!("latest rating: {:?}", trust_atom_latest.value);
+    return Ok(trust_atom_latest.value)
+  }
+  Ok(None)
 }
 
 fn get_latest(
   base: EntryHash,
   target: EntryHash,
   tag_filter: Option<LinkTag>,
-) -> ExternResult<Link> {
-  let links = get_links(base, tag_filter)?;
+) -> ExternResult<Option<Link>> {
+  let mut links: Vec<Link> = get_links(base, tag_filter)?.into_iter().filter(|x| x.target == target).collect();
   // debug!("links: {:?}", links);
-  let mut timestamps = Vec::new();
-  for link in links.clone() {
-    if link.target == target {
-      timestamps.push(link.timestamp);
+    links.sort_by(|a, b| a.timestamp.cmp(&b.timestamp)); // ignoring nanoseconds
+    let latest = links.pop();
+    match latest {
+      Some(link) => return Ok(Some(link)),
+      None => return Ok(None)
     }
   }
-
-  timestamps.sort_by(|a, b| a.cmp(b)); // ignoring nanoseconds
-  // debug!("timestamps: {:?}", timestamps);
-  let latest = timestamps.pop().expect("Error");
-  let mut latest_link: Vec<Link> = links
-    .into_iter()
-    .filter(|x| x.timestamp == latest)
-    .collect();
-  if latest_link.len() == 1 {
-    // should always be one
-    let link = latest_link.pop().expect("Error");
-    return Ok(link);
-  } else {
-    return Err(WasmError::Guest("Something went wrong".to_string()));
-  }
-}
+  // let mut timestamps = Vec::new(); ////
+  // for link in links.clone() {
+  //   if link.target == target {
+  //     timestamps.push(link.timestamp);
+  //   }
+  // }
+  // if !timestamps.is_empty() {
+  //   timestamps.sort_by(|a, b| a.cmp(b)); // ignoring nanoseconds
+  //   debug!("timestamps: {:?}", timestamps);
+  //   let latest = timestamps.pop().expect("Timestamp vec shouldn't be empty");
+  //   let mut latest_link: Vec<Link> = links
+  //     .into_iter()
+  //     .filter(|x| x.timestamp == latest);
+  //   if latest_link.len() == 1 {
+  //     // should always be one
+  //     let link = latest_link.pop().expect("Error");
+  //     return Ok(Some(link));
+  //   } else {
+  //     return Err(WasmError::Guest("Something went wrong".to_string()));
+  //   }
+  // } ////
 
 // fn create_rollup_atoms() {
 

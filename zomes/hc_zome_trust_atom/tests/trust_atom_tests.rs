@@ -507,13 +507,13 @@ pub async fn test_create_trust_graph() {
       (agent_bob.clone(), conductor_bob, cell_bob),
       "holochain",
       "-0.99",
-      hia_entry_hash.clone(),
+      hia_entry_hash.clone(), // IDEA: spam count, outliers
     ),
     (
       (agent_bob.clone(), conductor_bob, cell_bob),
       "engineering",
       "0.99",
-      ethereum_entry_hash.clone(),
+      telos_entry_hash.clone(), 
     ),
   ];
 
@@ -590,7 +590,7 @@ pub async fn test_create_trust_graph() {
     let trust_atom_input = TrustAtomInput {
       source: agent.clone(),
       target,
-      prefix: None,
+      prefix: None, //Some("test".to_string()),
       content: Some(content.to_string()),
       value: Some(value.to_string()),
       extra: None,
@@ -624,27 +624,27 @@ pub async fn test_create_trust_graph() {
         source_entry_hash: me_b64.clone(),
         target_entry_hash: EntryHashB64::from(hia_entry_hash),
         prefix: Some("rollup".to_string()),
-        content: Some("HIA".to_string()),
-        value: Some(".980000000".to_string()), // YMMV
-        extra: None,
-      },
-      TrustAtom {
-        source_entry_hash: me_b64.clone(),
-        target_entry_hash: EntryHashB64::from(ethereum_entry_hash),
-        prefix: Some("rollup".to_string()),
-        content: Some("Ethereum".to_string()),
-        value: Some(".990000000".to_string()), // YMMV
+        content: Some("holochain".to_string()),
+        value: Some(".9580000000000001".to_string()), // YMMV
         extra: None,
       },
       TrustAtom {
         source_entry_hash: me_b64.clone(),
         target_entry_hash: EntryHashB64::from(telos_entry_hash),
         prefix: Some("rollup".to_string()),
-        content: Some("Telos".to_string()),
+        content: Some("engineering".to_string()),
         value: Some(".880000000".to_string()), // YMMV
         extra: None,
-      }
-    ]
+      },
+      TrustAtom {
+        source_entry_hash: me_b64.clone(),
+        target_entry_hash: EntryHashB64::from(ethereum_entry_hash),
+        prefix: Some("rollup".to_string()),
+        content: Some("engineering".to_string()),
+        value: Some(".990000000".to_string()), // YMMV
+        extra: None,
+      },
+    ] 
   );
 }
 
