@@ -547,7 +547,7 @@ pub async fn test_create_trust_graph() {
     )
     .await;
 
-  debug!("zippy_mock_rollup_atom: {:?}", zippy_mock_rollup_atom);
+  println!("zippy_mock_rollup_atom: {:?}", zippy_mock_rollup_atom);
 
   let bob_mock1_rollup_atom_input = TrustAtomInput {
     source: agent_bob.clone(),
@@ -636,16 +636,16 @@ pub async fn test_create_trust_graph() {
         value: Some(".880000000".to_string()), // YMMV
         extra: None,
       },
-      TrustAtom {
-        source_entry_hash: me_b64.clone(),
-        target_entry_hash: EntryHashB64::from(ethereum_entry_hash),
-        prefix: Some("rollup".to_string()),
-        content: Some("engineering".to_string()),
-        value: Some(".990000000".to_string()), // YMMV
-        extra: None,
-      },
+      // TrustAtom {
+      //   source_entry_hash: me_b64.clone(),
+      //   target_entry_hash: EntryHashB64::from(ethereum_entry_hash),
+      //   prefix: Some("rollup".to_string()),
+      //   content: Some("engineering".to_string()),
+      //   value: Some(".990000000".to_string()), // YMMV
+      //   extra: None,
+      // },
     ] 
-  );
+  ); // currently ignore targets not rated by self
 }
 
 // TESTING UTILITY FUNCTIONS
