@@ -547,7 +547,7 @@ pub async fn test_create_trust_graph() {
     )
     .await;
 
-  println!("zippy_mock_rollup_atom: {:?}", zippy_mock_rollup_atom);
+  // println!("zippy_mock_rollup_atom: {:?}", zippy_mock_rollup_atom);
 
   let bob_mock1_rollup_atom_input = TrustAtomInput {
     source: agent_bob.clone(),
@@ -596,13 +596,15 @@ pub async fn test_create_trust_graph() {
       extra: None,
     };
 
-    let _trust_atom: TrustAtom = conductor
+    let trust_atom: TrustAtom = conductor
       .call(
         &cell.zome("trust_atom"),
         "create_trust_atom",
         trust_atom_input,
       )
       .await;
+    
+    // println!("trust_atom: {:#?}", trust_atom);
   }
 
   let any = ();

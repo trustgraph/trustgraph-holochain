@@ -81,10 +81,11 @@ fn build_rollup_silver(
 ) -> ExternResult<BTreeMap<EntryHash, BTreeMap<EntryHash, RollupData>>> {
   let mut rollup_silver: BTreeMap<EntryHash, BTreeMap<EntryHash, RollupData>> = BTreeMap::new(); // K: Target (EntryHash) V: BTreeMap<Agent, RollupData>
   let targets: Vec<EntryHash> = atoms.into_iter().map(|x| EntryHash::from(x.target_entry_hash)).collect();
-  debug!("targets: {:?}", targets);
-  for target in targets.clone() {
+  debug!("targets: {:?}", targets); 
+  for target in targets.clone() { 
     if &target != me && !agents.contains(&target) {
-      let links = get_links(target.clone(), None)?; // OPTION1: filter_map by agent list
+      let links = get_links(target.clone(), None)?; // OPTION1: filter_map source by agent list
+      // debug!("target_links: {:?}", links);
       let mut links_latest = Vec::new();
       //// tests only ////
       let mut vec = Vec::new();
@@ -95,11 +96,11 @@ fn build_rollup_silver(
       }
       debug!("silver_links: {:#?}", vec);
       ///////
-      // debug!("target_links: {:?}", links);
       for link in links.clone() {
         let latest = get_latest(target.clone(), link.target, None)?;
         if let Some(latest) = latest {
           if !links_latest.contains(&latest) {
+            // debug!("latest: {:?}", latest);
           links_latest.push(latest);
           }
         }
@@ -122,9 +123,9 @@ fn build_rollup_silver(
             ]; 
 
             let filter = create_link_tag(&LinkDirection::Forward, &chunks); // NOTE: filter by content broken if mislabeled
-            debug!("tag_filter: {:?}", String::from_utf8_lossy(&filter.clone().into_inner()));
+            // debug!("tag_filter: {:?}", String::from_utf8_lossy(&filter.clone().into_inner()));
             let agent_rating: Option<String> = get_rating(me.clone(), source.clone(), Some(filter))?; 
-            debug!("agent_rating: {:?}", agent_rating);
+            // debug!("agent_rating: {:?}", agent_rating);
             if let Some(rating) = agent_rating {
               if rating.parse::<f64>().unwrap() > 0.0 {
                 // retain only positively rated agents
@@ -234,7 +235,7 @@ fn get_rating(
   let link_latest = get_latest(base.clone(), target, tag_filter)?;
   if let Some(latest) = link_latest {
     let trust_atom_latest = convert_link_to_trust_atom(latest, &LinkDirection::Forward, &base)?;
-    debug!("latest rating: {:?}", trust_atom_latest.value);
+    // debug!("latest rating: {:?}", trust_atom_latest.value);
     return Ok(trust_atom_latest.value)
   }
   Ok(None)
