@@ -15,7 +15,7 @@ pub enum LinkDirection {
 
 /// Client-facing representation of a Trust Atom
 /// We may support JSON in the future to allow for more complex data structures @TODO
-#[derive(Serialize, Deserialize, SerializedBytes, Debug, Clone, PartialEq, Hash)]
+#[derive(Serialize, Deserialize, SerializedBytes, Debug, Clone, Eq, PartialEq, Hash)]
 pub struct TrustAtom {
   // pub source: String, // TODO source_name
   // pub target: String,
