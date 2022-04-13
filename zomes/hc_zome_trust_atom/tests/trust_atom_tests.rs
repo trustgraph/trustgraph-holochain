@@ -3,6 +3,7 @@
 use std::collections::BTreeMap;
 
 use futures::future;
+use tokio::time::{sleep, Duration};
 
 use hc_zome_trust_atom::*;
 use hdk::prelude::holo_hash::AgentPubKey;
@@ -607,6 +608,8 @@ pub async fn test_create_trust_graph() {
     // println!("trust_atom: {:#?}", trust_atom);
   }
 
+  sleep(Duration::from_millis(1000)).await;
+
   let any = ();
   let rollup_atoms: Vec<TrustAtom> = conductor_me
     .call(&cell_me.zome("trust_atom"), "create_rollup_atoms", any)
@@ -624,19 +627,19 @@ pub async fn test_create_trust_graph() {
     vec![
       TrustAtom {
         source_entry_hash: me_b64.clone(),
-        target_entry_hash: EntryHashB64::from(hia_entry_hash),
+        target_entry_hash: EntryHashB64::from(telos_entry_hash),
         prefix: Some("rollup".to_string()),
-        content: Some("holochain".to_string()),
-        value: Some(".9580000000000001".to_string()), // YMMV
+        content: Some("engineering".to_string()),
+        value: Some("0.7040000000000001".to_string()), // YMMV
         extra: None,
       },
       TrustAtom {
         source_entry_hash: me_b64.clone(),
-        target_entry_hash: EntryHashB64::from(telos_entry_hash),
+        target_entry_hash: EntryHashB64::from(hia_entry_hash),
         prefix: Some("rollup".to_string()),
-        content: Some("engineering".to_string()),
-        value: Some(".880000000".to_string()), // YMMV
-        extra: None,
+        content: Some("holochain".to_string()),
+        value: Some("0.7881675977653632".to_string()), // YMMV
+        extra: Some("uhCkk3wH2ScJfxJ9BnHSpRYz_5Tz5JbyB58yheis9pLnTGBjvoxdQ".to_string()),
       },
       // TrustAtom {
       //   source_entry_hash: me_b64.clone(),

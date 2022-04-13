@@ -109,7 +109,7 @@ fn build_rollup_silver(
     let trust_atoms_latest =
       convert_links_to_trust_atoms(links_latest, &LinkDirection::Reverse, &target)?;
     let mut map: BTreeMap<EntryHash, RollupData> = BTreeMap::new();
-      debug!("TA latest: {:#?}", trust_atoms_latest);
+      // debug!("TA latest: {:#?}", trust_atoms_latest);
     for ta in trust_atoms_latest.clone() {
       let source = EntryHash::from(ta.source_entry_hash);
       if agents.contains(&source) { // OPTION2: get only Agent TAs
@@ -125,7 +125,7 @@ fn build_rollup_silver(
             let filter = create_link_tag(&LinkDirection::Forward, &chunks); // NOTE: filter by content broken if mislabeled
             // debug!("tag_filter: {:?}", String::from_utf8_lossy(&filter.clone().into_inner()));
             let agent_rating: Option<String> = get_rating(me.clone(), source.clone(), Some(filter))?; 
-            // debug!("agent_rating: {:?}", agent_rating);
+            debug!("agent_rating: {:?}", agent_rating);
             if let Some(rating) = agent_rating {
               if rating.parse::<f64>().unwrap() > 0.0 {
                 // retain only positively rated agents
@@ -158,11 +158,11 @@ fn build_rollup_gold(
   for (target, map) in rollup_silver.clone() {
     let mut sourced_trust_atoms: BTreeMap<EntryHashB64, TrustAtom> = BTreeMap::new(); // collect to input for rollup extra field
     let mut accumulator: Vec<f64> = Vec::new(); // gather weighted values
-    let mut rating_sum: f64 = 0.0;
+    let mut agent_rating_sum: f64 = 0.0;
 
     for (agent, rollup_data) in map.clone() {
       if let Some(rating) = rollup_data.agent_rating {
-        rating_sum += rating.parse::<f64>().expect("Parse Error"); // could ignore parse err and use .ok() to convert result into option 
+        agent_rating_sum += rating.parse::<f64>().expect("Parse Error"); // could ignore parse err and use .ok() to convert result into option 
       }
       let link_latest = get_latest(agent.clone(), target.clone(), None)?;
         if let Some(latest) = link_latest {
@@ -184,45 +184,56 @@ fn build_rollup_gold(
       }
       else { None }
     };
+    // debug!("sourced_atoms: {:?}", sourced_atoms);
 
     for (_agent, rollup_data) in map.clone() {
       if let Some(rating) = rollup_data.agent_rating {
-        let calc: f64 = (rating.parse::<f64>().expect("Parse Error") / rating_sum)
-          * rollup_data.value.parse::<f64>().expect("Parse Error");  
+        let calc: f64 = (rating.parse::<f64>().expect("Parse Error") / agent_rating_sum)
+          * rollup_data.value.parse::<f64>().expect("Parse Error");
+          debug!("calc: {:?}", calc);  
         accumulator.push(calc);
       }
+    }
 
+      debug!("accum: {:?}", accumulator);
       let my_rating: Option<String> = get_rating(me.clone(), target.clone(), None)?;
-      let sum: f64 = accumulator.iter().sum();
-
+      let weighted_sum: f64 = accumulator.iter().sum();
+      debug!("sum: {:?}", weighted_sum);
+      let content: Option<String> = { // TODO: cleanup get content method by adding TA.target_name String
+          let get_latest = get_latest(me.clone(), target.clone(), None)?;
+          match get_latest {
+            Some(link) => convert_link_to_trust_atom(link, &LinkDirection::Forward, &me)?.content, 
+            None => None
+          }
+        };
       if let Some(rating) = my_rating {
         let parsed: f64 = rating.parse::<f64>().expect("Parse Error");
-        let algo: f64 = parsed * 0.80 + sum * 0.20; // self weight is 80%
+        let algo: f64 = parsed * 0.80 + weighted_sum * 0.20; // self weight is 80%
         let rollup_atom = create_trust_atom(
           me.clone(),
           target.clone(),
           Some("rollup".to_string()),
-          Some(rollup_data.content),
+          content.clone(),
           Some(algo.to_string()),
           sourced_atoms.clone(),
         )?;
         rollup_gold.push(rollup_atom);
-      } else {
+       } 
+      else {
         // if no self rating for target then avg the other agents weighted values
         let total = accumulator.len() as f64;
-        let algo: f64 = sum / total;
+        let algo: f64 = weighted_sum / total;
         let rollup_atom = create_trust_atom(
           me.clone(),
           target.clone(),
           Some("rollup".to_string()),
-          Some(rollup_data.content),
+          content.clone(),
           Some(algo.to_string()),
           sourced_atoms.clone(),
         )?;
         rollup_gold.push(rollup_atom);
       }
     }
-  }
   debug!("gold: {:#?}", rollup_gold);
   Ok(rollup_gold)
 }
@@ -247,9 +258,10 @@ fn get_latest(
   tag_filter: Option<LinkTag>,
 ) -> ExternResult<Option<Link>> {
   let mut links: Vec<Link> = get_links(base, tag_filter)?.into_iter().filter(|x| x.target == target).collect();
-  // debug!("links: {:?}", links);
+  // debug!("get_latest_inks: {:?}", links);
     links.sort_by(|a, b| a.timestamp.cmp(&b.timestamp)); // ignoring nanoseconds
     let latest = links.pop();
+    // debug!("latest: {:?}", latest);
     match latest {
       Some(link) => return Ok(Some(link)),
       None => return Ok(None)
