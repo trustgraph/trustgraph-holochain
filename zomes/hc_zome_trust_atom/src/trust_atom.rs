@@ -24,7 +24,7 @@ pub struct TrustAtom {
   pub prefix: Option<String>,
   pub content: Option<String>,
   pub value: Option<String>,
-  pub extra: Option<String>, // stringified HeaderHash of the associated extra entry
+  pub extra: Option<String>, // stringified EntryHash of the associated extra entry
 }
 
 const UNICODE_NUL_STR: &str = "\u{0}"; // Unicode NUL character
@@ -119,10 +119,11 @@ fn create_bucket_string(bucket_bytes: &[u8]) -> String {
 pub fn create_extra(input: BTreeMap<EntryHashB64, TrustAtom>) -> ExternResult<String> {
 
   let entry = Extra { sourced_atoms: Some(input) };
-
-  let entry_hash_string = create_entry(entry.clone())?.to_string();
+  create_entry(entry.clone())?;
+  let entry_hash_string = hash_entry(entry)?.to_string();
+  debug!("extra_hash: {:?}", entry_hash_string);
   Ok(entry_hash_string)
-}
+} // returns stringified EntryHash
 
 
 fn normalize_value(value_str: Option<String>) -> ExternResult<Option<String>> {
