@@ -156,7 +156,7 @@ fn build_rollup_gold(
 ) -> ExternResult<Vec<TrustAtom>> {
   let mut rollup_gold: Vec<TrustAtom> = Vec::new();
   for (target, map) in rollup_silver.clone() {
-    let mut sourced_trust_atoms: BTreeMap<EntryHashB64, TrustAtom> = BTreeMap::new(); // collect to input for rollup extra field
+    // let mut sourced_trust_atoms: BTreeMap<EntryHashB64, TrustAtom> = BTreeMap::new(); // collect to input for rollup extra field
     let mut accumulator: Vec<f64> = Vec::new(); // gather weighted values
     let mut agent_rating_sum: f64 = 0.0;
 
@@ -164,26 +164,26 @@ fn build_rollup_gold(
       if let Some(rating) = rollup_data.agent_rating {
         agent_rating_sum += rating.parse::<f64>().expect("Parse Error"); // could ignore parse err and use .ok() to convert result into option 
       }
-      let link_latest = get_latest(agent.clone(), target.clone(), None)?;
-        if let Some(latest) = link_latest {
-        let sourced_atom_latest = convert_link_to_trust_atom(
-          latest,
-          &LinkDirection::Forward,
-          &agent,
-        )?;
-        sourced_trust_atoms.insert(
-          sourced_atom_latest.source_entry_hash.clone(),
-          sourced_atom_latest.clone(),
-        );
-      }
+    //   let link_latest = get_latest(agent.clone(), target.clone(), None)?;
+    //     if let Some(latest) = link_latest {
+    //     let sourced_atom_latest = convert_link_to_trust_atom(
+    //       latest,
+    //       &LinkDirection::Forward,
+    //       &agent,
+    //     )?;
+    //     sourced_trust_atoms.insert(
+    //       sourced_atom_latest.source_entry_hash.clone(),
+    //       sourced_atom_latest.clone(),
+    //     );
+    //   }
     }
 
-    let sourced_atoms: Option<BTreeMap<EntryHashB64, TrustAtom>> = {
-      if sourced_trust_atoms.len() > 0 {
-        Some(sourced_trust_atoms)
-      }
-      else { None }
-    };
+    // let sourced_atoms: Option<BTreeMap<EntryHashB64, TrustAtom>> = {
+    //   if sourced_trust_atoms.len() > 0 {
+    //     Some(sourced_trust_atoms)
+    //   }
+    //   else { None }
+    // };
     // debug!("sourced_atoms: {:?}", sourced_atoms);
 
     for (_agent, rollup_data) in map.clone() {
@@ -215,7 +215,7 @@ fn build_rollup_gold(
           Some("rollup".to_string()),
           content.clone(),
           Some(algo.to_string()),
-          sourced_atoms.clone(),
+          None, //sourced_atoms.clone(),
         )?;
         rollup_gold.push(rollup_atom);
        } 
@@ -229,7 +229,7 @@ fn build_rollup_gold(
           Some("rollup".to_string()),
           content.clone(),
           Some(algo.to_string()),
-          sourced_atoms.clone(),
+          None, //sourced_atoms.clone(),
         )?;
         rollup_gold.push(rollup_atom);
       }
