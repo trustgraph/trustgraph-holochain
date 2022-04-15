@@ -93,7 +93,7 @@ pub async fn test_create_trust_atom() {
   let chunks: Vec<&str> = relevant_link_string.split(unicode_nul).collect();
   assert_eq!(chunks.len(), 5);
   assert_eq!(chunks[0], "Ŧ→");
-  assert_eq!(chunks[1], "sushi"); 
+  assert_eq!(chunks[1], "sushi");
   assert_eq!(chunks[2], ".800000000");
 
   let bucket = chunks[3];
@@ -104,17 +104,12 @@ pub async fn test_create_trust_atom() {
   // let expected_entry_hash = "uhCEkto76kYgGIZMzU6AbEzCx1HMRNzurwPaOdF2utJaP-33mdcdN";
   let expected_link_tag_string = format!(
     "{}{}{}{}{}{}{}{}{}",
-    "Ŧ",
-    "→",
-    unicode_nul,
-    "sushi",
-    unicode_nul,
-    ".800000000",
-    unicode_nul,
-    bucket,
-    unicode_nul,
+    "Ŧ", "→", unicode_nul, "sushi", unicode_nul, ".800000000", unicode_nul, bucket, unicode_nul,
   );
-  println!("117: {:?}", assert_eq!(relevant_link_string, expected_link_tag_string));
+  println!(
+    "117: {:?}",
+    assert_eq!(relevant_link_string, expected_link_tag_string)
+  );
 
   // CHECK BACKWARD LINK
 
@@ -137,15 +132,7 @@ pub async fn test_create_trust_atom() {
   let relevant_link_string = String::from_utf8(relevant_link_bytes).unwrap();
   let expected_link_tag_string = format!(
     "{}{}{}{}{}{}{}{}{}",
-    "Ŧ",
-    "↩",
-    unicode_nul,
-    "sushi",
-    unicode_nul,
-    ".800000000",
-    unicode_nul,
-    bucket,
-    unicode_nul,
+    "Ŧ", "↩", unicode_nul, "sushi", unicode_nul, ".800000000", unicode_nul, bucket, unicode_nul,
   );
   assert_eq!(relevant_link_string, expected_link_tag_string);
 
@@ -318,7 +305,7 @@ pub async fn test_query_mine() {
 //         &cell1.zome("trust_atom"),
 //         "create_trust_atom",
 //         TrustAtomInput {
-//           source: agent.clone().into(), 
+//           source: agent.clone().into(),
 //           target: target_entry_hash.clone(),
 //           prefix: None,
 //           content: Some(content_full.into()),
@@ -366,7 +353,7 @@ pub async fn test_query_mine() {
 //     .await;
 
 //   let mock_input = TrustAtomInput {
-    
+
 //     source: agent.clone(),
 //     target: target_entry_hash,
 //     prefix: None,
@@ -422,230 +409,229 @@ pub async fn test_query_mine() {
 //     )
 //   );
 // }
-// #[tokio::test(flavor = "multi_thread")]
-// pub async fn test_create_trust_graph() {
-//   let (conductors, agents, apps) = setup_conductors(3).await;
-//   conductors.exchange_peer_info().await;
+#[tokio::test(flavor = "multi_thread")]
+pub async fn test_create_trust_graph() {
+  let (conductors, agents, apps) = setup_conductors(3).await;
+  conductors.exchange_peer_info().await;
 
-//   let agent_me = EntryHash::from(agents[0].clone());
-//   let agent_zippy = EntryHash::from(agents[1].clone());
-//   let agent_bob = EntryHash::from(agents[2].clone());
+  let agent_me = EntryHash::from(agents[0].clone());
+  let agent_zippy = EntryHash::from(agents[1].clone());
+  let agent_bob = EntryHash::from(agents[2].clone());
 
-//   let conductor_me = &conductors[0];
-//   let conductor_zippy = &conductors[1];
-//   let conductor_bob = &conductors[2];
+  let conductor_me = &conductors[0];
+  let conductor_zippy = &conductors[1];
+  let conductor_bob = &conductors[2];
 
-//   let cells = apps.cells_flattened();
-//   let cell_me = cells[0];
-//   let cell_zippy = cells[1];
-//   let cell_bob = cells[2];
+  let cells = apps.cells_flattened();
+  let cell_me = cells[0];
+  let cell_zippy = cells[1];
+  let cell_bob = cells[2];
 
-//   // CREATE TARGET ENTRIES
+  // CREATE TARGET ENTRIES
 
-//     let hia_entry_hash: EntryHash = conductor_me
-//       .call(
-//         &cell_me.zome("trust_atom"),
-//         "create_string_target",
-//         "HIA",
-//       )
-//       .await;
+    let hia_entry_hash: EntryHash = conductor_me
+      .call(
+        &cell_me.zome("trust_atom"),
+        "create_string_target",
+        "HIA",
+      )
+      .await;
 
-//     let telos_entry_hash: EntryHash = conductor_me
-//       .call(
-//         &cell_me.zome("trust_atom"),
-//         "create_string_target",
-//         "Telos",
-//       )
-//       .await;
-    
-//     let _ethereum_entry_hash: EntryHash = conductor_bob
-//       .call(
-//         &cell_bob.zome("trust_atom"),
-//         "create_string_target",
-//         "Ethereum",
-//       )
-//       .await;
+    let telos_entry_hash: EntryHash = conductor_me
+      .call(
+        &cell_me.zome("trust_atom"),
+        "create_string_target",
+        "Telos",
+      )
+      .await;
 
-//   // eg : given TAs:
-//   let data = [
-//     (
-//       (agent_me.clone(), conductor_me, cell_me),
-//       "holochain",
-//       "0.99",
-//       agent_zippy.clone(),
-//     ),
-//     (
-//       (agent_me.clone(), conductor_me, cell_me),
-//       "holochain",
-//       "0.80",
-//       agent_bob.clone(),
-//     ),
-//     (
-//       (agent_me.clone(), conductor_me, cell_me),
-//       "holochain",
-//       "0.97",
-//       hia_entry_hash.clone(),
-//     ),
-//     (
-//       (agent_me.clone(), conductor_me, cell_me),
-//       "engineering",
-//       "0.88",
-//       telos_entry_hash.clone(),
-//     ),
-//     (
-//       (agent_zippy.clone(), conductor_zippy, cell_zippy),
-//       "holochain",
-//       "0.91",
-//       hia_entry_hash.clone(),
-//     ),
-//     (
-//       (agent_bob.clone(), conductor_bob, cell_bob),
-//       "holochain",
-//       "-0.99",
-//       hia_entry_hash.clone(), // IDEA: spam count, outliers
-//     ),
-//     (
-//       (agent_bob.clone(), conductor_bob, cell_bob),
-//       "engineering",
-//       "0.99",
-//       telos_entry_hash.clone(), 
-//     ),
-//   ];
+    let _ethereum_entry_hash: EntryHash = conductor_bob
+      .call(
+        &cell_bob.zome("trust_atom"),
+        "create_string_target",
+        "Ethereum",
+      )
+      .await;
 
+  // eg : given TAs:
+  let data = [
+    (
+      (agent_me.clone(), conductor_me, cell_me),
+      "holochain",
+      "0.99",
+      agent_zippy.clone(),
+    ),
+    (
+      (agent_me.clone(), conductor_me, cell_me),
+      "holochain",
+      "0.80",
+      agent_bob.clone(),
+    ),
+    (
+      (agent_me.clone(), conductor_me, cell_me),
+      "holochain",
+      "0.97",
+      hia_entry_hash.clone(),
+    ),
+    (
+      (agent_me.clone(), conductor_me, cell_me),
+      "engineering",
+      "0.88",
+      telos_entry_hash.clone(),
+    ),
+    (
+      (agent_zippy.clone(), conductor_zippy, cell_zippy),
+      "holochain",
+      "0.91",
+      hia_entry_hash.clone(),
+    ),
+    (
+      (agent_bob.clone(), conductor_bob, cell_bob),
+      "holochain",
+      "-0.99",
+      hia_entry_hash.clone(), // IDEA: spam count, outliers
+    ),
+    (
+      (agent_bob.clone(), conductor_bob, cell_bob),
+      "engineering",
+      "0.99",
+      telos_entry_hash.clone(),
+    ),
+  ];
 
-//   // CREATE TEST ENTRIES
+  // CREATE TEST ENTRIES
 
-//   let fake1_entry_hash: EntryHash = conductor_me
-//     .call(&cell_me.zome("trust_atom"), "create_string_target", "fake1")
-//     .await;
+  let fake1_entry_hash: EntryHash = conductor_me
+    .call(&cell_me.zome("trust_atom"), "create_string_target", "fake1")
+    .await;
 
-//   let fake2_entry_hash: EntryHash = conductor_me
-//     .call(&cell_me.zome("trust_atom"), "create_string_target", "fake2")
-//     .await;
+  let fake2_entry_hash: EntryHash = conductor_me
+    .call(&cell_me.zome("trust_atom"), "create_string_target", "fake2")
+    .await;
 
-//   // CREATE TEST AGENT ROLLUPS  // helps to identify the agents for algorithm
+  // CREATE TEST AGENT ROLLUPS  // helps to identify the agents for algorithm
 
-//   let zippy_mock_rollup_atom_input = TrustAtomInput {
-//     source: agent_zippy.clone(),
-//     target: fake1_entry_hash.clone(),
-//     prefix: Some("rollup".to_string()),
-//     content: None,
-//     value: None,
-//     extra: None,
-//   };
+  let zippy_mock_rollup_atom_input = TrustAtomInput {
+    source: agent_zippy.clone(),
+    target: fake1_entry_hash.clone(),
+    prefix: Some("rollup".to_string()),
+    content: None,
+    value: None,
+    extra: None,
+  };
 
-//   let _zippy_mock_rollup_atom: TrustAtom = conductor_zippy
-//     .call(
-//       &cell_zippy.zome("trust_atom"),
-//       "create_trust_atom",
-//       zippy_mock_rollup_atom_input,
-//     )
-//     .await;
+  let _zippy_mock_rollup_atom: TrustAtom = conductor_zippy
+    .call(
+      &cell_zippy.zome("trust_atom"),
+      "create_trust_atom",
+      zippy_mock_rollup_atom_input,
+    )
+    .await;
 
-//   // println!("zippy_mock_rollup_atom: {:?}", zippy_mock_rollup_atom);
+  // println!("zippy_mock_rollup_atom: {:?}", zippy_mock_rollup_atom);
 
-//   let bob_mock1_rollup_atom_input = TrustAtomInput {
-//     source: agent_bob.clone(),
-//     target: fake1_entry_hash.clone(),
-//     prefix: Some("rollup".to_string()),
-//     content: None,
-//     value: None,
-//     extra: None,
-//   };
+  let bob_mock1_rollup_atom_input = TrustAtomInput {
+    source: agent_bob.clone(),
+    target: fake1_entry_hash.clone(),
+    prefix: Some("rollup".to_string()),
+    content: None,
+    value: None,
+    extra: None,
+  };
 
-//   let _bob_mock1_rollup_atom: TrustAtom = conductor_bob
-//     .call(
-//       &cell_bob.zome("trust_atom"),
-//       "create_trust_atom",
-//       bob_mock1_rollup_atom_input,
-//     )
-//     .await;
+  let _bob_mock1_rollup_atom: TrustAtom = conductor_bob
+    .call(
+      &cell_bob.zome("trust_atom"),
+      "create_trust_atom",
+      bob_mock1_rollup_atom_input,
+    )
+    .await;
 
-//   let bob_mock2_rollup_atom_input = TrustAtomInput {
-//     source: agent_bob.clone(),
-//     target: fake2_entry_hash.clone(),
-//     prefix: Some("rollup".to_string()),
-//     content: None,
-//     value: None,
-//     extra: None,
-//   };
+  let bob_mock2_rollup_atom_input = TrustAtomInput {
+    source: agent_bob.clone(),
+    target: fake2_entry_hash.clone(),
+    prefix: Some("rollup".to_string()),
+    content: None,
+    value: None,
+    extra: None,
+  };
 
-//   let _bob_mock2_rollup_atom: TrustAtom = conductor_bob
-//     .call(
-//       &cell_bob.zome("trust_atom"),
-//       "create_trust_atom",
-//       bob_mock2_rollup_atom_input,
-//     )
-//     .await;
+  let _bob_mock2_rollup_atom: TrustAtom = conductor_bob
+    .call(
+      &cell_bob.zome("trust_atom"),
+      "create_trust_atom",
+      bob_mock2_rollup_atom_input,
+    )
+    .await;
 
-//   for ((agent, conductor, cell), content, value, target) in data {
+  for ((agent, conductor, cell), content, value, target) in data {
 
-//     // CREATE TRUST ATOM
+    // CREATE TRUST ATOM
 
-//     let trust_atom_input = TrustAtomInput {
-//       source: agent.clone(),
-//       target,
-//       prefix: None, //Some("test".to_string()),
-//       content: Some(content.to_string()),
-//       value: Some(value.to_string()),
-//       extra: None,
-//     };
+    let trust_atom_input = TrustAtomInput {
+      source: agent.clone(),
+      target,
+      prefix: None, //Some("test".to_string()),
+      content: Some(content.to_string()),
+      value: Some(value.to_string()),
+      extra: None,
+    };
 
-//     let _trust_atom: TrustAtom = conductor
-//       .call(
-//         &cell.zome("trust_atom"),
-//         "create_trust_atom",
-//         trust_atom_input,
-//       )
-//       .await;
-    
-//     // println!("trust_atom: {:#?}", trust_atom);
-//   }
+    let _trust_atom: TrustAtom = conductor
+      .call(
+        &cell.zome("trust_atom"),
+        "create_trust_atom",
+        trust_atom_input,
+      )
+      .await;
 
-//   sleep(Duration::from_millis(1000)).await;
+    // println!("trust_atom: {:#?}", trust_atom);
+  }
 
-//   let any = ();
-//   let rollup_atoms: Vec<TrustAtom> = conductor_me
-//     .call(&cell_me.zome("trust_atom"), "create_rollup_atoms", any)
-//     .await;
+  sleep(Duration::from_millis(1000)).await;
 
-//   // then rollup atoms will be:
-//   // me -[rollup, holochain, 0.98]-> HIA                  // actual value is TBD
-//   // me -[rollup, engineering, 0.99]-> Ethereum     // actual value is TBD
-//   // me -[rollup, engineering, 0.88]-> Telos            // actual value is TBD
+  let any = ();
+  let rollup_atoms: Vec<TrustAtom> = conductor_me
+    .call(&cell_me.zome("trust_atom"), "create_rollup_atoms", any)
+    .await;
 
-//   let me_b64 = EntryHashB64::from(agent_me.clone());
+  // then rollup atoms will be:
+  // me -[rollup, holochain, 0.98]-> HIA                  // actual value is TBD
+  // me -[rollup, engineering, 0.99]-> Ethereum     // actual value is TBD
+  // me -[rollup, engineering, 0.88]-> Telos            // actual value is TBD
 
-//   assert_eq!(
-//     rollup_atoms,
-//     vec![
-//       TrustAtom {
-//         source_entry_hash: me_b64.clone(),
-//         target_entry_hash: EntryHashB64::from(telos_entry_hash),
-//         prefix: Some("rollup".to_string()),
-//         content: Some("engineering".to_string()),
-//         value: Some("0.7040000000000001".to_string()), // YMMV
-//         extra: None,
-//       },
-//       TrustAtom {
-//         source_entry_hash: me_b64.clone(),
-//         target_entry_hash: EntryHashB64::from(hia_entry_hash),
-//         prefix: Some("rollup".to_string()),
-//         content: Some("holochain".to_string()),
-//         value: Some("0.7881675977653632".to_string()), // YMMV
-//         extra: None,
-//       },
-//       // TrustAtom {
-//       //   source_entry_hash: me_b64.clone(),
-//       //   target_entry_hash: EntryHashB64::from(ethereum_entry_hash),
-//       //   prefix: Some("rollup".to_string()),
-//       //   content: Some("engineering".to_string()),
-//       //   value: Some(".990000000".to_string()), // YMMV
-//       //   extra: None,
-//       // },
-//     ] 
-//   ); // currently ignore targets not rated by self
-// }
+  let me_b64 = EntryHashB64::from(agent_me.clone());
+
+  assert_eq!(
+    rollup_atoms,
+    vec![
+      TrustAtom {
+        source_entry_hash: me_b64.clone(),
+        target_entry_hash: EntryHashB64::from(telos_entry_hash),
+        prefix: Some("rollup".to_string()),
+        content: Some("engineering".to_string()),
+        value: Some("0.7040000000000001".to_string()), // YMMV
+        extra: None,
+      },
+      TrustAtom {
+        source_entry_hash: me_b64.clone(),
+        target_entry_hash: EntryHashB64::from(hia_entry_hash),
+        prefix: Some("rollup".to_string()),
+        content: Some("holochain".to_string()),
+        value: Some("0.7881675977653632".to_string()), // YMMV
+        extra: None,
+      },
+      // TrustAtom {
+      //   source_entry_hash: me_b64.clone(),
+      //   target_entry_hash: EntryHashB64::from(ethereum_entry_hash),
+      //   prefix: Some("rollup".to_string()),
+      //   content: Some("engineering".to_string()),
+      //   value: Some(".990000000".to_string()), // YMMV
+      //   extra: None,
+      // },
+    ]
+  ); // currently ignore targets not rated by self
+}
 
 // TESTING UTILITY FUNCTIONS
 
