@@ -117,14 +117,14 @@ fn create_bucket_string(bucket_bytes: &[u8]) -> String {
 }
 
 pub fn create_extra(input: BTreeMap<EntryHashB64, TrustAtom>) -> ExternResult<String> {
-
-  let entry = Extra { sourced_atoms: Some(input) };
+  let entry = Extra {
+    sourced_atoms: Some(input),
+  };
   create_entry(entry.clone())?;
   let entry_hash_string = hash_entry(entry)?.to_string();
   debug!("extra_hash: {:?}", entry_hash_string);
   Ok(entry_hash_string)
 } // returns stringified EntryHash
-
 
 fn normalize_value(value_str: Option<String>) -> ExternResult<Option<String>> {
   match value_str {
@@ -169,10 +169,10 @@ pub fn create_link_tag(
 
   for i in 0..chunk_options.len() {
     if let Some(chunk) = chunk_options[i].clone() {
-      chunks.push(chunk); 
+      chunks.push(chunk);
     }
     if i < chunk_options.len() - 1 {
-                  chunks.push(UNICODE_NUL_STR.to_string());
+      chunks.push(UNICODE_NUL_STR.to_string());
     }
   }
   create_link_tag_metal(link_direction, chunks)
@@ -283,7 +283,7 @@ pub fn query(
       &[Some(prefix), Some(content_starts_with)],
     )),
     (None, None, Some(value_starts_with)) => Some(create_link_tag(&link_direction, &[Some(prefix), Some(value_starts_with)])),
-    (None, None, None) => Some(create_link_tag(&link_direction, &[Some(prefix)])), 
+    (None, None, None) => Some(create_link_tag(&link_direction, &[Some(prefix)])),
     }
     }
     None => {
@@ -340,7 +340,11 @@ pub fn convert_link_to_trust_atom(
   link_direction: &LinkDirection,
   link_base: &EntryHash,
 ) -> ExternResult<TrustAtom> {
-  let link_tag_bytes = link.tag.clone().into_inner().split_off(tg_link_tag_header_length()); // drop leading "Ŧ→" or "Ŧ↩"
+  let link_tag_bytes = link
+    .tag
+    .clone()
+    .into_inner()
+    .split_off(tg_link_tag_header_length()); // drop leading "Ŧ→" or "Ŧ↩"
   let link_tag = match String::from_utf8(link_tag_bytes) {
     Ok(link_tag) => link_tag,
     Err(_) => {
@@ -354,26 +358,38 @@ pub fn convert_link_to_trust_atom(
   let chunks: Vec<&str> = link_tag.split(UNICODE_NUL_STR).collect();
   // debug!("chunks: {:?}", chunks);
 
-  let prefix = { if chunks[0].is_empty() {
-                                    None }
-                                else { Some(chunks[0].to_string()) }  
-                              }; 
+  let prefix = {
+    if chunks[0].is_empty() {
+      None
+    } else {
+      Some(chunks[0].to_string())
+    }
+  };
 
-  let content = { if chunks[1].is_empty() {
-                                    None }
-                                else { Some(chunks[1].to_string()) }  
-                              }; 
-  
-  let value = { if chunks[2].is_empty() {
-                                    None }
-                                else { Some(chunks[2].to_string()) }  
-                              }; 
+  let content = {
+    if chunks[1].is_empty() {
+      None
+    } else {
+      Some(chunks[1].to_string())
+    }
+  };
+
+  let value = {
+    if chunks[2].is_empty() {
+      None
+    } else {
+      Some(chunks[2].to_string())
+    }
+  };
   // bucket is chunk 3
-  let extra = { if chunks[4].is_empty() {
-                                    None }
-                                else { Some(chunks[4].to_string()) }  
-                              }; 
-                           
+  let extra = {
+    if chunks[4].is_empty() {
+      None
+    } else {
+      Some(chunks[4].to_string())
+    }
+  };
+
   let link_base_b64 = EntryHashB64::from(link_base.clone());
   let link_target_b64 = EntryHashB64::from(link.target);
 
@@ -383,10 +399,10 @@ pub fn convert_link_to_trust_atom(
       // target: link_target_b64.to_string(),
       source_entry_hash: link_base_b64,
       target_entry_hash: link_target_b64,
-      prefix: prefix,
-      content: content,
-      value: value,
-      extra: extra, 
+      prefix,
+      content,
+      value,
+      extra,
     },
     LinkDirection::Reverse => {
       TrustAtom {
@@ -394,10 +410,10 @@ pub fn convert_link_to_trust_atom(
         //target: link_base_b64.to_string(),   // flipped for Reverse direction
         source_entry_hash: link_target_b64, // flipped for Reverse direction
         target_entry_hash: link_base_b64,   // flipped for Reverse direction
-        prefix: prefix,
-        content: content,
-        value: value,
-        extra: extra,
+        prefix,
+        content,
+        value,
+        extra,
       }
     }
   };
