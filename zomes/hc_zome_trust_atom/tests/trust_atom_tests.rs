@@ -152,6 +152,104 @@ pub async fn test_create_trust_atom() {
   assert_eq!(chunks[2], bucket);
   assert_eq!(chunks[3], expected_entry_hash);
 }
+#[tokio::test(flavor = "multi_thread")]
+pub async fn test_create_trust_atom_with_empty_chunks() {
+  let unicode_nul: &str = std::str::from_utf8(&[0]).unwrap();
+  let (conductor, agent, cell1) = setup_1_conductor().await;
+
+  // CREATE TARGET ENTRY
+
+  let target_entry_hash: EntryHash = conductor
+    .call(
+      &cell1.zome("trust_atom"),
+      "create_string_target",
+      "Nuka Sushi",
+    )
+    .await;
+
+  // CREATE TRUST ATOM
+
+  let trust_atom_input = TrustAtomInput {
+    target: target_entry_hash.clone(),
+    content: None,
+    value: None,
+    extra: None,
+  };
+
+  let _result: TrustAtom = conductor
+    .call(
+      &cell1.zome("trust_atom"),
+      "create_trust_atom",
+      trust_atom_input,
+    )
+    .await;
+
+  // CHECK FORWARD LINK
+
+  let agent_address: EntryHash = agent.clone().into();
+
+  let forward_links: Vec<Link> = conductor
+    .call(
+      &cell1.zome("trust_atom"),
+      "test_helper_list_links_for_base",
+      agent_address,
+    )
+    .await;
+
+  assert_eq!(forward_links.len(), 1);
+  let link = &forward_links[0];
+
+  let target_from_link: EntryHash = link.clone().target;
+  assert_eq!(target_from_link, target_entry_hash);
+
+  let link_tag_bytes = link.clone().tag.into_inner();
+  let relevant_link_bytes = link_tag_bytes.to_vec();
+  let relevant_link_string = String::from_utf8(relevant_link_bytes).unwrap();
+
+  let chunks: Vec<&str> = relevant_link_string.split(unicode_nul).collect();
+  assert_eq!(chunks.len(), 4);
+  assert_eq!(chunks[0], "Ŧ→");
+  assert_eq!(chunks[1], "");
+
+  let bucket = chunks[2];
+
+  assert_eq!(bucket.chars().count(), 9);
+  assert!(bucket.chars().all(|c| c.is_digit(10)));
+
+  let expected_link_tag_string = format!(
+    "{}{}{}{}{}{}",
+    "Ŧ", "→", unicode_nul, unicode_nul, bucket, unicode_nul
+  );
+  assert_eq!(relevant_link_string, expected_link_tag_string);
+
+  // CHECK BACKWARD LINK
+
+  let backward_links: Vec<Link> = conductor
+    .call(
+      &cell1.zome("trust_atom"),
+      "test_helper_list_links_for_base",
+      target_entry_hash.clone(),
+    )
+    .await;
+
+  assert_eq!(backward_links.len(), 1);
+  let link = &backward_links[0];
+
+  let link_tag_bytes = link.clone().tag.into_inner();
+  let relevant_link_bytes = link_tag_bytes.to_vec();
+  let relevant_link_string = String::from_utf8(relevant_link_bytes).unwrap();
+  let expected_link_tag_string = format!(
+    "{}{}{}{}{}{}",
+    "Ŧ", "↩", unicode_nul, unicode_nul, bucket, unicode_nul
+  );
+  assert_eq!(relevant_link_string, expected_link_tag_string);
+
+  let chunks: Vec<&str> = relevant_link_string.split(unicode_nul).collect();
+  assert_eq!(chunks.len(), 4);
+  assert_eq!(chunks[0], "Ŧ↩");
+  assert_eq!(chunks[1], "");
+  assert_eq!(chunks[2], bucket);
+}
 
 #[tokio::test(flavor = "multi_thread")]
 pub async fn test_query_mine() {

@@ -155,9 +155,9 @@ fn create_link_tag(link_direction: &LinkDirection, chunk_options: &[Option<Strin
   for i in 0..chunk_options.len() {
     if let Some(chunk) = chunk_options[i].clone() {
       chunks.push(chunk);
-      if i < chunk_options.len() - 1 {
-        chunks.push(UNICODE_NUL_STR.to_string());
-      }
+    }
+    if i < chunk_options.len() - 1 {
+      chunks.push(UNICODE_NUL_STR.to_string());
     }
   }
 
