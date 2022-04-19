@@ -436,6 +436,8 @@ pub async fn test_create_trust_atom() {
   )]);
 
   let trust_atom_input = TrustAtomInput {
+    prefix: None,
+    source: EntryHash::from(agent.clone()),
     target: target_entry_hash.clone(),
     content: Some(content.clone()),
     value: Some(value.clone()),
