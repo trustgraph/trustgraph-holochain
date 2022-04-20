@@ -36,7 +36,7 @@ pub struct TrustAtomInput {
   pub prefix: Option<String>,
   pub content: Option<String>,
   pub value: Option<String>,
-  pub extra: Option<BTreeMap<EntryHashB64, TrustAtom>>, // TODO back to String -> String
+  pub extra: Option<BTreeMap<String, String>>, // TODO back to String -> String
                                                         // for rollups key is "rolled_up_trust_atoms"
                                                         // value is json: '["header hash of atom 1","header hash of atom 2"...]'
 }
@@ -126,4 +126,9 @@ pub fn test_helper_list_links(
 #[hdk_extern]
 pub fn test_helper_list_links_for_base(base: EntryHash) -> ExternResult<Vec<Link>> {
   test_helpers::list_links_for_base(base)
+}
+
+#[hdk_extern]
+pub fn test_helper_calc_extra_hash(input: Extra) -> ExternResult<EntryHash> {
+  test_helpers::calc_extra_hash(input)
 }
