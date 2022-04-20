@@ -87,7 +87,7 @@ fn build_rollup_silver(
     debug!("target: {:?}", target);
     if &target != me && !agents.contains(&target) {
       let links = get_links(target.clone(), None)?; // OPTION1: filter_map source by agent list
-                                                    // debug!("target_links: {:?}", links);
+       // debug!("target_links: {:?}", links);
       let mut links_latest = Vec::new();
       //// tests only ////
       let mut vec = Vec::new();
@@ -96,7 +96,7 @@ fn build_rollup_silver(
         let tag: Option<String> = String::from_utf8(bytes.clone()).ok();
         vec.push(tag);
       }
-      // debug!("silver_links: {:#?}", vec);
+      debug!("silver_links: {:#?}", vec);
       ///////
       for link in links.clone() {
         let latest = get_latest(target.clone(), link.target, None)?;
@@ -126,7 +126,7 @@ fn build_rollup_silver(
               ];
 
               let filter = create_link_tag(&LinkDirection::Forward, &chunks); // NOTE: filter by content broken if mislabeled
-                                                                              // debug!("tag_filter: {:?}", String::from_utf8_lossy(&filter.clone().into_inner()));
+              // debug!("tag_filter: {:?}", String::from_utf8_lossy(&filter.clone().into_inner()));
               let agent_rating: Option<String> =
                 get_rating(me.clone(), source.clone(), Some(filter))?;
               // debug!("agent_rating: {:?}", agent_rating);
@@ -160,52 +160,51 @@ fn build_rollup_gold(
 ) -> ExternResult<Vec<TrustAtom>> {
   let mut rollup_gold: Vec<TrustAtom> = Vec::new();
   for (target, map) in rollup_silver.clone() {
-    // let mut sourced_trust_atoms: BTreeMap<EntryHashB64, TrustAtom> = BTreeMap::new(); // collect to input for rollup extra field
+    let mut sourced_trust_atoms: BTreeMap<String, String> = BTreeMap::new(); // collect to input for rollup extra field
     let mut accumulator: Vec<f64> = Vec::new(); // gather weighted values
     let mut agent_rating_sum: f64 = 0.0;
     // debug!("map: {:#?}", map);
-    for (_agent, rollup_data) in map.clone() {
+    for (agent, rollup_data) in map.clone() {
       // debug!("data: {:#?}", rollup_data);
       if let Some(rating) = rollup_data.agent_rating {
         agent_rating_sum += rating.parse::<f64>().expect("Parse Error"); // could ignore parse err and use .ok() to convert result into option
       }
-      // debug!("agent_rating_sum: {:?}", agent_rating_sum);
-      //   let link_latest = get_latest(agent.clone(), target.clone(), None)?;
-      //     if let Some(latest) = link_latest {
-      //     let sourced_atom_latest = convert_link_to_trust_atom(
-      //       latest,
-      //       &LinkDirection::Forward,
-      //       &agent,
-      //     )?;
-      //     sourced_trust_atoms.insert(
-      //       sourced_atom_latest.source_entry_hash.clone(),
-      //       sourced_atom_latest.clone(),
-      //     );
-      //   }
+      debug!("agent_rating_sum: {:?}", agent_rating_sum);
+        let link_latest = get_latest(agent.clone(), target.clone(), None)?;
+          if let Some(latest) = link_latest {
+          let sourced_atom_latest = convert_link_to_trust_atom(
+            latest,
+            &LinkDirection::Forward,
+            &agent,
+          )?;
+          sourced_trust_atoms.insert(
+            EntryHashB64::from(sourced_atom_latest.source_entry_hash).to_string(),
+            EntryHashB64::from(sourced_atom_latest.target_entry_hash).to_string(),
+          );
+        }
     }
-
-    // let sourced_atoms: Option<BTreeMap<EntryHashB64, TrustAtom>> = {
-    //   if sourced_trust_atoms.len() > 0 {
-    //     Some(sourced_trust_atoms)
-    //   }
-    //   else { None }
-    // };
-    // debug!("sourced_atoms: {:?}", sourced_atoms);
+    let sourced_atoms: Option<BTreeMap<String, String>> = {
+      if sourced_trust_atoms.len() > 0 {
+        Some(sourced_trust_atoms)
+      }
+      else { None }
+    };
+    debug!("sourced_atoms: {:#?}", sourced_atoms);
 
     for (_agent, rollup_data) in map.clone() {
       if let Some(rating) = rollup_data.agent_rating {
         let calc: f64 = (rating.parse::<f64>().expect("Parse Error") / agent_rating_sum)
           * rollup_data.value.parse::<f64>().expect("Parse Error");
-        // debug!("calc: {:?}", calc);
+        debug!("calc: {:?}", calc);
         accumulator.push(calc);
       }
     }
 
-    // debug!("accum: {:?}", accumulator);
+    debug!("accum: {:?}", accumulator);
     let my_rating: Option<String> = get_rating(me.clone(), target.clone(), None)?;
-    // debug!("my_rating: {:?}", my_rating);
+    debug!("my_rating: {:?}", my_rating);
     let weighted_sum: f64 = accumulator.iter().sum();
-    // debug!("sum: {:?}", weighted_sum);
+    debug!("sum: {:?}", weighted_sum);
     let content: Option<String> = {
       // TODO: cleanup get content method by adding TA.target_name String
       let get_latest = get_latest(me.clone(), target.clone(), None)?;
@@ -217,7 +216,7 @@ fn build_rollup_gold(
     if let Some(rating) = my_rating {
       let parsed: f64 = rating.parse::<f64>().expect("Parse Error");
       let algo: f64 = parsed + ((weighted_sum - parsed) * 0.20); // self weight is 80%
-      // debug!("algo: {:?}", algo);
+      debug!("algo: {:?}", algo);
       let rollup_atom = create_trust_atom(
         me.clone(),
         target.clone(),
@@ -237,7 +236,7 @@ fn build_rollup_gold(
         Some("rollup".to_string()),
         content.clone(),
         Some(algo.to_string()),
-        None, //sourced_atoms.clone(),
+        sourced_atoms.clone(),
       )?;
       rollup_gold.push(rollup_atom);
     }

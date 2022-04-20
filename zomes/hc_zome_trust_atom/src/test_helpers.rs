@@ -1,6 +1,7 @@
 #![allow(clippy::module_name_repetitions)]
 
 use hdk::prelude::*;
+use crate::trust_atom::Extra;
 
 #[derive(Serialize, Deserialize, Debug, SerializedBytes)]
 struct StringLinkTag(String);
@@ -33,6 +34,10 @@ pub fn create_string_target(input: String) -> ExternResult<EntryHash> {
 
   let target_entry_hash = hash_entry(string_target)?;
   Ok(target_entry_hash)
+}
+
+pub fn calc_extra_hash(input: Extra) -> ExternResult<EntryHash> {
+  hash_entry(input)
 }
 
 fn link_tag(tag: String) -> ExternResult<LinkTag> {

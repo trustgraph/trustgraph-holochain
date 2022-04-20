@@ -32,11 +32,17 @@ const LINK_TAG_HEADER: [u8; 2] = [197, 166]; // Unicode "Ŧ" // hex bytes: [0xC5
 const LINK_TAG_ARROW_FORWARD: [u8; 3] = [226, 134, 146]; // Unicode "→" // hex bytes: [0xE2][0x86][0x92]
 const LINK_TAG_ARROW_REVERSE: [u8; 3] = [226, 134, 169]; // Unicode "↩" // hex bytes: [0xE2][0x86][0xA9]
 
+// pub enum ExtraEntryInput {
+//   Content(String),
+//   SourcedAtoms(BTreeMap<EntryHashB64, TrustAtom>),
+//   Attributes(BTreeMap<String, String>),
+// }
+
 #[hdk_entry(id = "extra", visibility = "public")]
-#[derive(Clone)]
+#[derive(Clone, PartialEq, Eq)]
 pub struct Extra {
   //pub content_overflow: Option<String>,
-  pub sourced_atoms: Option<BTreeMap<EntryHashB64, TrustAtom>>,
+  pub sourced_atoms: Option<BTreeMap<String, String>>, // K: AgentPubKey (as EntryHash), V: Target EntryHash
   //pub attributes: Option<BTreeMap<String, String>>
 }
 
@@ -46,7 +52,7 @@ pub fn create_trust_atom(
   prefix: Option<String>,
   content: Option<String>,
   value: Option<String>,
-  extra: Option<BTreeMap<EntryHashB64, TrustAtom>>, // ?TODO: make generic
+  extra: Option<BTreeMap<String, String>>,
 ) -> ExternResult<TrustAtom> {
   let agent_address = source; //// modified for testing purposes ////
 
@@ -98,7 +104,8 @@ pub fn create_trust_atom(
     value,
     extra: extra_entry_hash_string,
   };
-  // debug!("atoms: {:?}", trust_atom);
+
+  // debug!("atoms: {:#?}", trust_atom);
   Ok(trust_atom)
 }
 
@@ -116,7 +123,7 @@ fn create_bucket_string(bucket_bytes: &[u8]) -> String {
   bucket
 }
 
-pub fn create_extra(input: BTreeMap<EntryHashB64, TrustAtom>) -> ExternResult<String> {
+pub fn create_extra(input: BTreeMap<String, String>) -> ExternResult<String> {
   let entry = Extra {
     sourced_atoms: Some(input),
   };
@@ -166,7 +173,7 @@ pub fn create_link_tag(
   chunk_options: &[Option<String>],
 ) -> LinkTag {
   let mut chunks: Vec<String> = vec![];
-
+  
   for i in 0..chunk_options.len() {
     if let Some(chunk) = chunk_options[i].clone() {
       chunks.push(chunk);
@@ -187,13 +194,36 @@ fn create_link_tag_metal(link_direction: &LinkDirection, chunks: Vec<String>) ->
   let mut link_tag_bytes = vec![];
   link_tag_bytes.extend_from_slice(&LINK_TAG_HEADER);
   link_tag_bytes.extend_from_slice(&link_tag_arrow);
+  link_tag_bytes.extend_from_slice(UNICODE_NUL_STR.as_bytes());
 
   for chunk in chunks {
     link_tag_bytes.extend_from_slice(chunk.as_bytes());
   }
 
-  // debug!("link_tag: {:?}", String::from_utf8_lossy(&link_tag_bytes));
+  // debug!("link_tag_metal: {:?}", String::from_utf8_lossy(&link_tag_bytes));
   LinkTag(link_tag_bytes)
+}
+
+pub fn build_link_tag(
+  link_direction: &LinkDirection,
+  chunk_options: &[Option<String>],
+  nul_count: u8,
+) -> LinkTag {
+let mut chunks: Vec<String> = vec![];
+let mut count = 0;
+  while nul_count > count {
+    chunks.push(UNICODE_NUL_STR.to_string());
+    count += 1;
+  }
+  for i in 0..chunk_options.len() {
+    if let Some(chunk) = chunk_options[i].clone() {
+      chunks.push(chunk);
+    }
+    if i < chunk_options.len() - 1 {
+      chunks.push(UNICODE_NUL_STR.to_string());
+    }
+  }
+  create_link_tag_metal(link_direction, chunks)
 }
 
 pub fn get_extra(entry_hash: &EntryHash) -> ExternResult<Extra> {
@@ -259,10 +289,12 @@ pub fn query(
       ))
     }
   };
+  // debug!("link_direction: {:?}", link_direction);
+  // debug!("link_base: {:?}", link_base);
 
   let link_tag = match prefix {
     Some(prefix) => {
-     match (content_full, content_starts_with, value_starts_with) {
+     match (content_full.clone(), content_starts_with, value_starts_with) {
     (Some(_content_full), Some(_content_starts_with), _) => {
       return Err(WasmError::Guest("Only one of `content_full` or `content_starts_with` can be used".into()))
     }
@@ -271,23 +303,23 @@ pub fn query(
         "Cannot use `value_starts_with` and `content_starts_with` arguments together; maybe try `content_full` instead?".into(),
       ))
     }
-    (Some(content_full), None, Some(value_starts_with)) => Some(create_link_tag(
+    (Some(content_full), None, Some(value_starts_with)) => Some(build_link_tag(
       &link_direction,
-      &[Some(prefix), Some(content_full), Some(value_starts_with)],
+      &[Some(prefix), Some(content_full), Some(value_starts_with)], 0,
     )),
     (Some(content_full), None, None) => {
-      Some(create_link_tag(&link_direction, &[Some(prefix), Some(content_full)]))
+      Some(build_link_tag(&link_direction, &[Some(prefix), Some(content_full)], 0))
     }
-    (None, Some(content_starts_with), None) => Some(create_link_tag(
+    (None, Some(content_starts_with), None) => Some(build_link_tag(
       &link_direction,
-      &[Some(prefix), Some(content_starts_with)],
+      &[Some(prefix), Some(content_starts_with)], 0,
     )),
-    (None, None, Some(value_starts_with)) => Some(create_link_tag(&link_direction, &[Some(prefix), Some(value_starts_with)])),
-    (None, None, None) => Some(create_link_tag(&link_direction, &[Some(prefix)])),
+    (None, None, Some(value_starts_with)) => Some(build_link_tag(&link_direction, &[Some(prefix), Some(value_starts_with)], 0)),
+    (None, None, None) => Some(build_link_tag(&link_direction, &[Some(prefix)], 0)),
     }
     }
     None => {
-    match (content_full, content_starts_with, value_starts_with) {
+    match (content_full.clone(), content_starts_with, value_starts_with) {
     (Some(_content_full), Some(_content_starts_with), _) => {
       return Err(WasmError::Guest("Only one of `content_full` or `content_starts_with` can be used".into()))
     }
@@ -296,26 +328,39 @@ pub fn query(
         "Cannot use `value_starts_with` and `content_starts_with` arguments together; maybe try `content_full` instead?".into(),
       ))
     }
-    (Some(content_full), None, Some(value_starts_with)) => Some(create_link_tag(
+    (Some(content_full), None, Some(value_starts_with)) => Some(build_link_tag(
       &link_direction,
-      &[Some(content_full), Some(value_starts_with)],
+      &[Some(content_full), Some(value_starts_with)], 1,
     )),
     (Some(content_full), None, None) => {
-      Some(create_link_tag(&link_direction, &[Some(content_full)]))
+      Some(build_link_tag(&link_direction, &[Some(content_full)], 1))
     }
-    (None, Some(content_starts_with), None) => Some(create_link_tag(
+    (None, Some(content_starts_with), None) => Some(build_link_tag(
       &link_direction,
-      &[Some(content_starts_with)],
+      &[Some(content_starts_with)], 1
     )),
-    (None, None, Some(value_starts_with)) => Some(create_link_tag(&link_direction, &[Some(value_starts_with)])),
+    (None, None, Some(value_starts_with)) => Some(build_link_tag(&link_direction, &[Some(value_starts_with)], 2)),
     (None, None, None) => None,
     }
     }
   };
-  let links = get_links(link_base.clone(), link_tag)?;
+  // let link_tag_string = String::from_utf8(link_tag.clone().unwrap().into_inner());
+  // debug!("link_tag:  {:?}", link_tag_string);
+  let links = { 
 
+    if content_full.is_some() {
+      let mut filter = link_tag.clone().expect("Expected content").into_inner(); 
+      filter.extend_from_slice(UNICODE_NUL_STR.as_bytes());
+      // debug!("filter: {:?}", filter);
+      get_links(link_base.clone(), Some(LinkTag::from(filter)))?
+    }
+    else {
+      get_links(link_base.clone(), link_tag)?
+    }
+  };
+  // debug!("links: {:?}", links);
   let trust_atoms = convert_links_to_trust_atoms(links, &link_direction, &link_base)?;
-  // debug!("query_atoms: {:#?}", trust_atoms);
+  debug!("query_atoms: {:#?}", trust_atoms);
   Ok(trust_atoms)
 }
 
@@ -343,8 +388,8 @@ pub fn convert_link_to_trust_atom(
   let link_tag_bytes = link
     .tag
     .clone()
-    .into_inner()
-    .split_off(tg_link_tag_header_length()); // drop leading "Ŧ→" or "Ŧ↩"
+    .into_inner();
+    // .split_off(tg_link_tag_header_length()); // drop leading "Ŧ→" or "Ŧ↩" // not needed if we add unicode nul after, see line 190
   let link_tag = match String::from_utf8(link_tag_bytes) {
     Ok(link_tag) => link_tag,
     Err(_) => {
@@ -359,14 +404,6 @@ pub fn convert_link_to_trust_atom(
   // debug!("chunks: {:?}", chunks);
 
   let prefix = {
-    if chunks[0].is_empty() {
-      None
-    } else {
-      Some(chunks[0].to_string())
-    }
-  };
-
-  let content = {
     if chunks[1].is_empty() {
       None
     } else {
@@ -374,19 +411,27 @@ pub fn convert_link_to_trust_atom(
     }
   };
 
-  let value = {
+  let content = {
     if chunks[2].is_empty() {
       None
     } else {
       Some(chunks[2].to_string())
     }
   };
-  // bucket is chunk 3
-  let extra = {
-    if chunks[4].is_empty() {
+
+  let value = {
+    if chunks[3].is_empty() {
       None
     } else {
-      Some(chunks[4].to_string())
+      Some(chunks[3].to_string())
+    }
+  };
+  // bucket is chunk 4
+  let extra = {
+    if chunks[5].is_empty() {
+      None
+    } else {
+      Some(chunks[5].to_string())
     }
   };
 
@@ -421,9 +466,9 @@ pub fn convert_link_to_trust_atom(
   Ok(trust_atom)
 }
 
-const fn tg_link_tag_header_length() -> usize {
-  LINK_TAG_HEADER.len() + LINK_TAG_ARROW_FORWARD.len()
-}
+// const fn tg_link_tag_header_length() -> usize {
+//   LINK_TAG_HEADER.len() + LINK_TAG_ARROW_FORWARD.len()
+// }
 
 // #[cfg(test)]
 // #[allow(clippy::unwrap_used)]
