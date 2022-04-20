@@ -455,18 +455,20 @@ pub async fn test_create_trust_atom_with_empty_chunks() {
   let relevant_link_string = String::from_utf8(relevant_link_bytes).unwrap();
 
   let chunks: Vec<&str> = relevant_link_string.split(unicode_nul).collect();
-  assert_eq!(chunks.len(), 4);
+  assert_eq!(chunks.len(), 6);
   assert_eq!(chunks[0], "Ŧ→");
   assert_eq!(chunks[1], "");
+  assert_eq!(chunks[2], "");
+  assert_eq!(chunks[3], "");
 
-  let bucket = chunks[2];
+  let bucket = chunks[4];
 
   assert_eq!(bucket.chars().count(), 9);
   assert!(bucket.chars().all(|c| c.is_digit(10)));
 
   let expected_link_tag_string = format!(
-    "{}{}{}{}{}{}",
-    "Ŧ", "→", unicode_nul, unicode_nul, bucket, unicode_nul
+    "{}{}{}{}{}{}{}{}",
+    "Ŧ", "→", unicode_nul, unicode_nul, unicode_nul, unicode_nul, bucket, unicode_nul
   );
   assert_eq!(relevant_link_string, expected_link_tag_string);
 
@@ -487,17 +489,21 @@ pub async fn test_create_trust_atom_with_empty_chunks() {
   let relevant_link_bytes = link_tag_bytes.to_vec();
   let relevant_link_string = String::from_utf8(relevant_link_bytes).unwrap();
   let expected_link_tag_string = format!(
-    "{}{}{}{}{}{}",
-    "Ŧ", "↩", unicode_nul, unicode_nul, bucket, unicode_nul
+    "{}{}{}{}{}{}{}{}",
+    "Ŧ", "↩", unicode_nul, unicode_nul, unicode_nul, unicode_nul, bucket, unicode_nul
   );
   assert_eq!(relevant_link_string, expected_link_tag_string);
 
   let chunks: Vec<&str> = relevant_link_string.split(unicode_nul).collect();
-  assert_eq!(chunks.len(), 4);
+  assert_eq!(chunks.len(), 6);
   assert_eq!(chunks[0], "Ŧ↩");
   assert_eq!(chunks[1], "");
-  assert_eq!(chunks[2], bucket);
+  assert_eq!(chunks[2], "");
+  assert_eq!(chunks[3], "");
+  assert_eq!(chunks[4], bucket);
 }
+
+#[tokio::test(flavor = "multi_thread")]
 pub async fn test_create_trust_graph() {
   let (conductors, agents, apps) = setup_conductors(3).await;
   conductors.exchange_peer_info().await;
