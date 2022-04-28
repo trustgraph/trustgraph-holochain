@@ -88,6 +88,7 @@ pub struct TrustAtom {
   pub target: String,
   pub source_entry_hash: EntryHashB64,
   pub target_entry_hash: EntryHashB64,
+  pub prefix: Option<String>
   pub content: Option<String>,
   pub value: Option<String>,
   pub extra: Option<BTreeMap<String, String>>,
@@ -129,14 +130,14 @@ We encode TrustAtoms as links, with the following components:
 ### Full Example Link Tags
 
 ```
-Ŧ→sushi[0x00]0.999999999[0x00]892412523[0x00]uhCEk…UFnFF
-Ŧ↩sushi[0x00]0.999999999[0x00]892412523[0x00]uhCEk…UFnFF
+Ŧ→[0x00]prefix[0x00]sushi[0x00]0.999999999[0x00]892412523[0x00]uhCEk…UFnFF
+Ŧ↩[0x00]prefix[0x00]sushi[0x00]0.999999999[0x00]892412523[0x00]uhCEk…UFnFF
 
-Ŧ→sushi[0x00]0.800000000[0x00]087423432[0x00]uhCEk…qS5wc
-Ŧ↩sushi[0x00]0.800000000[0x00]087423432[0x00]uhCEk…qS5wc
+Ŧ→[0x00]rollup[0x00]content[0x00]0.800000000[0x00]087423432[0x00]uhCEk…qS5wc
+Ŧ↩[0x00]rollup[0x00]content[0x00]0.800000000[0x00]087423432[0x00]uhCEk…qS5wc
 
-Ŧ→spam[0x00]-0.999999999[0x00]328425615[0x00]uhCEk…VaaDd
-Ŧ→block[0x00]-0.999999999[0x00]837592944[0x00]uhCEk…VaaDd
+Ŧ→[0x00]entry[0x00]spam[0x00]-0.999999999[0x00]328425615[0x00]uhCEk…VaaDd
+Ŧ→[0x00]agent[0x00]block[0x00]-0.999999999[0x00]837592944[0x00]uhCEk…VaaDd
 ```
 
 ## Roadmap
