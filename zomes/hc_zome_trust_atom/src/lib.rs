@@ -32,7 +32,7 @@ entry_defs![test_helpers::StringTarget::entry_def(), Extra::entry_def()];
 #[derive(Serialize, Deserialize, SerializedBytes, Debug, Clone)]
 pub struct TrustAtomInput {
   pub source: EntryHash, //// for testing purposes ////
-  pub target: EntryHash, // TODO maybe target_entry_hash?
+  pub target: EntryHash, 
   pub prefix: Option<String>,
   pub content: Option<String>,
   pub value: Option<String>,

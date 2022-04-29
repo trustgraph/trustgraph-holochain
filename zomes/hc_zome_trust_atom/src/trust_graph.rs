@@ -32,8 +32,6 @@ pub fn create_rollup_atoms() -> ExternResult<Vec<TrustAtom>> {
   // debug!("agent_links: {:#?}", vec);
   ////////
 
-  // TODO: feature: general agent rating for all things (not just for specific content)
-
   let rollup_silver: BTreeMap<EntryHash, BTreeMap<EntryHash, RollupData>> =
     build_rollup_silver(&me, my_atoms, agents)?;
   let rollup_gold: Vec<TrustAtom> = build_rollup_gold(rollup_silver, me)?;
