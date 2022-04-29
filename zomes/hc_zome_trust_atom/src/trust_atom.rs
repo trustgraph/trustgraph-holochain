@@ -17,14 +17,14 @@ pub enum LinkDirection {
 /// We may support JSON in the future to allow for more complex data structures @TODO
 #[derive(Serialize, Deserialize, SerializedBytes, Debug, Clone, Eq, PartialEq, Hash)]
 pub struct TrustAtom {
-  // pub source: String, // TODO source_name
+  // pub source: String, 
   // pub target: String,
   pub source_entry_hash: EntryHashB64,
   pub target_entry_hash: EntryHashB64,
   pub prefix: Option<String>,
   pub content: Option<String>,
   pub value: Option<String>,
-  pub extra: Option<String>, // stringified EntryHash of the associated extra entry
+  pub extra: Option<BTreeMap<String, String>>,
 }
 
 const UNICODE_NUL_STR: &str = "\u{0}"; // Unicode NUL character
