@@ -9,13 +9,20 @@ struct StringLinkTag(String);
 #[derive(Clone)]
 pub struct StringTarget(String);
 
-pub fn list_links_for_base(base: EntryHash) -> ExternResult<Vec<Link>> {
+#[hdk_entry(id = "test", visibility = "public")]
+#[derive(Clone)]
+pub struct Test {
+  pub example_field: String,
+  //another_test_field:
+}
+
+pub fn list_links_for_base(base: AnyLinkableHash) -> ExternResult<Vec<Link>> {
   let links = hdk::link::get_links(base, None)?;
 
   Ok(links)
 }
 
-pub fn list_links(base: EntryHash, link_tag_text: Option<String>) -> ExternResult<Vec<Link>> {
+pub fn list_links(base: AnyLinkableHash, link_tag_text: Option<String>) -> ExternResult<Vec<Link>> {
   let link_tag = match link_tag_text {
     Some(link_tag_text) => Some(link_tag(link_tag_text)?),
     None => None,
@@ -24,6 +31,11 @@ pub fn list_links(base: EntryHash, link_tag_text: Option<String>) -> ExternResul
   let links = hdk::link::get_links(base, link_tag)?;
 
   Ok(links)
+}
+
+fn link_tag(tag: String) -> ExternResult<LinkTag> {
+  let serialized_bytes: SerializedBytes = StringLinkTag(tag).try_into()?;
+  Ok(LinkTag(serialized_bytes.bytes().clone()))
 }
 
 pub fn create_string_target(input: String) -> ExternResult<EntryHash> {
@@ -35,7 +47,36 @@ pub fn create_string_target(input: String) -> ExternResult<EntryHash> {
   Ok(target_entry_hash)
 }
 
-fn link_tag(tag: String) -> ExternResult<LinkTag> {
-  let serialized_bytes: SerializedBytes = StringLinkTag(tag).try_into()?;
-  Ok(LinkTag(serialized_bytes.bytes().clone()))
+pub fn create_test_entry(input: Test) -> ExternResult<HeaderHash> {
+  create_entry(input)
+}
+
+pub fn get_entry_by_header(header_hash: HeaderHash) -> ExternResult<Test> {
+  let element = get_element_by_header(header_hash, GetOptions::default())?;
+  match element.entry() {
+    element::ElementEntry::Present(entry) => {
+      Test::try_from(entry.clone()).or(Err(WasmError::Guest(format!(
+        "Couldn't convert Element entry {:?} into data type {}",
+        entry,
+        std::any::type_name::<Test>()
+      ))))
+    }
+    _ => Err(WasmError::Guest(format!(
+      "Element {:?} does not have an entry",
+      element
+    ))),
+  }
+}
+#[allow(clippy::needless_pass_by_value)]
+fn get_element_by_header(
+  header_hash: HeaderHash,
+  get_options: GetOptions,
+) -> ExternResult<Element> {
+  match get(header_hash.clone(), get_options)? {
+    Some(element) => Ok(element),
+    None => Err(WasmError::Guest(format!(
+      "There is no element at the hash {}",
+      header_hash
+    ))),
+  }
 }

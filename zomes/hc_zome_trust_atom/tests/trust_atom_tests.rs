@@ -7,8 +7,10 @@ use futures::future;
 // use hc_zome_trust_atom::*;
 
 use hc_zome_trust_atom::*;
-use hdk::prelude::holo_hash::EntryHashB64;
 use hdk::prelude::*;
+use holo_hash::AgentPubKey;
+use holo_hash::AnyLinkableHash;
+use holo_hash::AnyLinkableHashB64;
 use holochain::sweettest::{
   SweetAgents, SweetAppBatch, SweetCell, SweetConductor, SweetConductorBatch, SweetDnaFile,
 };
@@ -51,7 +53,7 @@ pub async fn test_create_trust_atom() {
   )]);
 
   let trust_atom_input = TrustAtomInput {
-    target: target_entry_hash.clone(),
+    target: AnyLinkableHash::from(target_entry_hash.clone()),
     content: Some(content.clone()),
     value: Some(value.clone()),
     extra: Some(extra.clone()),
@@ -80,8 +82,11 @@ pub async fn test_create_trust_atom() {
   assert_eq!(forward_links.len(), 1);
   let link = &forward_links[0];
 
-  let target_from_link: EntryHash = link.clone().target;
-  assert_eq!(target_from_link, target_entry_hash);
+  let target_from_link = link.clone().target;
+  assert_eq!(
+    target_from_link,
+    AnyLinkableHash::from(target_entry_hash.clone())
+  );
 
   let link_tag_bytes = link.clone().tag.into_inner();
   let relevant_link_bytes = link_tag_bytes.to_vec();
@@ -170,7 +175,7 @@ pub async fn test_create_trust_atom_with_empty_chunks() {
   // CREATE TRUST ATOM
 
   let trust_atom_input = TrustAtomInput {
-    target: target_entry_hash.clone(),
+    target: AnyLinkableHash::from(target_entry_hash.clone()),
     content: None,
     value: None,
     extra: None,
@@ -199,8 +204,11 @@ pub async fn test_create_trust_atom_with_empty_chunks() {
   assert_eq!(forward_links.len(), 1);
   let link = &forward_links[0];
 
-  let target_from_link: EntryHash = link.clone().target;
-  assert_eq!(target_from_link, target_entry_hash);
+  let target_from_link = link.clone().target;
+  assert_eq!(
+    target_from_link,
+    AnyLinkableHash::from(target_entry_hash.clone())
+  );
 
   let link_tag_bytes = link.clone().tag.into_inner();
   let relevant_link_bytes = link_tag_bytes.to_vec();
@@ -272,7 +280,7 @@ pub async fn test_query_mine() {
       &cell1.zome("trust_atom"),
       "create_trust_atom",
       TrustAtomInput {
-        target: target_entry_hash.clone(),
+        target: AnyLinkableHash::from(target_entry_hash.clone()),
         content: Some("sushi".to_string()),
         value: Some("0.8".to_string()),
         extra: Some(BTreeMap::new()),
@@ -300,19 +308,17 @@ pub async fn test_query_mine() {
 
   assert_eq!(trust_atoms_from_query.len(), 1);
 
-  let source_entry_hash_b64 = EntryHashB64::from(EntryHash::from(agent.clone()));
-  let target_entry_hash_b64 = EntryHashB64::from(target_entry_hash);
+  // let source_entry_hash_b64 = EntryHashB64::from(EntryHash::from(agent.clone()));
+  // let target_entry_hash_b64 = EntryHashB64::from(target_entry_hash);
   let trust_atom = &trust_atoms_from_query[0];
 
   assert_eq!(
     *trust_atom,
     TrustAtom {
-      source: source_entry_hash_b64.to_string(),
-      target: target_entry_hash_b64.to_string(),
+      source_entry_hash: AnyLinkableHashB64::from(AnyLinkableHash::from(agent.clone())),
+      target_entry_hash: AnyLinkableHashB64::from(AnyLinkableHash::from(target_entry_hash)),
       content: Some("sushi".to_string()),
       value: Some(".800000000".to_string()),
-      source_entry_hash: source_entry_hash_b64,
-      target_entry_hash: target_entry_hash_b64,
       extra: Some(BTreeMap::new()),
     }
   );
@@ -342,7 +348,7 @@ pub async fn test_query_mine_with_content_starts_with() {
         &cell1.zome("trust_atom"),
         "create_trust_atom",
         TrustAtomInput {
-          target: target_entry_hash.clone(),
+          target: AnyLinkableHash::from(target_entry_hash.clone()),
           content: Some(content.into()),
           value: Some("0.8".into()),
           extra: Some(BTreeMap::new()),
@@ -404,7 +410,7 @@ pub async fn test_query_mine_with_content_full() {
         &cell1.zome("trust_atom"),
         "create_trust_atom",
         TrustAtomInput {
-          target: target_entry_hash.clone(),
+          target: AnyLinkableHash::from(target_entry_hash.clone()),
           content: Some(content_full.into()),
           value: Some("0.8".into()),
           extra: Some(BTreeMap::new()),
@@ -434,44 +440,6 @@ pub async fn test_query_mine_with_content_full() {
     trust_atoms_from_query[0].clone().content,
     Some("sushi".to_string())
   );
-}
-
-// TESTING UTILITY FUNCTIONS
-
-async fn setup_1_conductor() -> (SweetConductor, AgentPubKey, SweetCell) {
-  let dna = SweetDnaFile::from_bundle(std::path::Path::new(DNA_FILEPATH))
-    .await
-    .unwrap();
-
-  let mut conductor = SweetConductor::from_standard_config().await;
-
-  let agent = SweetAgents::one(conductor.keystore()).await;
-  let app1 = conductor
-    .setup_app_for_agent("app", agent.clone(), &[dna.clone()])
-    .await
-    .unwrap();
-
-  let cell1 = app1.into_cells()[0].clone();
-
-  (conductor, agent, cell1)
-}
-
-pub async fn setup_conductors(n: usize) -> (SweetConductorBatch, Vec<AgentPubKey>, SweetAppBatch) {
-  let dna = SweetDnaFile::from_bundle(std::path::Path::new(DNA_FILEPATH))
-    .await
-    .unwrap();
-
-  let mut conductors = SweetConductorBatch::from_standard_config(n).await;
-
-  let all_agents: Vec<AgentPubKey> =
-    future::join_all(conductors.iter().map(|c| SweetAgents::one(c.keystore()))).await;
-  let apps = conductors
-    .setup_app_for_zipped_agents("app", &all_agents, &[dna])
-    .await
-    .unwrap();
-
-  conductors.exchange_peer_info().await;
-  (conductors, all_agents, apps)
 }
 
 #[tokio::test(flavor = "multi_thread")]
@@ -548,4 +516,109 @@ pub async fn test_get_extra() {
       &"Put more information here".to_string()
     )
   );
+}
+
+#[tokio::test(flavor = "multi_thread")]
+pub async fn test_get_entry_by_headerhash() {
+  let (conductor, _agent, cell1) = setup_1_conductor().await;
+
+  let test_entry = Test {
+    example_field: "test".to_string(),
+  };
+
+  let header_hash: HeaderHash = conductor
+    .call(&cell1.zome("trust_atom"), "create_test_entry", test_entry)
+    .await;
+
+  let retrieval: Test = conductor
+    .call(
+      &cell1.zome("trust_atom"),
+      "test_get_entry_by_header",
+      header_hash,
+    )
+    .await;
+  assert_eq!("test".to_string(), retrieval.example_field);
+}
+
+// #[tokio::test(flavor = "multi_thread")]
+// pub async fn test_fetch_external() {
+//   let (conductor, agent, cell1) = setup_1_conductor().await;
+
+//   //// WIP
+
+//   let ipfs_address = ExternalHash::from("https://ipfs.io/ipfs/Qme7ss3ARVgxv6rXqVPiikMJ8u2NLgmgszg13pYrDKEoiu".to_string());
+//   let hc_linked_ipfs_address = AnyLinkableHash::from(ipfs_address.clone());
+
+//   let mock_input = TrustAtomInput {
+//     target: AnyLinkableHash::from(ipfs_address),
+//     content: Some("ipfs".to_string()),
+//     value: None,
+//     extra: None,
+//   };
+
+//   let mock_trust_atom: TrustAtom = conductor
+//     .call(
+//       &cell1.zome("trust_atom"),
+//       "create_trust_atom",
+//       mock_input.clone(),
+//     )
+//     .await;
+
+//   let external_link = get_links(AnyLinkableHash::from(ipfs_address), None);
+
+//   let fetched_atom = convert_link_to_trust_atom(external_link, LinkDirection::Reverse, AnyLinkableHash::from(agent))?;
+
+//   println!("external_link: {:?}", external_link);
+//   assert_eq!(mock_trust_atom, fetched_atom);
+//   assert_eq!(fetched_atom.target, ipfs_address);
+// }
+
+// TESTING UTILITY FUNCTIONS
+
+async fn setup_1_conductor() -> (SweetConductor, AgentPubKey, SweetCell) {
+  let dna = SweetDnaFile::from_bundle(std::path::Path::new(DNA_FILEPATH))
+    .await
+    .unwrap();
+
+  let mut conductor = SweetConductor::from_standard_config().await;
+
+  let holo_core_agent = SweetAgents::one(conductor.keystore()).await;
+  let app1 = conductor
+    .setup_app_for_agent("app", holo_core_agent.clone(), &[dna.clone()])
+    .await
+    .unwrap();
+
+  let cell1 = app1.into_cells()[0].clone();
+
+  let agent_hash = holo_core_agent.into_inner();
+  let agent = AgentPubKey::from_raw_39(agent_hash).unwrap();
+
+  (conductor, agent, cell1)
+}
+
+pub async fn setup_conductors(n: usize) -> (SweetConductorBatch, Vec<AgentPubKey>, SweetAppBatch) {
+  let dna = SweetDnaFile::from_bundle(std::path::Path::new(DNA_FILEPATH))
+    .await
+    .unwrap();
+
+  let mut conductors = SweetConductorBatch::from_standard_config(n).await;
+
+  let all_agents1: Vec<holochain::core::AgentPubKey> =
+    future::join_all(conductors.iter().map(|c| SweetAgents::one(c.keystore()))).await;
+
+  let all_agents2: Vec<AgentPubKey> = all_agents1
+    .iter()
+    .map(|holo_core_agent| {
+      let agent_hash = holo_core_agent.clone().into_inner();
+      AgentPubKey::from_raw_39(agent_hash).unwrap()
+    })
+    .collect();
+
+  let apps = conductors
+    .setup_app_for_zipped_agents("app", &all_agents1, &[dna])
+    .await
+    .unwrap();
+
+  conductors.exchange_peer_info().await;
+  (conductors, all_agents2, apps)
 }

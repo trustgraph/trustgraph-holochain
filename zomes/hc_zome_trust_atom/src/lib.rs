@@ -4,8 +4,8 @@
 #![deny(clippy::nursery)]
 #![deny(clippy::unwrap_used)]
 #![deny(clippy::unwrap_in_result)]
-#![allow(clippy::missing_const_for_fn)]
 #![allow(clippy::missing_errors_doc)] // TODO fix and remove this
+#![allow(clippy::missing_const_for_fn)]
 #![allow(clippy::or_fun_call)]
 
 // #![warn(clippy::cargo)]
@@ -17,14 +17,19 @@ use std::collections::BTreeMap;
 pub mod trust_atom;
 pub use crate::trust_atom::*;
 pub mod test_helpers;
+pub use test_helpers::Test;
 
-entry_defs![test_helpers::StringTarget::entry_def(), Extra::entry_def()];
+entry_defs![
+  test_helpers::StringTarget::entry_def(),
+  Extra::entry_def(),
+  Test::entry_def()
+];
 
 // INPUT TYPES
 
 #[derive(Serialize, Deserialize, SerializedBytes, Debug, Clone)]
 pub struct TrustAtomInput {
-  pub target: EntryHash, // TODO maybe target_entry_hash?
+  pub target: AnyLinkableHash,
   pub content: Option<String>,
   pub value: Option<String>,
   pub extra: Option<BTreeMap<String, String>>,
@@ -32,8 +37,8 @@ pub struct TrustAtomInput {
 
 #[derive(Serialize, Deserialize, SerializedBytes, Debug, Clone)]
 pub struct QueryInput {
-  pub source: Option<EntryHash>,
-  pub target: Option<EntryHash>,
+  pub source: Option<AnyLinkableHash>,
+  pub target: Option<AnyLinkableHash>,
   pub content_full: Option<String>,
   pub content_starts_with: Option<String>,
   pub value_starts_with: Option<String>,
@@ -41,7 +46,7 @@ pub struct QueryInput {
 
 #[derive(Serialize, Deserialize, SerializedBytes, Debug, Clone)]
 pub struct QueryMineInput {
-  pub target: Option<EntryHash>,
+  pub target: Option<AnyLinkableHash>,
   pub content_full: Option<String>,
   pub content_starts_with: Option<String>,
   pub value_starts_with: Option<String>,
@@ -96,13 +101,23 @@ pub fn create_string_target(input: String) -> ExternResult<EntryHash> {
 }
 
 #[hdk_extern]
+pub fn create_test_entry(input: Test) -> ExternResult<HeaderHash> {
+  test_helpers::create_test_entry(input)
+}
+
+#[hdk_extern]
+pub fn test_get_entry_by_header(input: HeaderHash) -> ExternResult<Test> {
+  test_helpers::get_entry_by_header(input)
+}
+
+#[hdk_extern]
 pub fn test_helper_list_links(
-  (base, link_tag_text): (EntryHash, Option<String>),
+  (base, link_tag_text): (AnyLinkableHash, Option<String>),
 ) -> ExternResult<Vec<Link>> {
   test_helpers::list_links(base, link_tag_text)
 }
 
 #[hdk_extern]
-pub fn test_helper_list_links_for_base(base: EntryHash) -> ExternResult<Vec<Link>> {
+pub fn test_helper_list_links_for_base(base: AnyLinkableHash) -> ExternResult<Vec<Link>> {
   test_helpers::list_links_for_base(base)
 }
