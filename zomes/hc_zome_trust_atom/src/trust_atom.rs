@@ -4,6 +4,8 @@ use ::holo_hash::EntryHashB64;
 use hdk::prelude::*;
 use rust_decimal::prelude::*;
 use std::collections::BTreeMap;
+use std::collections::hash_map::DefaultHasher;
+use std::hash::{Hash,Hasher};
 
 use crate::utils::*;
 
@@ -17,6 +19,7 @@ pub enum LinkDirection {
 /// We may support JSON in the future to allow for more complex data structures @TODO
 #[derive(Serialize, Deserialize, SerializedBytes, Debug, Clone, Eq, PartialEq, Hash)]
 pub struct TrustAtom {
+  pub id: Option<String>, // hash of: source_entry_hash + target_entry_hash + random number
   // pub source: String, 
   // pub target: String,
   pub source_entry_hash: EntryHashB64,
@@ -58,6 +61,14 @@ pub fn create_trust_atom(
 
   //let agent_address: EntryHash = agent_info()?.agent_initial_pubkey.into();
 
+  let mut hasher = DefaultHasher::new();
+  let source_raw_bytes: &[u8] = source.get_raw_36();
+  let target_raw_bytes: &[u8] = target.get_raw_36();
+  let random_bytes: &[u8] = create_bucket()?.as_bytes();
+  let bytes: &[u8] = [source, target, random_bytes].concat();
+  bytes.hash(&mut hasher);
+  let id: String = hasher.finish().to_string();
+  debug!("id: {:?}", id);
   let bucket = create_bucket()?;
 
   let extra_entry_hash_string = match extra.clone() {
@@ -65,6 +76,7 @@ pub fn create_trust_atom(
     None => None,
   };
   let chunks = [
+    Some(id.clone()),
     prefix.clone(),
     content.clone(),
     normalize_value(value.clone())?,
@@ -95,6 +107,7 @@ pub fn create_trust_atom(
   let agent_address_entry: EntryHash = agent_address;
 
   let trust_atom = TrustAtom {
+    id: Some(id),
     // source: agent_address_entry.to_string(),
     // target: target.to_string(),
     source_entry_hash: agent_address_entry.into(),
@@ -403,7 +416,7 @@ pub fn convert_link_to_trust_atom(
   let chunks: Vec<&str> = link_tag.split(UNICODE_NUL_STR).collect();
   // debug!("chunks: {:?}", chunks);
 
-  let prefix = {
+  let id = {
     if chunks[1].is_empty() {
       None
     } else {
@@ -411,7 +424,7 @@ pub fn convert_link_to_trust_atom(
     }
   };
 
-  let content = {
+  let prefix = {
     if chunks[2].is_empty() {
       None
     } else {
@@ -419,19 +432,27 @@ pub fn convert_link_to_trust_atom(
     }
   };
 
-  let value = {
+  let content = {
     if chunks[3].is_empty() {
       None
     } else {
       Some(chunks[3].to_string())
     }
   };
-  // bucket is chunk 4
-  let extra = {
-    if chunks[5].is_empty() {
+
+  let value = {
+    if chunks[4].is_empty() {
       None
     } else {
-      Some(chunks[5].to_string())
+      Some(chunks[4].to_string())
+    }
+  };
+  // bucket is chunk 5
+  let extra = {
+    if chunks[6].is_empty() {
+      None
+    } else {
+      Some(chunks[6].to_string())
     }
   };
 
@@ -440,6 +461,7 @@ pub fn convert_link_to_trust_atom(
 
   let trust_atom = match link_direction {
     LinkDirection::Forward => TrustAtom {
+      id,
       // source: link_base_b64.to_string(),
       // target: link_target_b64.to_string(),
       source_entry_hash: link_base_b64,
@@ -451,6 +473,7 @@ pub fn convert_link_to_trust_atom(
     },
     LinkDirection::Reverse => {
       TrustAtom {
+        id,
         //source: link_target_b64.to_string(), // flipped for Reverse direction
         //target: link_base_b64.to_string(),   // flipped for Reverse direction
         source_entry_hash: link_target_b64, // flipped for Reverse direction
