@@ -45,11 +45,12 @@ pub async fn test_create_trust_atom() {
 
   let content: String = "sushi".into();
   let value: String = ".8".into();
-  let extra: BTreeMap<String, String> = BTreeMap::from([(
-    "details".into(),
-    "Excellent specials. The regular menu is so-so. Their coconut curry (special) is to die for"
-      .into(),
-  )]);
+  // let extra: BTreeMap<String, String> = BTreeMap::from([(
+  //   "details".into(),
+  //   "Excellent specials. The regular menu is so-so. Their coconut curry (special) is to die for"
+  //     .into(),
+  // )]);
+  let extra = "details".to_string();
 
   let trust_atom_input = TrustAtomInput {
     source: EntryHash::from(agent.clone()),
@@ -354,15 +355,17 @@ pub async fn test_get_extra() {
     )
     .await;
 
+  
   let extra_map = BTreeMap::from([("key1".to_string(), "val1".to_string()), ("key2".to_string(), "val2".to_string())]);
+  let json = serde_json::to_string(&extra_map).unwrap();
+  
   let mock_input = TrustAtomInput {
-
     source: EntryHash::from(agent.clone()),
     target: target_entry_hash,
     prefix: None,
     content: Some("sushi".to_string()),
     value: Some("0.9871".to_string()),
-    extra: Some(extra_map.clone()),
+    extra: Some(json),
   };
 
   let _mock_trust_atom: TrustAtom = conductor
@@ -374,8 +377,9 @@ pub async fn test_get_extra() {
     .await;
 
   let mock_extra_data = Extra {
-    sourced_atoms: mock_input.extra
+    field: mock_input.extra.unwrap()
   };
+
   let mock_extra_entry_hash: EntryHash = conductor
     .call(&cell1.zome("trust_atom"), "test_helper_calc_extra_hash", mock_extra_data.clone())
     .await;
@@ -384,13 +388,13 @@ pub async fn test_get_extra() {
     .call(
       &cell1.zome("trust_atom"),
       "get_extra",
-      mock_extra_entry_hash,
+      mock_extra_entry_hash.clone(),
     )
     .await;
 
   assert_eq!(
-    extra_map,
-    mock_extra_data.clone().sourced_atoms.unwrap()
+    mock_extra_entry_hash.to_string(),
+    mock_extra_data.clone().field
   );
   assert_eq!(
     mock_extra_data.clone(),

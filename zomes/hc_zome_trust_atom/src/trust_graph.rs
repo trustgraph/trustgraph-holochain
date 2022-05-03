@@ -1,8 +1,8 @@
+
 use hdk::prelude::holo_hash::EntryHashB64;
 use hdk::prelude::*;
 
 use std::collections::BTreeMap;
-
 use crate::*;
 
 #[derive(Clone, Debug)]
@@ -160,14 +160,14 @@ fn build_rollup_gold(
   for (target, map) in rollup_silver.clone() {
     let mut sourced_trust_atoms: BTreeMap<String, String> = BTreeMap::new(); // collect to input for rollup extra field
     let mut accumulator: Vec<f64> = Vec::new(); // gather weighted values
-    let mut agent_rating_sum: f64 = 0.0;
+    let mut agent_rating_phi_sum: f64 = 0.0; // raised to PHI allows for smooth weight curve
     // debug!("map: {:#?}", map);
     for (agent, rollup_data) in map.clone() {
       // debug!("data: {:#?}", rollup_data);
       if let Some(rating) = rollup_data.agent_rating {
-        agent_rating_sum += rating.parse::<f64>().expect("Parse Error"); // could ignore parse err and use .ok() to convert result into option
+        agent_rating_phi_sum += (rating.parse::<f64>().expect("Parse Error")).powf(1.618); // could ignore parse err and use .ok() to convert result into option
       }
-      debug!("agent_rating_sum: {:?}", agent_rating_sum);
+      debug!("agent_rating_phi_sum: {:?}", agent_rating_phi_sum);
         let link_latest = get_latest(agent.clone(), target.clone(), None)?;
           if let Some(latest) = link_latest {
           let sourced_atom_latest = convert_link_to_trust_atom(
@@ -181,9 +181,9 @@ fn build_rollup_gold(
           );
         }
     }
-    let sourced_atoms: Option<BTreeMap<String, String>> = {
+    let sourced_atoms: Option<String> = {
       if sourced_trust_atoms.len() > 0 {
-        Some(sourced_trust_atoms)
+        serde_json::to_string(&sourced_trust_atoms).ok() // convert map to JSON
       }
       else { None }
     };
@@ -191,12 +191,19 @@ fn build_rollup_gold(
 
     for (_agent, rollup_data) in map.clone() {
       if let Some(rating) = rollup_data.agent_rating {
-        let calc: f64 = (rating.parse::<f64>().expect("Parse Error") / agent_rating_sum)
+        let calc: f64 = ((rating.parse::<f64>().expect("Parse Error")).powf(1.618) / agent_rating_phi_sum)
           * rollup_data.value.parse::<f64>().expect("Parse Error");
         debug!("calc: {:?}", calc);
         accumulator.push(calc);
       }
     }
+    
+    let extra_entry_hash: Option<String> = {
+      if let Some(atoms) = sourced_atoms {
+        Some(create_extra(atoms)?)
+      }
+      else { None }
+    };
 
     debug!("accum: {:?}", accumulator);
     let my_rating: Option<String> = get_rating(me.clone(), target.clone(), None)?;
@@ -221,7 +228,7 @@ fn build_rollup_gold(
         Some("rollup".to_string()),
         content.clone(),
         Some(algo.to_string()),
-        None, //sourced_atoms.clone(),
+        extra_entry_hash.clone()
       )?;
       rollup_gold.push(rollup_atom);
     } else {
@@ -234,7 +241,7 @@ fn build_rollup_gold(
         Some("rollup".to_string()),
         content.clone(),
         Some(algo.to_string()),
-        sourced_atoms.clone(),
+        extra_entry_hash.clone(),
       )?;
       rollup_gold.push(rollup_atom);
     }

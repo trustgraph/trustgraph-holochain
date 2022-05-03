@@ -15,6 +15,7 @@ hdk = "=0.0.125"
 holo_hash = { version = "*", features = ["encoding"] }
 rust_decimal = "1"
 serde = "1"
+serde_json = "1.0"
 
 [dev-dependencies]
 holochain = { version = "=0.0.130", default-features = false, features = [

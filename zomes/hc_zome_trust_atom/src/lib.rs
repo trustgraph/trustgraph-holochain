@@ -10,10 +10,7 @@
 
 // #![warn(clippy::cargo)]
 
-use hdk::prelude::holo_hash::EntryHashB64;
 use hdk::prelude::*;
-
-use std::collections::BTreeMap;
 
 // public for sweettest; TODO can we fix this:
 pub mod trust_atom;
@@ -36,9 +33,7 @@ pub struct TrustAtomInput {
   pub prefix: Option<String>,
   pub content: Option<String>,
   pub value: Option<String>,
-  pub extra: Option<BTreeMap<String, String>>, // TODO back to String -> String
-                                                        // for rollups key is "rolled_up_trust_atoms"
-                                                        // value is json: '["header hash of atom 1","header hash of atom 2"...]'
+  pub extra: Option<String>,
 }
 
 #[derive(Serialize, Deserialize, SerializedBytes, Debug, Clone)]
@@ -64,21 +59,19 @@ pub struct QueryMineInput {
 
 #[hdk_extern]
 pub fn create_rollup_atoms(_: ()) -> ExternResult<Vec<TrustAtom>> {
-  let trust_graph = trust_graph::create_rollup_atoms()?;
-  Ok(trust_graph)
+  trust_graph::create_rollup_atoms()
 }
 
 #[hdk_extern]
 pub fn create_trust_atom(input: TrustAtomInput) -> ExternResult<TrustAtom> {
-  let trust_atom = trust_atom::create_trust_atom(
+  trust_atom::create_trust_atom(
     input.source,
     input.target,
     input.prefix,
     input.content,
     input.value,
     input.extra,
-  )?;
-  Ok(trust_atom)
+  )
 }
 
 #[hdk_extern]

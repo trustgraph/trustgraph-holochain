@@ -3,7 +3,7 @@
 use ::holo_hash::EntryHashB64;
 use hdk::prelude::*;
 use rust_decimal::prelude::*;
-use std::collections::BTreeMap;
+// use std::collections::BTreeMap;
 
 use crate::utils::*;
 
@@ -24,7 +24,7 @@ pub struct TrustAtom {
   pub prefix: Option<String>,
   pub content: Option<String>,
   pub value: Option<String>,
-  pub extra: Option<BTreeMap<String, String>>,
+  pub extra: Option<String>,
 }
 
 const UNICODE_NUL_STR: &str = "\u{0}"; // Unicode NUL character
@@ -41,8 +41,9 @@ const LINK_TAG_ARROW_REVERSE: [u8; 3] = [226, 134, 169]; // Unicode "↩" // hex
 #[hdk_entry(id = "extra", visibility = "public")]
 #[derive(Clone, PartialEq, Eq)]
 pub struct Extra {
+  pub field: String, // testing JSON object
   //pub content_overflow: Option<String>,
-  pub sourced_atoms: Option<BTreeMap<String, String>>, // K: AgentPubKey (as EntryHash), V: Target EntryHash
+  //pub sourced_atoms: Option<BTreeMap<String, String>>, // K: AgentPubKey (as EntryHash), V: Target EntryHash
   //pub attributes: Option<BTreeMap<String, String>>
 }
 
@@ -52,7 +53,7 @@ pub fn create_trust_atom(
   prefix: Option<String>,
   content: Option<String>,
   value: Option<String>,
-  extra: Option<BTreeMap<String, String>>,
+  extra: Option<String>,
 ) -> ExternResult<TrustAtom> {
   let agent_address = source; //// modified for testing purposes ////
 
@@ -123,9 +124,9 @@ fn create_bucket_string(bucket_bytes: &[u8]) -> String {
   bucket
 }
 
-pub fn create_extra(input: BTreeMap<String, String>) -> ExternResult<String> {
+pub fn create_extra(input: String) -> ExternResult<String> {
   let entry = Extra {
-    sourced_atoms: Some(input),
+    field: input,
   };
   create_entry(entry.clone())?;
   let entry_hash_string = hash_entry(entry)?.to_string();
