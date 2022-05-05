@@ -12,13 +12,10 @@ pub enum LinkDirection {
   Forward,
   Reverse,
 }
-
 /// Client-facing representation of a Trust Atom
 /// We may support JSON in the future to allow for more complex data structures @TODO
 #[derive(Serialize, Deserialize, SerializedBytes, Debug, Clone, Eq, PartialEq, Hash)]
 pub struct TrustAtom {
-  // pub source: String, 
-  // pub target: String,
   pub source_entry_hash: EntryHashB64,
   pub target_entry_hash: EntryHashB64,
   pub prefix: Option<String>,
@@ -75,10 +72,10 @@ pub fn create_trust_atom(
   let forward_link_tag = create_link_tag(&LinkDirection::Forward, &chunks);
   let reverse_link_tag = create_link_tag(&LinkDirection::Reverse, &chunks);
 
-  // debug!(
-  //   "forward_link_tag: {:?}",
-  //   String::from_utf8_lossy(&forward_link_tag.clone().into_inner())
-  // );
+  debug!(
+    "forward_link_tag: {:?}",
+    String::from_utf8_lossy(&forward_link_tag.clone().into_inner())
+  );
 
   create_link(
     agent_address.clone(),
@@ -96,8 +93,6 @@ pub fn create_trust_atom(
   let agent_address_entry: EntryHash = agent_address;
 
   let trust_atom = TrustAtom {
-    // source: agent_address_entry.to_string(),
-    // target: target.to_string(),
     source_entry_hash: agent_address_entry.into(),
     target_entry_hash: target.into(),
     prefix,
@@ -361,7 +356,7 @@ pub fn query(
   };
   // debug!("links: {:?}", links);
   let trust_atoms = convert_links_to_trust_atoms(links, &link_direction, &link_base)?;
-  debug!("query_atoms: {:#?}", trust_atoms);
+  // debug!("query_atoms: {:#?}", trust_atoms);
   Ok(trust_atoms)
 }
 

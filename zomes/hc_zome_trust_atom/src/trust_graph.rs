@@ -40,33 +40,16 @@ pub fn create_rollup_atoms() -> ExternResult<Vec<TrustAtom>> {
 
 fn build_agent_list(atoms: Vec<TrustAtom>) -> ExternResult<Vec<EntryHash>> {
   let mut agents: Vec<EntryHash> = Vec::new();
-
-  let chunks = [Some("rollup".to_string())];
-  let filter = create_link_tag(&LinkDirection::Forward, &chunks);
-  // debug!(
-  //   "filter: {:?}",
-  //   String::from_utf8_lossy(&filter.clone().into_inner())
-  // );
-  for ta in atoms {
-    let entry_hash = EntryHash::from(ta.target_entry_hash);
-
-    let rollup_links: Vec<Link> = get_links(entry_hash.clone(), Some(filter.clone()))?; // NOTE: Agent must have done at least one rollup
-
-    // debug!("rollup_links: {:?}", rollup_links);
-    if rollup_links.len() > 0 {
-      // for link in rollup_links {
-      // debug!(
-      //   "rollup_link.tag: {:?}",
-      //   String::from_utf8_lossy(&link.tag.clone().into_inner())
-      // );
-      // }
-      if !agents.contains(&entry_hash) {
-        // prevent duplicates
-        agents.push(entry_hash);
+  let _agent_prefix_string = "agent".to_string();
+  for atom in atoms {
+    let target_hash = EntryHash::from(atom.target_entry_hash);
+    if let Some(_agent_prefix_string) = atom.prefix { 
+      if !agents.contains(&target_hash) { // prevent duplicates
+        agents.push(target_hash); 
       }
-    }
+    } 
   }
-  debug!("agents: {:#?}", agents);
+  debug!("agents: {:?}", agents);
   Ok(agents)
 }
 
@@ -78,26 +61,26 @@ fn build_rollup_silver(
   let mut rollup_silver: BTreeMap<EntryHash, BTreeMap<EntryHash, RollupData>> = BTreeMap::new(); // K: Target (EntryHash) V: BTreeMap<Agent, RollupData>
   let targets: Vec<EntryHash> = atoms
     .into_iter()
-    .map(|x| EntryHash::from(x.target_entry_hash))
+    .filter(|ta| ta.prefix != Some("agent".to_string())).map(|x| EntryHash::from(x.target_entry_hash)) // filter out agents
     .collect();
-  
+  let link_filter = create_link_tag(&LinkDirection::Reverse, &[None]); // get only TA links
+  // debug!("link_filter: {:?}", String::from_utf8_lossy(&target_filter.clone().into_inner()));
   for target in targets.clone() {
-    debug!("target: {:?}", target);
-    if &target != me && !agents.contains(&target) {
-      let links = get_links(target.clone(), None)?; // OPTION1: filter_map source by agent list
-       // debug!("target_links: {:?}", links);
+    // debug!("target: {:?}", target);
+    if !agents.contains(&target) {
+      let links = get_links(target.clone(), Some(link_filter.clone()))?;
       let mut links_latest = Vec::new();
       //// tests only ////
-      let mut vec = Vec::new();
-      for link in links.clone() {
-        let bytes = link.tag.into_inner();
-        let tag: Option<String> = String::from_utf8(bytes.clone()).ok();
-        vec.push(tag);
-      }
-      debug!("silver_links: {:#?}", vec);
+      // let mut vec = Vec::new();
+      // for link in links.clone() {
+      //   let bytes = link.tag.into_inner();
+      //   let tag: Option<String> = String::from_utf8(bytes.clone()).ok();
+      //   vec.push(tag);
+      // }
+      // debug!("silver_links: {:#?}", vec);
       ///////
       for link in links.clone() {
-        let latest = get_latest(target.clone(), link.target, None)?;
+        let latest = get_latest(target.clone(), link.target, Some(link_filter.clone()))?;
         if let Some(latest) = latest {
           if !links_latest.contains(&latest) {
             // debug!("latest: {:?}", latest);
@@ -105,29 +88,28 @@ fn build_rollup_silver(
           }
         }
       }
-      // debug!("links_latest: {:?}", links_latest);
+      debug!("links_latest: {:?}", links_latest);
       let trust_atoms_latest =
         convert_links_to_trust_atoms(links_latest, &LinkDirection::Reverse, &target)?;
       let mut map: BTreeMap<EntryHash, RollupData> = BTreeMap::new();
-      // debug!("TA latest: {:#?}", trust_atoms_latest);
+      debug!("TA latest: {:#?}", trust_atoms_latest);
       for ta in trust_atoms_latest.clone() {
         let source = EntryHash::from(ta.source_entry_hash);
-        if agents.contains(&source) {
-          // OPTION2: get only Agent TAs
+        if agents.contains(&source) { // get only rated Agent TAs
           if let Some(content) = ta.content {
             if let Some(value) = ta.value {
               // ignore content without a rating
 
               let chunks = [
-                None, // ?TODO: agent prefix
+                None,
                 Some(content.clone()),
               ];
 
               let filter = create_link_tag(&LinkDirection::Forward, &chunks); // NOTE: filter by content broken if mislabeled
-              // debug!("tag_filter: {:?}", String::from_utf8_lossy(&filter.clone().into_inner()));
+              debug!("tag_filter: {:?}", String::from_utf8_lossy(&filter.clone().into_inner()));
               let agent_rating: Option<String> =
                 get_rating(me.clone(), source.clone(), Some(filter))?;
-              // debug!("agent_rating: {:?}", agent_rating);
+              debug!("agent_rating: {:?}", agent_rating);
               if let Some(rating) = agent_rating {
                 if rating.parse::<f64>().unwrap() > 0.0 {
                   // retain only positively rated agents
@@ -136,7 +118,7 @@ fn build_rollup_silver(
                     value,
                     agent_rating: Some(rating),
                   };
-                  // debug!("rollup_data: {:?}", rollup_data);
+                  debug!("rollup_data: {:?}", rollup_data);
                   map.insert(source.clone(), rollup_data);
                 }
               }
@@ -144,11 +126,11 @@ fn build_rollup_silver(
           }
         }
       }
-      // debug!("Map: {:?}", map);
+      debug!("Map: {:?}", map);
       rollup_silver.insert(target, map);
     }
   }
-  // debug!("silver: {:#?}", rollup_silver);
+  debug!("silver: {:#?}", rollup_silver);
   Ok(rollup_silver)
 }
 
@@ -161,13 +143,12 @@ fn build_rollup_gold(
     let mut sourced_trust_atoms: BTreeMap<String, String> = BTreeMap::new(); // collect to input for rollup extra field
     let mut accumulator: Vec<f64> = Vec::new(); // gather weighted values
     let mut agent_rating_phi_sum: f64 = 0.0; // raised to PHI allows for smooth weight curve
-    // debug!("map: {:#?}", map);
+    debug!("map: {:#?}", map);
     for (agent, rollup_data) in map.clone() {
-      // debug!("data: {:#?}", rollup_data);
+      debug!("data: {:#?}", rollup_data);
       if let Some(rating) = rollup_data.agent_rating {
         agent_rating_phi_sum += (rating.parse::<f64>().expect("Parse Error")).powf(1.618); // could ignore parse err and use .ok() to convert result into option
       }
-      debug!("agent_rating_phi_sum: {:?}", agent_rating_phi_sum);
         let link_latest = get_latest(agent.clone(), target.clone(), None)?;
           if let Some(latest) = link_latest {
           let sourced_atom_latest = convert_link_to_trust_atom(
@@ -181,6 +162,7 @@ fn build_rollup_gold(
           );
         }
     }
+    debug!("phi_sum: {:?}", agent_rating_phi_sum);
     let sourced_atoms: Option<String> = {
       if sourced_trust_atoms.len() > 0 {
         serde_json::to_string(&sourced_trust_atoms).ok() // convert map to JSON
@@ -207,11 +189,10 @@ fn build_rollup_gold(
 
     debug!("accum: {:?}", accumulator);
     let my_rating: Option<String> = get_rating(me.clone(), target.clone(), None)?;
-    debug!("my_rating: {:?}", my_rating);
+    // debug!("my_rating: {:?}", my_rating);
     let weighted_sum: f64 = accumulator.iter().sum();
     debug!("sum: {:?}", weighted_sum);
     let content: Option<String> = {
-      // TODO: cleanup get content method by adding TA.target_name String
       let get_latest = get_latest(me.clone(), target.clone(), None)?;
       match get_latest {
         Some(link) => convert_link_to_trust_atom(link, &LinkDirection::Forward, &me)?.content,
