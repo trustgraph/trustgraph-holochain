@@ -505,21 +505,30 @@ pub async fn test_create_trust_atom_with_empty_chunks() {
 
 #[tokio::test(flavor = "multi_thread")]
 pub async fn test_create_trust_graph() {
-  let (conductors, agents, apps) = setup_conductors(3).await;
+  let (conductors, agents, apps) = setup_conductors(6).await;
   conductors.exchange_peer_info().await;
 
   let agent_me = EntryHash::from(agents[0].clone());
   let agent_zippy = EntryHash::from(agents[1].clone());
-  let agent_bob = EntryHash::from(agents[2].clone());
+  let agent_alice = EntryHash::from(agents[2].clone());
+  let agent_bob = EntryHash::from(agents[3].clone());
+  let agent_charlie = EntryHash::from(agents[4].clone());
+  let agent_spam = EntryHash::from(agents[5].clone());
 
   let conductor_me = &conductors[0];
   let conductor_zippy = &conductors[1];
-  let conductor_bob = &conductors[2];
+  let conductor_alice = &conductors[2];
+  let conductor_bob = &conductors[3];
+  let conductor_charlie = &conductors[4];
+  let conductor_spam = &conductors[5];
 
   let cells = apps.cells_flattened();
   let cell_me = cells[0];
   let cell_zippy = cells[1];
-  let cell_bob = cells[2];
+  let cell_alice = cells[2];
+  let cell_bob = cells[3];
+  let cell_charlie = cells[4];
+  let cell_spam = cells[5];
 
   // CREATE TARGET ENTRIES
 
@@ -531,13 +540,13 @@ pub async fn test_create_trust_graph() {
     .call(&cell_me.zome("trust_atom"), "create_string_target", "Telos")
     .await;
 
-  let _ethereum_entry_hash: EntryHash = conductor_bob
-    .call(
-      &cell_bob.zome("trust_atom"),
-      "create_string_target",
-      "Ethereum",
-    )
-    .await;
+  // let _ethereum_entry_hash: EntryHash = conductor_bob
+  //   .call(
+  //     &cell_bob.zome("trust_atom"),
+  //     "create_string_target",
+  //     "Ethereum",
+  //   )
+  //   .await;
 
   // eg : given TAs:
   let data = [
@@ -550,8 +559,56 @@ pub async fn test_create_trust_graph() {
     (
       (agent_me.clone(), conductor_me, cell_me),
       "holochain",
+      "0.90",
+      agent_alice.clone(),
+    ),
+    (
+      (agent_me.clone(), conductor_me, cell_me),
+      "holochain",
       "0.80",
       agent_bob.clone(),
+    ),
+    (
+      (agent_me.clone(), conductor_me, cell_me),
+      "holochain",
+      "0.70",
+      agent_charlie.clone(),
+    ),
+    (
+      (agent_me.clone(), conductor_me, cell_me),
+      "holochain",
+      "-0.99",
+      agent_spam.clone(),
+    ),
+    (
+      (agent_me.clone(), conductor_me, cell_me),
+      "engineering",
+      "0.80",
+      agent_zippy.clone(),
+    ),
+    (
+      (agent_me.clone(), conductor_me, cell_me),
+      "engineering",
+      "0.50",
+      agent_alice.clone(),
+    ),
+    (
+      (agent_me.clone(), conductor_me, cell_me),
+      "engineering",
+      "0.20",
+      agent_bob.clone(),
+    ),
+    (
+      (agent_me.clone(), conductor_me, cell_me),
+      "engineering",
+      "-0.10",
+      agent_charlie.clone(),
+    ),
+    (
+      (agent_me.clone(), conductor_me, cell_me),
+      "engineering",
+      "-0.99",
+      agent_spam.clone(),
     ),
     (
       (agent_me.clone(), conductor_me, cell_me),
@@ -562,7 +619,7 @@ pub async fn test_create_trust_graph() {
     (
       (agent_me.clone(), conductor_me, cell_me),
       "engineering",
-      "0.88",
+      "0.83",
       telos_entry_hash.clone(),
     ),
     (
@@ -572,13 +629,55 @@ pub async fn test_create_trust_graph() {
       hia_entry_hash.clone(),
     ),
     (
-      (agent_bob.clone(), conductor_bob, cell_bob),
+      (agent_zippy.clone(), conductor_zippy, cell_zippy),
+      "engineering",
+      "0.74",
+      telos_entry_hash.clone(),
+    ),
+    (
+      (agent_alice.clone(), conductor_alice, cell_alice),
       "holochain",
-      "-0.99",
-      hia_entry_hash.clone(), // IDEA: spam count, outliers
+      "0.85",
+      hia_entry_hash.clone(),
+    ),
+    (
+      (agent_alice.clone(), conductor_alice, cell_alice),
+      "engineering",
+      "0.96",
+      telos_entry_hash.clone(),
     ),
     (
       (agent_bob.clone(), conductor_bob, cell_bob),
+      "holochain",
+      "0.90",
+      hia_entry_hash.clone(),
+    ),
+    (
+      (agent_bob.clone(), conductor_bob, cell_bob),
+      "engineering",
+      "0.99",
+      telos_entry_hash.clone(),
+    ),
+    (
+      (agent_charlie.clone(), conductor_charlie, cell_charlie),
+      "holochain",
+      "0.50",
+      hia_entry_hash.clone(),
+    ),
+    (
+      (agent_charlie.clone(), conductor_charlie, cell_charlie),
+      "engineering",
+      "0.99",
+      telos_entry_hash.clone(),
+    ),
+    (
+      (agent_spam.clone(), conductor_spam, cell_spam),
+      "holochain",
+      "-0.99",
+      hia_entry_hash.clone(),
+    ),
+    (
+      (agent_spam.clone(), conductor_spam, cell_spam),
       "engineering",
       "0.99",
       telos_entry_hash.clone(),
@@ -587,19 +686,15 @@ pub async fn test_create_trust_graph() {
 
   // CREATE TEST ENTRIES
 
-  let fake1_entry_hash: EntryHash = conductor_me
-    .call(&cell_me.zome("trust_atom"), "create_string_target", "fake1")
-    .await;
-
-  let fake2_entry_hash: EntryHash = conductor_me
-    .call(&cell_me.zome("trust_atom"), "create_string_target", "fake2")
+  let fake_entry_hash: EntryHash = conductor_me
+    .call(&cell_me.zome("trust_atom"), "create_string_target", "fake")
     .await;
 
   // CREATE TEST AGENT ROLLUPS  // helps to identify the agents for algorithm
 
   let zippy_mock_rollup_atom_input = TrustAtomInput {
     source: agent_zippy.clone(),
-    target: fake1_entry_hash.clone(),
+    target: fake_entry_hash.clone(),
     prefix: Some("rollup".to_string()),
     content: None,
     value: None,
@@ -614,37 +709,71 @@ pub async fn test_create_trust_graph() {
     )
     .await;
 
-  let bob_mock1_rollup_atom_input = TrustAtomInput {
-    source: agent_bob.clone(),
-    target: fake1_entry_hash.clone(),
+  let alice_mock_rollup_atom_input = TrustAtomInput {
+    source: agent_alice.clone(),
+    target: fake_entry_hash.clone(),
     prefix: Some("rollup".to_string()),
     content: None,
     value: None,
     extra: None,
   };
 
-  let _bob_mock1_rollup_atom: TrustAtom = conductor_bob
+  let _alice_mock_rollup_atom: TrustAtom = conductor_alice
+    .call(
+      &cell_alice.zome("trust_atom"),
+      "create_trust_atom",
+      alice_mock_rollup_atom_input,
+    )
+    .await;  
+
+  let bob_mock_rollup_atom_input = TrustAtomInput {
+    source: agent_bob.clone(),
+    target: fake_entry_hash.clone(),
+    prefix: Some("rollup".to_string()),
+    content: None,
+    value: None,
+    extra: None,
+  };
+
+  let _bob_mock_rollup_atom: TrustAtom = conductor_bob
     .call(
       &cell_bob.zome("trust_atom"),
       "create_trust_atom",
-      bob_mock1_rollup_atom_input,
+      bob_mock_rollup_atom_input,
     )
     .await;
-
-  let bob_mock2_rollup_atom_input = TrustAtomInput {
-    source: agent_bob.clone(),
-    target: fake2_entry_hash.clone(),
+  
+  let charlie_mock_rollup_atom_input = TrustAtomInput {
+    source: agent_charlie.clone(),
+    target: fake_entry_hash.clone(),
     prefix: Some("rollup".to_string()),
     content: None,
     value: None,
     extra: None,
   };
 
-  let _bob_mock2_rollup_atom: TrustAtom = conductor_bob
+  let _charlie_mock_rollup_atom: TrustAtom = conductor_charlie
+    .call(
+      &cell_charlie.zome("trust_atom"),
+      "create_trust_atom",
+      charlie_mock_rollup_atom_input,
+    )
+    .await;
+  
+  let spam_mock_rollup_atom_input = TrustAtomInput {
+    source: agent_spam.clone(),
+    target: fake_entry_hash.clone(),
+    prefix: Some("rollup".to_string()),
+    content: None,
+    value: None,
+    extra: None,
+  };
+
+  let _spam_mock_rollup_atom: TrustAtom = conductor_spam
     .call(
       &cell_bob.zome("trust_atom"),
       "create_trust_atom",
-      bob_mock2_rollup_atom_input,
+      spam_mock_rollup_atom_input,
     )
     .await;
 
