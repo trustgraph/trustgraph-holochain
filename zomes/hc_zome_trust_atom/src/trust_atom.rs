@@ -43,7 +43,21 @@ pub struct Extra {
   pub field: BTreeMap<String, String>,
 }
 
-pub fn create_trust_atom(
+// pub fn create_trust_atom(
+//   source: EntryHash, //// for tests ////
+//   target: AnyLinkableHash,
+//   prefix: Option<String>,
+//   content: Option<String>,
+//   value: Option<String>,
+//   extra: Option<BTreeMap<String, String>>,
+// ) -> ExternResult<TrustAtom> {
+// set source to me
+// _create_trust_atom(
+// source: me
+// ...
+// )
+
+pub fn _create_trust_atom(
   source: EntryHash, //// for tests ////
   target: AnyLinkableHash,
   prefix: Option<String>,

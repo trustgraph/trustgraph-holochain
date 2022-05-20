@@ -33,8 +33,8 @@ entry_defs![
 
 #[derive(Serialize, Deserialize, SerializedBytes, Debug, Clone)]
 pub struct TrustAtomInput {
-pub prefix: Option<String>,
-pub target: AnyLinkableHash,
+  pub prefix: Option<String>,
+  pub target: AnyLinkableHash,
   pub source: EntryHash, //// for testing purposes ////
   pub content: Option<String>,
   pub value: Option<String>,
@@ -45,8 +45,8 @@ pub target: AnyLinkableHash,
 
 #[derive(Serialize, Deserialize, SerializedBytes, Debug, Clone)]
 pub struct QueryInput {
-pub source: Option<AnyLinkableHash>,
-pub target: Option<AnyLinkableHash>,
+  pub source: Option<AnyLinkableHash>,
+  pub target: Option<AnyLinkableHash>,
   pub prefix: Option<String>,
   pub content_full: Option<String>,
   pub content_starts_with: Option<String>,
@@ -55,7 +55,7 @@ pub target: Option<AnyLinkableHash>,
 
 #[derive(Serialize, Deserialize, SerializedBytes, Debug, Clone)]
 pub struct QueryMineInput {
-pub target: Option<AnyLinkableHash>,
+  pub target: Option<AnyLinkableHash>,
   pub prefix: Option<String>,
   pub content_full: Option<String>,
   pub content_starts_with: Option<String>,
@@ -72,7 +72,6 @@ pub fn create_rollup_atoms(_: ()) -> ExternResult<Vec<TrustAtom>> {
 #[hdk_extern]
 pub fn create_trust_atom(input: TrustAtomInput) -> ExternResult<TrustAtom> {
   trust_atom::create_trust_atom(
-    input.source,
     input.target,
     input.prefix,
     input.content,
@@ -109,6 +108,18 @@ pub fn query_mine(input: QueryMineInput) -> ExternResult<Vec<TrustAtom>> {
   )
 }
 // TEST HELPERS
+
+// #[hdk_extern]
+// pub fn test_helper_create_trust_atom(input: TrustAtomInput) -> ExternResult<TrustAtom> {
+//   trust_atom::create_trust_atom(
+//     input.source,
+//     input.target,
+//     input.prefix,
+//     input.content,
+//     input.value,
+//     input.extra,
+//   )
+// }
 
 #[hdk_extern]
 pub fn create_string_target(input: String) -> ExternResult<EntryHash> {
