@@ -1,6 +1,7 @@
 #![allow(clippy::module_name_repetitions)]
 
-use ::holo_hash::EntryHashB64;
+use ::holo_hash::AnyLinkableHash;
+use ::holo_hash::AnyLinkableHashB64;
 use hdk::prelude::*;
 use rust_decimal::prelude::*;
 use std::collections::BTreeMap;
@@ -15,10 +16,8 @@ enum LinkDirection {
 /// We may support JSON in the future to allow for more complex data structures @TODO
 #[derive(Serialize, Deserialize, SerializedBytes, Debug, Clone, PartialEq)]
 pub struct TrustAtom {
-  pub source: String, // TODO source_name
-  pub target: String,
-  pub source_entry_hash: EntryHashB64,
-  pub target_entry_hash: EntryHashB64,
+  pub source_entry_hash: AnyLinkableHashB64,
+  pub target_entry_hash: AnyLinkableHashB64,
   pub content: Option<String>,
   pub value: Option<String>,
   pub extra: Option<BTreeMap<String, String>>,
@@ -36,12 +35,12 @@ pub struct Extra {
 }
 
 pub fn create(
-  target: EntryHash,
+  target: AnyLinkableHash,
   content: Option<String>,
   value: Option<String>,
   extra: Option<BTreeMap<String, String>>,
 ) -> ExternResult<TrustAtom> {
-  let agent_address: EntryHash = agent_info()?.agent_initial_pubkey.into();
+  let agent_address = AnyLinkableHash::from(agent_info()?.agent_initial_pubkey);
 
   let bucket = create_bucket()?;
 
@@ -72,13 +71,9 @@ pub fn create(
     reverse_link_tag,
   )?;
 
-  let agent_address_entry: EntryHash = agent_address;
-
   let trust_atom = TrustAtom {
-    source: agent_address_entry.to_string(),
-    target: target.to_string(),
-    source_entry_hash: agent_address_entry.into(),
-    target_entry_hash: target.into(),
+    source_entry_hash: AnyLinkableHashB64::from(agent_address),
+    target_entry_hash: AnyLinkableHashB64::from(target),
     content,
     value,
     extra,
@@ -210,12 +205,12 @@ fn get_element(entry_hash: &EntryHash, get_options: GetOptions) -> ExternResult<
 }
 
 pub fn query_mine(
-  target: Option<EntryHash>,
+  target: Option<AnyLinkableHash>,
   content_full: Option<String>,
   content_starts_with: Option<String>,
   value_starts_with: Option<String>,
 ) -> ExternResult<Vec<TrustAtom>> {
-  let agent_address: EntryHash = agent_info()?.agent_initial_pubkey.into();
+  let agent_address = AnyLinkableHash::from(agent_info()?.agent_initial_pubkey);
 
   let result = query(
     Some(agent_address),
@@ -233,8 +228,8 @@ pub fn query_mine(
 /// Arguments act as additive filters (AND)
 #[warn(clippy::needless_pass_by_value)]
 pub fn query(
-  source: Option<EntryHash>,
-  target: Option<EntryHash>,
+  source: Option<AnyLinkableHash>,
+  target: Option<AnyLinkableHash>,
   content_full: Option<String>,
   content_starts_with: Option<String>,
   value_starts_with: Option<String>,
@@ -279,19 +274,20 @@ pub fn query(
   };
   let links = get_links(link_base.clone(), link_tag)?;
 
-  let trust_atoms = convert_links_to_trust_atoms(links, &link_direction, &link_base)?;
+  let trust_atoms = convert_links_to_trust_atoms(links, &link_direction, link_base)?;
 
   Ok(trust_atoms)
 }
 
+#[allow(clippy::needless_pass_by_value)]
 fn convert_links_to_trust_atoms(
   links: Vec<Link>,
   link_direction: &LinkDirection,
-  link_base: &EntryHash,
+  link_base: AnyLinkableHash,
 ) -> ExternResult<Vec<TrustAtom>> {
   let trust_atoms_result: Result<Vec<TrustAtom>, _> = links
     .into_iter()
-    .map(|link| convert_link_to_trust_atom(link, link_direction, link_base))
+    .map(|link| convert_link_to_trust_atom(link, link_direction, link_base.clone()))
     .collect();
   let trust_atoms = trust_atoms_result?;
   Ok(trust_atoms)
@@ -299,10 +295,11 @@ fn convert_links_to_trust_atoms(
   //   Ok(trust_atoms.or_else(|_| WasmError::Guest("erro"))?)
 }
 
+// #[warn(clippy::pedantic)]
 fn convert_link_to_trust_atom(
   link: Link,
   link_direction: &LinkDirection,
-  link_base: &EntryHash,
+  link_base: AnyLinkableHash,
 ) -> ExternResult<TrustAtom> {
   let link_tag_bytes = link.tag.clone().into_inner();
   let link_tag = match String::from_utf8(link_tag_bytes) {
@@ -319,16 +316,11 @@ fn convert_link_to_trust_atom(
   let content = chunks[0][tg_link_tag_header_length()..].to_string(); // drop leading "Ŧ→" or "Ŧ↩"
   let value = chunks[1].to_string();
 
-  let link_base_b64 = EntryHashB64::from(link_base.clone());
-  let link_target_b64 = EntryHashB64::from(link.target);
-
   let trust_atom = match link_direction {
     LinkDirection::Forward => {
       TrustAtom {
-        source: link_base_b64.to_string(),
-        target: link_target_b64.to_string(),
-        source_entry_hash: link_base_b64,
-        target_entry_hash: link_target_b64,
+        source_entry_hash: AnyLinkableHashB64::from(link_base),
+        target_entry_hash: AnyLinkableHashB64::from(link.target),
         content: Some(content),
         value: Some(value),
         extra: Some(BTreeMap::new()), // TODO
@@ -336,10 +328,8 @@ fn convert_link_to_trust_atom(
     }
     LinkDirection::Reverse => {
       TrustAtom {
-        source: link_target_b64.to_string(), // flipped for Reverse direction
-        target: link_base_b64.to_string(),   // flipped for Reverse direction
-        source_entry_hash: link_target_b64,  // flipped for Reverse direction
-        target_entry_hash: link_base_b64,    // flipped for Reverse direction
+        source_entry_hash: AnyLinkableHashB64::from(link.target), // flipped for Reverse direction
+        target_entry_hash: AnyLinkableHashB64::from(link_base),   // flipped for Reverse direction
         content: Some(content),
         value: Some(value),
         extra: Some(BTreeMap::new()), // TODO
