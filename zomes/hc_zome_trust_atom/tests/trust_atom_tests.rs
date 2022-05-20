@@ -55,8 +55,8 @@ pub async fn test_create_trust_atom() {
   )]);
 
   let trust_atom_input = TrustAtomInput {
-source: EntryHash::from(agent.clone()),
-target: AnyLinkableHash::from(target_entry_hash.clone()),
+    source: EntryHash::from(agent.clone()),
+    target: AnyLinkableHash::from(target_entry_hash.clone()),
     prefix: None,
     content: Some(content.clone()),
     value: Some(value.clone()),
@@ -294,8 +294,8 @@ pub async fn test_query_mine() {
       &cell1.zome("trust_atom"),
       "create_trust_atom",
       TrustAtomInput {
-source: agent.clone().into(),
-target: AnyLinkableHash::from(target_entry_hash.clone()),
+        source: agent.clone().into(),
+        target: AnyLinkableHash::from(target_entry_hash.clone()),
         prefix: None,
         content: Some("sushi".to_string()),
         value: Some("0.8".to_string()),
@@ -332,9 +332,9 @@ target: AnyLinkableHash::from(target_entry_hash.clone()),
   assert_eq!(
     *trust_atom,
     TrustAtom {
-source_entry_hash: AnyLinkableHashB64::from(AnyLinkableHash::from(agent.clone())),
-target_entry_hash: AnyLinkableHashB64::from(AnyLinkableHash::from(target_entry_hash)),
-prefix: None,
+      source_entry_hash: AnyLinkableHashB64::from(AnyLinkableHash::from(agent.clone())),
+      target_entry_hash: AnyLinkableHashB64::from(AnyLinkableHash::from(target_entry_hash)),
+      prefix: None,
       content: Some("sushi".to_string()),
       value: Some(".800000000".to_string()),
       extra: None,
@@ -366,8 +366,8 @@ pub async fn test_query_mine_with_content_starts_with() {
         &cell1.zome("trust_atom"),
         "create_trust_atom",
         TrustAtomInput {
-source: agent.clone().into(),
-target: AnyLinkableHash::from(target_entry_hash.clone()),
+          source: agent.clone().into(),
+          target: AnyLinkableHash::from(target_entry_hash.clone()),
           prefix: None,
           content: Some(content.into()),
           value: Some("0.8".into()),
@@ -432,8 +432,8 @@ pub async fn test_query_mine_with_content_full() {
         &cell1.zome("trust_atom"),
         "create_trust_atom",
         TrustAtomInput {
-source: agent.clone().into(),
-target: AnyLinkableHash::from(target_entry_hash.clone()),
+          source: agent.clone().into(),
+          target: AnyLinkableHash::from(target_entry_hash.clone()),
           prefix: None,
           content: Some(content_full.into()),
           value: Some("0.8".into()),
@@ -518,31 +518,6 @@ pub async fn test_get_extra() {
       mock_extra_entry_hash,
     )
     .await;
-
-// <<<<<<< HEAD
-  let field1 = mock_extra_data
-    .fields
-    .get_key_value(&"extra_stuff".to_string())
-    .unwrap();
-  let field2 = mock_extra_data
-    .fields
-    .get_key_value(&"another_thing".to_string())
-    .unwrap();
-
-  assert_eq!(
-    field1,
-    (
-      &"extra_stuff".to_string(),
-      &"Say some extra stuff here".to_string()
-    )
-  );
-  assert_eq!(
-    field2,
-    (
-      &"another_thing".to_string(),
-      &"Put more information here".to_string()
-    )
-  );
 }
 
 #[tokio::test(flavor = "multi_thread")]
@@ -599,13 +574,14 @@ pub async fn test_get_entry_by_headerhash() {
 //   assert_eq!(mock_trust_atom, fetched_atom);
 //   assert_eq!(fetched_atom.target, ipfs_address);
 // }
+
 // =======
 // =======
 // =======
 // =======
-  assert_eq!(extra_map, mock_extra_data.clone().field);
-  assert_eq!(mock_extra_data.clone(), mock_entry.clone());
-}
+//   assert_eq!(extra_map, mock_extra_data.clone().field);
+//   assert_eq!(mock_extra_data.clone(), mock_entry.clone());
+// }
 
 #[tokio::test(flavor = "multi_thread")]
 pub async fn test_create_trust_atom_with_empty_chunks() {
