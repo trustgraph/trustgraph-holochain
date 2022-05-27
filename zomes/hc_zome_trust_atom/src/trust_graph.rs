@@ -16,17 +16,17 @@ struct RollupData {
 }
 
 pub fn create_rollup_atoms() -> ExternResult<Vec<TrustAtom>> {
-  let me: EntryHash = EntryHash::from(agent_info()?.agent_latest_pubkey);
+  let me: AnyLinkableHash = AnyLinkableHash::from(agent_info()?.agent_latest_pubkey);
   let my_atoms: Vec<TrustAtom> = query_mine(None, None, None, None, None)?;
   let agents = build_agent_list(my_atoms.clone())?;
 
-  let rollup_silver: BTreeMap<EntryHash, BTreeMap<EntryHash, RollupData>> =
+  let rollup_silver: BTreeMap<AnyLinkableHash, BTreeMap<AnyLinkableHash, RollupData>> =
     build_rollup_silver(&me, my_atoms, agents)?;
   let rollup_gold: Vec<TrustAtom> = build_rollup_gold(rollup_silver, me)?;
   Ok(rollup_gold)
 }
 
-fn build_agent_list(atoms: Vec<TrustAtom>) -> ExternResult<Vec<EntryHash>> {
+fn build_agent_list(atoms: Vec<TrustAtom>) -> ExternResult<Vec<AnyLinkableHash>> {
   let mut agents: Vec<AnyLinkableHash> = Vec::new();
 
   let chunks = [Some("rollup".to_string())];
@@ -45,14 +45,15 @@ fn build_agent_list(atoms: Vec<TrustAtom>) -> ExternResult<Vec<EntryHash>> {
 
 #[allow(clippy::needless_pass_by_value)]
 fn build_rollup_silver(
-  me: &EntryHash,
+  me: &AnyLinkableHash,
   atoms: Vec<TrustAtom>,
-  agents: Vec<EntryHash>,
-) -> ExternResult<BTreeMap<EntryHash, BTreeMap<EntryHash, RollupData>>> {
-  let mut rollup_silver: BTreeMap<EntryHash, BTreeMap<EntryHash, RollupData>> = BTreeMap::new(); // K: Target (EntryHash) V: BTreeMap<Agent, RollupData>
-  let targets: Vec<EntryHash> = atoms
+  agents: Vec<AnyLinkableHash>,
+) -> ExternResult<BTreeMap<AnyLinkableHash, BTreeMap<AnyLinkableHash, RollupData>>> {
+  let mut rollup_silver: BTreeMap<AnyLinkableHash, BTreeMap<AnyLinkableHash, RollupData>> =
+    BTreeMap::new(); // K: Target (AnyLinkableHash) V: BTreeMap<Agent, RollupData>
+  let targets: Vec<AnyLinkableHash> = atoms
     .into_iter()
-    .map(|x| EntryHash::from(x.target_entry_hash))
+    .map(|x| AnyLinkableHash::from(x.target_entry_hash))
     .collect();
 
   for target in targets.clone() {
@@ -69,10 +70,10 @@ fn build_rollup_silver(
         }
       }
       let trust_atoms_latest =
-        convert_links_to_trust_atoms(links_latest, &LinkDirection::Reverse, &target)?;
-      let mut map: BTreeMap<EntryHash, RollupData> = BTreeMap::new();
+        convert_links_to_trust_atoms(links_latest, &LinkDirection::Reverse, target)?;
+      let mut map: BTreeMap<AnyLinkableHash, RollupData> = BTreeMap::new();
       for ta in trust_atoms_latest.clone() {
-        let source = EntryHash::from(ta.source_entry_hash);
+        let source = AnyLinkableHash::from(ta.source_entry_hash);
         if agents.contains(&source) {
           // get only Agent TAs
           if let Some(content) = ta.content {
@@ -110,8 +111,8 @@ fn build_rollup_silver(
 
 #[allow(clippy::needless_pass_by_value)]
 fn build_rollup_gold(
-  rollup_silver: BTreeMap<EntryHash, BTreeMap<EntryHash, RollupData>>,
-  me: EntryHash,
+  rollup_silver: BTreeMap<AnyLinkableHash, BTreeMap<AnyLinkableHash, RollupData>>,
+  me: AnyLinkableHash,
 ) -> ExternResult<Vec<TrustAtom>> {
   let mut rollup_gold: Vec<TrustAtom> = Vec::new();
   for (target, map) in rollup_silver.clone() {
@@ -127,7 +128,7 @@ fn build_rollup_gold(
       let link_latest = get_latest(&agent, &target, None)?;
       if let Some(latest) = link_latest {
         let sourced_atom_latest =
-          convert_link_to_trust_atom(latest, &LinkDirection::Forward, &agent)?;
+          convert_link_to_trust_atom(latest, &LinkDirection::Forward, agent)?;
         sourced_trust_atoms.insert(
           sourced_atom_latest.source_entry_hash.to_string(),
           sourced_atom_latest.target_entry_hash.to_string(),
@@ -157,7 +158,7 @@ fn build_rollup_gold(
       // TODO: cleanup get content method by adding TA.target_name String
       let get_latest = get_latest(&me, &target, None)?;
       match get_latest {
-        Some(link) => convert_link_to_trust_atom(link, &LinkDirection::Forward, &me)?.content,
+        Some(link) => convert_link_to_trust_atom(link, &LinkDirection::Forward, me)?.content,
         None => None,
       }
     };
@@ -194,8 +195,8 @@ fn build_rollup_gold(
 }
 
 fn get_rating(
-  base: &EntryHash,
-  target: &EntryHash,
+  base: &AnyLinkableHash,
+  target: &AnyLinkableHash,
   tag_filter: Option<LinkTag>,
 ) -> ExternResult<Option<String>> {
   let link_latest = get_latest(base, target, tag_filter)?;
@@ -208,8 +209,8 @@ fn get_rating(
 }
 
 fn get_latest(
-  base: &EntryHash,
-  target: &EntryHash,
+  base: &AnyLinkableHash,
+  target: &AnyLinkableHash,
   tag_filter: Option<LinkTag>,
 ) -> ExternResult<Option<Link>> {
   let mut links: Vec<Link> = get_links(base.clone(), tag_filter)?
