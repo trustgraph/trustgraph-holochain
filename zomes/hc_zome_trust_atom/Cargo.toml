@@ -12,7 +12,7 @@ crate-type = ["cdylib", "rlib"]
 
 [dependencies]
 hdk = "=0.0.131"
-holo_hash = { version = "*", features = ["encoding"] }
+holo_hash = { version = "=0.0.24", features = ["encoding"] }
 rust_decimal = "1"
 serde = "1"
 
