@@ -115,6 +115,7 @@ release_patch_dry () {
       --dev-version
       --dev-version-ext 'dev'
       --no-publish
+      --no-push
       --tag-prefix ''
       patch
   "
@@ -126,6 +127,7 @@ release_patch () {
       --dev-version
       --dev-version-ext 'dev'
       --no-publish
+      --no-push
       --tag-prefix ''
       --execute
       patch
