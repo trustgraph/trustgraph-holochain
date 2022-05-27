@@ -4,7 +4,7 @@ use hdk::prelude::*;
 use std::collections::BTreeMap;
 
 use crate::trust_atom::{
-  _create_trust_atom, convert_link_to_trust_atom, convert_links_to_trust_atoms, create_link_tag,
+  convert_link_to_trust_atom, convert_links_to_trust_atoms, create_link_tag, create_trust_atom,
   query_mine, LinkDirection, TrustAtom,
 };
 
@@ -165,7 +165,7 @@ fn build_rollup_gold(
     if let Some(rating) = my_rating {
       let parsed: f64 = rating.parse::<f64>().expect("Parse Error");
       let algo: f64 = (weighted_sum - parsed).mul_add(0.20, parsed); // self weight is 80%
-      let rollup_atom = _create_trust_atom(
+      let rollup_atom = create_trust_atom(
         me.clone(),
         target.clone(),
         Some("rollup".to_string()),
@@ -180,7 +180,7 @@ fn build_rollup_gold(
       let total = accumulator.len() as f64;
 
       let algo: f64 = weighted_sum / total;
-      let rollup_atom = _create_trust_atom(
+      let rollup_atom = create_trust_atom(
         me.clone(),
         target.clone(),
         Some("rollup".to_string()),

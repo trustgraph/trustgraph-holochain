@@ -37,12 +37,21 @@ entry_defs![
 pub struct TrustAtomInput {
   pub prefix: Option<String>,
   pub target: AnyLinkableHash,
-  pub source: EntryHash, //// for testing purposes ////
   pub content: Option<String>,
   pub value: Option<String>,
   pub extra: Option<BTreeMap<String, String>>, // TODO back to String -> String
                                                // for rollups key is "rolled_up_trust_atoms"
                                                // value is json: '["header hash of atom 1","header hash of atom 2"...]'
+}
+
+#[derive(Serialize, Deserialize, SerializedBytes, Debug, Clone)]
+pub struct TestHelperTrustAtomInput {
+  pub source: AnyLinkableHash,
+  pub prefix: Option<String>,
+  pub target: AnyLinkableHash,
+  pub content: Option<String>,
+  pub value: Option<String>,
+  pub extra: Option<BTreeMap<String, String>>,
 }
 
 #[derive(Serialize, Deserialize, SerializedBytes, Debug, Clone)]
@@ -73,7 +82,22 @@ pub fn create_rollup_atoms(_: ()) -> ExternResult<Vec<TrustAtom>> {
 
 #[hdk_extern]
 pub fn create_trust_atom(input: TrustAtomInput) -> ExternResult<TrustAtom> {
-  trust_atom::_create_trust_atom(
+  let agent_address = AnyLinkableHash::from(agent_info()?.agent_initial_pubkey);
+  trust_atom::create_trust_atom(
+    agent_address,
+    input.target,
+    input.prefix,
+    input.content,
+    input.value,
+    input.extra,
+  )
+}
+
+#[hdk_extern]
+// TEST HELPER move me
+pub fn test_helper_create_trust_atom(input: TestHelperTrustAtomInput) -> ExternResult<TrustAtom> {
+  trust_atom::create_trust_atom(
+    input.source,
     input.target,
     input.prefix,
     input.content,
@@ -109,19 +133,8 @@ pub fn query_mine(input: QueryMineInput) -> ExternResult<Vec<TrustAtom>> {
     input.value_starts_with,
   )
 }
-// TEST HELPERS
 
-// #[hdk_extern]
-// pub fn test_helper_create_trust_atom(input: TrustAtomInput) -> ExternResult<TrustAtom> {
-//   trust_atom::create_trust_atom(
-//     input.source,
-//     input.target,
-//     input.prefix,
-//     input.content,
-//     input.value,
-//     input.extra,
-//   )
-// }
+// TEST HELPERS
 
 #[hdk_extern]
 pub fn create_string_target(input: String) -> ExternResult<EntryHash> {
