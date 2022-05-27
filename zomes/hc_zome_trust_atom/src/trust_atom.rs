@@ -362,7 +362,7 @@ pub fn query(
     }
   };
   // debug!("links: {:?}", links);
-  let trust_atoms = convert_links_to_trust_atoms(links, &link_direction, &link_base)?;
+  let trust_atoms = convert_links_to_trust_atoms(links, &link_direction, link_base)?;
   Ok(trust_atoms)
 }
 
@@ -383,7 +383,7 @@ pub fn convert_links_to_trust_atoms(
 }
 
 // #[warn(clippy::pedantic)]
-fn convert_link_to_trust_atom(
+pub(crate) fn convert_link_to_trust_atom(
   link: Link,
   link_direction: &LinkDirection,
   link_base: AnyLinkableHash,

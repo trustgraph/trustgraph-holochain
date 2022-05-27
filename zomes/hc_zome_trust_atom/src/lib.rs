@@ -22,6 +22,8 @@ pub mod trust_graph;
 pub use trust_graph::*;
 pub mod test_helpers;
 pub use test_helpers::Test;
+pub mod utils;
+pub use utils::*;
 
 entry_defs![
   test_helpers::StringTarget::entry_def(),
@@ -71,7 +73,7 @@ pub fn create_rollup_atoms(_: ()) -> ExternResult<Vec<TrustAtom>> {
 
 #[hdk_extern]
 pub fn create_trust_atom(input: TrustAtomInput) -> ExternResult<TrustAtom> {
-  trust_atom::create_trust_atom(
+  trust_atom::_create_trust_atom(
     input.target,
     input.prefix,
     input.content,

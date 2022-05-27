@@ -4,7 +4,7 @@ use hdk::prelude::*;
 use std::collections::BTreeMap;
 
 use crate::trust_atom::{
-  convert_link_to_trust_atom, convert_links_to_trust_atoms, create_link_tag, create_trust_atom,
+  _create_trust_atom, convert_link_to_trust_atom, convert_links_to_trust_atoms, create_link_tag,
   query_mine, LinkDirection, TrustAtom,
 };
 
@@ -17,7 +17,7 @@ struct RollupData {
 
 pub fn create_rollup_atoms() -> ExternResult<Vec<TrustAtom>> {
   let me: EntryHash = EntryHash::from(agent_info()?.agent_latest_pubkey);
-  let my_atoms: Vec<TrustAtom> = query_mine(None, None, None, None)?;
+  let my_atoms: Vec<TrustAtom> = query_mine(None, None, None, None, None)?;
   let agents = build_agent_list(my_atoms.clone())?;
 
   let rollup_silver: BTreeMap<EntryHash, BTreeMap<EntryHash, RollupData>> =
@@ -27,13 +27,13 @@ pub fn create_rollup_atoms() -> ExternResult<Vec<TrustAtom>> {
 }
 
 fn build_agent_list(atoms: Vec<TrustAtom>) -> ExternResult<Vec<EntryHash>> {
-  let mut agents: Vec<EntryHash> = Vec::new();
+  let mut agents: Vec<AnyLinkableHash> = Vec::new();
 
   let chunks = [Some("rollup".to_string())];
   let filter = create_link_tag(&LinkDirection::Forward, &chunks);
 
   for ta in atoms {
-    let entry_hash = EntryHash::from(ta.target_entry_hash);
+    let entry_hash = AnyLinkableHash::from(ta.target_entry_hash);
     let rollup_links: Vec<Link> = get_links(entry_hash.clone(), Some(filter.clone()))?; // NOTE: Agent must have done at least one rollup
     if !rollup_links.is_empty() && !agents.contains(&entry_hash) {
       // prevent duplicates
@@ -164,7 +164,7 @@ fn build_rollup_gold(
     if let Some(rating) = my_rating {
       let parsed: f64 = rating.parse::<f64>().expect("Parse Error");
       let algo: f64 = (weighted_sum - parsed).mul_add(0.20, parsed); // self weight is 80%
-      let rollup_atom = create_trust_atom(
+      let rollup_atom = _create_trust_atom(
         me.clone(),
         target.clone(),
         Some("rollup".to_string()),
@@ -179,7 +179,7 @@ fn build_rollup_gold(
       let total = accumulator.len() as f64;
 
       let algo: f64 = weighted_sum / total;
-      let rollup_atom = create_trust_atom(
+      let rollup_atom = _create_trust_atom(
         me.clone(),
         target.clone(),
         Some("rollup".to_string()),
