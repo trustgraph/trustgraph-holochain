@@ -135,7 +135,7 @@ release_patch () {
 }
 
 clean () {
-  shell "rm -rf .cargo target"
+  shell "rm -rf .cargo target || true"
   shell "git clean -Xfd"
   shell "cargo clean"
 }
