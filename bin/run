@@ -144,7 +144,7 @@ shipit () {
   run format
   if [[ -z $(git status --porcelain) ]]; then
     run checks
-    shell "git push origin HEAD"
+    shell "git push --tags --set-upstream origin HEAD"
   else
     echo "Error: git status not clean (after formatting):"
     set -x
