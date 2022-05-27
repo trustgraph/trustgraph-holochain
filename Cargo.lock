@@ -1518,11 +1518,11 @@ dependencies = [
 
 [[package]]
 name = "hc_zome_trust_atom"
-version = "0.0.8-dev"
+version = "0.0.8"
 dependencies = [
  "futures",
  "hdk 0.0.131",
- "holo_hash 0.0.24",
+ "holo_hash 0.0.23",
  "holochain",
  "rust_decimal",
  "serde",
@@ -1639,9 +1639,6 @@ version = "0.0.24"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "41531bb2e95b67a13d10e14f7f198e6bd394b4d9b861ca44c9135b6e1e52a9a6"
 dependencies = [
- "base64",
- "blake2b_simd 0.5.11",
- "derive_more",
  "holochain_serialized_bytes",
  "kitsune_p2p_dht_arc",
  "serde",
