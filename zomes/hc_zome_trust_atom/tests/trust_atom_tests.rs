@@ -6,13 +6,10 @@ use futures::future;
 use tokio::time::{sleep, Duration};
 
 use hc_zome_trust_atom::*;
-use hdk::prelude::holo_hash::AgentPubKey;
-use hdk::prelude::holo_hash::EntryHash;
-use hdk::prelude::holo_hash::EntryHashB64;
 use hdk::prelude::*;
 use holo_hash::AgentPubKey;
 use holo_hash::AnyLinkableHash;
-use holo_hash::AnyLinkableHashB64;
+// use holo_hash::AnyLinkableHashB64;
 use holochain::sweettest::{
   SweetAgents, SweetAppBatch, SweetCell, SweetConductor, SweetConductorBatch, SweetDnaFile,
 };
@@ -54,8 +51,8 @@ pub async fn test_create_trust_atom() {
       .into(),
   )]);
 
-  let trust_atom_input = TrustAtomInput {
-    source: EntryHash::from(agent.clone()),
+  let trust_atom_input = TestHelperTrustAtomInput {
+    source: AnyLinkableHash::from(agent.clone()),
     target: AnyLinkableHash::from(target_entry_hash.clone()),
     prefix: None,
     content: Some(content.clone()),
@@ -171,107 +168,6 @@ pub async fn test_create_trust_atom() {
   assert_eq!(chunks[4], bucket);
   assert_eq!(chunks[5], expected_entry_hash);
 }
-#[tokio::test(flavor = "multi_thread")]
-pub async fn test_create_trust_atom_with_empty_chunks() {
-  let unicode_nul: &str = std::str::from_utf8(&[0]).unwrap();
-  let (conductor, agent, cell1) = setup_1_conductor().await;
-
-  // CREATE TARGET ENTRY
-
-  let target_entry_hash: EntryHash = conductor
-    .call(
-      &cell1.zome("trust_atom"),
-      "create_string_target",
-      "Nuka Sushi",
-    )
-    .await;
-
-  // CREATE TRUST ATOM
-
-  let trust_atom_input = TrustAtomInput {
-    target: AnyLinkableHash::from(target_entry_hash.clone()),
-    content: None,
-    value: None,
-    extra: None,
-  };
-
-  let _result: TrustAtom = conductor
-    .call(
-      &cell1.zome("trust_atom"),
-      "create_trust_atom",
-      trust_atom_input,
-    )
-    .await;
-
-  // CHECK FORWARD LINK
-
-  let agent_address: EntryHash = agent.clone().into();
-
-  let forward_links: Vec<Link> = conductor
-    .call(
-      &cell1.zome("trust_atom"),
-      "test_helper_list_links_for_base",
-      agent_address,
-    )
-    .await;
-
-  assert_eq!(forward_links.len(), 1);
-  let link = &forward_links[0];
-
-  let target_from_link = link.clone().target;
-  assert_eq!(
-    target_from_link,
-    AnyLinkableHash::from(target_entry_hash.clone())
-  );
-
-  let link_tag_bytes = link.clone().tag.into_inner();
-  let relevant_link_bytes = link_tag_bytes.to_vec();
-  let relevant_link_string = String::from_utf8(relevant_link_bytes).unwrap();
-
-  let chunks: Vec<&str> = relevant_link_string.split(unicode_nul).collect();
-  assert_eq!(chunks.len(), 4);
-  assert_eq!(chunks[0], "Ŧ→");
-  assert_eq!(chunks[1], "");
-
-  let bucket = chunks[2];
-
-  assert_eq!(bucket.chars().count(), 9);
-  assert!(bucket.chars().all(|c| c.is_digit(10)));
-
-  let expected_link_tag_string = format!(
-    "{}{}{}{}{}{}",
-    "Ŧ", "→", unicode_nul, unicode_nul, bucket, unicode_nul
-  );
-  assert_eq!(relevant_link_string, expected_link_tag_string);
-
-  // CHECK BACKWARD LINK
-
-  let backward_links: Vec<Link> = conductor
-    .call(
-      &cell1.zome("trust_atom"),
-      "test_helper_list_links_for_base",
-      target_entry_hash.clone(),
-    )
-    .await;
-
-  assert_eq!(backward_links.len(), 1);
-  let link = &backward_links[0];
-
-  let link_tag_bytes = link.clone().tag.into_inner();
-  let relevant_link_bytes = link_tag_bytes.to_vec();
-  let relevant_link_string = String::from_utf8(relevant_link_bytes).unwrap();
-  let expected_link_tag_string = format!(
-    "{}{}{}{}{}{}",
-    "Ŧ", "↩", unicode_nul, unicode_nul, bucket, unicode_nul
-  );
-  assert_eq!(relevant_link_string, expected_link_tag_string);
-
-  let chunks: Vec<&str> = relevant_link_string.split(unicode_nul).collect();
-  assert_eq!(chunks.len(), 4);
-  assert_eq!(chunks[0], "Ŧ↩");
-  assert_eq!(chunks[1], "");
-  assert_eq!(chunks[2], bucket);
-}
 
 #[tokio::test(flavor = "multi_thread")]
 pub async fn test_query_mine() {
@@ -294,7 +190,6 @@ pub async fn test_query_mine() {
       &cell1.zome("trust_atom"),
       "create_trust_atom",
       TrustAtomInput {
-        source: agent.clone().into(),
         target: AnyLinkableHash::from(target_entry_hash.clone()),
         prefix: None,
         content: Some("sushi".to_string()),
@@ -332,8 +227,8 @@ pub async fn test_query_mine() {
   assert_eq!(
     *trust_atom,
     TrustAtom {
-      source_entry_hash: AnyLinkableHashB64::from(AnyLinkableHash::from(agent.clone())),
-      target_entry_hash: AnyLinkableHashB64::from(AnyLinkableHash::from(target_entry_hash)),
+      source_entry_hash: AnyLinkableHash::from(AnyLinkableHash::from(agent.clone())),
+      target_entry_hash: AnyLinkableHash::from(AnyLinkableHash::from(target_entry_hash)),
       prefix: None,
       content: Some("sushi".to_string()),
       value: Some(".800000000".to_string()),
@@ -366,7 +261,6 @@ pub async fn test_query_mine_with_content_starts_with() {
         &cell1.zome("trust_atom"),
         "create_trust_atom",
         TrustAtomInput {
-          source: agent.clone().into(),
           target: AnyLinkableHash::from(target_entry_hash.clone()),
           prefix: None,
           content: Some(content.into()),
@@ -432,7 +326,6 @@ pub async fn test_query_mine_with_content_full() {
         &cell1.zome("trust_atom"),
         "create_trust_atom",
         TrustAtomInput {
-          source: agent.clone().into(),
           target: AnyLinkableHash::from(target_entry_hash.clone()),
           prefix: None,
           content: Some(content_full.into()),
@@ -484,7 +377,6 @@ pub async fn test_get_extra() {
     ("key2".to_string(), "val2".to_string()),
   ]);
   let mock_input = TrustAtomInput {
-    source: EntryHash::from(agent.clone()),
     target: target_entry_hash,
     prefix: None,
     content: Some("sushi".to_string()),
@@ -590,7 +482,7 @@ pub async fn test_create_trust_atom_with_empty_chunks() {
 
   // CREATE TARGET ENTRY
 
-  let target_entry_hash: EntryHash = conductor
+  let target_entry_hash: AnyLinkableHash = conductor
     .call(
       &cell1.zome("trust_atom"),
       "create_string_target",
@@ -601,7 +493,6 @@ pub async fn test_create_trust_atom_with_empty_chunks() {
   // CREATE TRUST ATOM
 
   let trust_atom_input = TrustAtomInput {
-    source: EntryHash::from(agent.clone()),
     target: target_entry_hash.clone(),
     prefix: None,
     content: None,
@@ -632,7 +523,7 @@ pub async fn test_create_trust_atom_with_empty_chunks() {
   assert_eq!(forward_links.len(), 1);
   let link = &forward_links[0];
 
-  let target_from_link: EntryHash = link.clone().target;
+  let target_from_link: AnyLinkableHash = link.clone().target;
   assert_eq!(target_from_link, target_entry_hash);
 
   let link_tag_bytes = link.clone().tag.into_inner();
@@ -693,12 +584,12 @@ pub async fn test_create_trust_graph() {
   let (conductors, agents, apps) = setup_conductors(6).await;
   conductors.exchange_peer_info().await;
 
-  let agent_me = EntryHash::from(agents[0].clone());
-  let agent_zippy = EntryHash::from(agents[1].clone());
-  let agent_alice = EntryHash::from(agents[2].clone());
-  let agent_bob = EntryHash::from(agents[3].clone());
-  let agent_charlie = EntryHash::from(agents[4].clone());
-  let agent_spam = EntryHash::from(agents[5].clone());
+  let agent_me = AnyLinkableHash::from(agents[0].clone());
+  let agent_zippy = AnyLinkableHash::from(agents[1].clone());
+  let agent_alice = AnyLinkableHash::from(agents[2].clone());
+  let agent_bob = AnyLinkableHash::from(agents[3].clone());
+  let agent_charlie = AnyLinkableHash::from(agents[4].clone());
+  let agent_spam = AnyLinkableHash::from(agents[5].clone());
 
   let conductor_me = &conductors[0];
   let conductor_zippy = &conductors[1];
@@ -717,11 +608,11 @@ pub async fn test_create_trust_graph() {
 
   // CREATE TARGET ENTRIES
 
-  let hia_entry_hash: EntryHash = conductor_me
+  let hia_entry_hash: AnyLinkableHash = conductor_me
     .call(&cell_me.zome("trust_atom"), "create_string_target", "HIA")
     .await;
 
-  let telos_entry_hash: EntryHash = conductor_me
+  let telos_entry_hash: AnyLinkableHash = conductor_me
     .call(&cell_me.zome("trust_atom"), "create_string_target", "Telos")
     .await;
 
@@ -863,13 +754,13 @@ pub async fn test_create_trust_graph() {
 
   // CREATE TEST ENTRIES
 
-  let fake_entry_hash: EntryHash = conductor_me
+  let fake_entry_hash: AnyLinkableHash = conductor_me
     .call(&cell_me.zome("trust_atom"), "create_string_target", "fake")
     .await;
 
   // CREATE TEST AGENT ROLLUPS  // helps to identify the agents for algorithm
 
-  let zippy_mock_rollup_atom_input = TrustAtomInput {
+  let zippy_mock_rollup_atom_input = TestHelperTrustAtomInput {
     source: agent_zippy.clone(),
     target: fake_entry_hash.clone(),
     prefix: Some("rollup".to_string()),
@@ -886,7 +777,7 @@ pub async fn test_create_trust_graph() {
     )
     .await;
 
-  let alice_mock_rollup_atom_input = TrustAtomInput {
+  let alice_mock_rollup_atom_input = TestHelperTrustAtomInput {
     source: agent_alice.clone(),
     target: fake_entry_hash.clone(),
     prefix: Some("rollup".to_string()),
@@ -903,7 +794,7 @@ pub async fn test_create_trust_graph() {
     )
     .await;
 
-  let bob_mock_rollup_atom_input = TrustAtomInput {
+  let bob_mock_rollup_atom_input = TestHelperTrustAtomInput {
     source: agent_bob.clone(),
     target: fake_entry_hash.clone(),
     prefix: Some("rollup".to_string()),
@@ -920,7 +811,7 @@ pub async fn test_create_trust_graph() {
     )
     .await;
 
-  let charlie_mock_rollup_atom_input = TrustAtomInput {
+  let charlie_mock_rollup_atom_input = TestHelperTrustAtomInput {
     source: agent_charlie.clone(),
     target: fake_entry_hash.clone(),
     prefix: Some("rollup".to_string()),
@@ -937,7 +828,7 @@ pub async fn test_create_trust_graph() {
     )
     .await;
 
-  let spam_mock_rollup_atom_input = TrustAtomInput {
+  let spam_mock_rollup_atom_input = TestHelperTrustAtomInput {
     source: agent_spam.clone(),
     target: fake_entry_hash.clone(),
     prefix: Some("rollup".to_string()),
@@ -957,7 +848,7 @@ pub async fn test_create_trust_graph() {
   for ((agent, conductor, cell), content, value, target) in data {
     // CREATE TRUST ATOM
 
-    let trust_atom_input = TrustAtomInput {
+    let trust_atom_input = TestHelperTrustAtomInput {
       source: agent.clone(),
       target,
       prefix: None, //Some("test".to_string()),
@@ -989,22 +880,22 @@ pub async fn test_create_trust_graph() {
   // me -[rollup, engineering, 0.99]-> Ethereum     // actual value is TBD
   // me -[rollup, engineering, 0.88]-> Telos            // actual value is TBD
 
-  let me_b64 = EntryHashB64::from(agent_me.clone());
+  let me = AnyLinkableHash::from(agent_me.clone());
 
   assert_eq!(
     rollup_atoms,
     vec![
       TrustAtom {
-        source_entry_hash: me_b64.clone(),
-        target_entry_hash: EntryHashB64::from(telos_entry_hash),
+        source_entry_hash: me.clone(),
+        target_entry_hash: AnyLinkableHash::from(telos_entry_hash),
         prefix: Some("rollup".to_string()),
         content: Some("engineering".to_string()),
         value: Some("0.828443077244487".to_string()), // YMMV
         extra: None,
       },
       TrustAtom {
-        source_entry_hash: me_b64.clone(),
-        target_entry_hash: EntryHashB64::from(hia_entry_hash),
+        source_entry_hash: me.clone(),
+        target_entry_hash: AnyLinkableHash::from(hia_entry_hash),
         prefix: Some("rollup".to_string()),
         content: Some("holochain".to_string()),
         value: Some("0.9393462684191715".to_string()), // YMMV

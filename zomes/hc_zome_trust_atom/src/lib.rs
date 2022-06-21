@@ -10,7 +10,6 @@
 
 // #![warn(clippy::cargo)]
 
-use hdk::prelude::holo_hash::EntryHashB64;
 use hdk::prelude::*;
 
 use std::collections::BTreeMap;
@@ -39,7 +38,7 @@ pub struct TrustAtomInput {
   pub target: AnyLinkableHash,
   pub content: Option<String>,
   pub value: Option<String>,
-  pub extra: Option<BTreeMap<String, String>>, // TODO back to String -> String
+  pub extra: Option<BTreeMap<String, String>>, 
                                                // for rollups key is "rolled_up_trust_atoms"
                                                // value is json: '["header hash of atom 1","header hash of atom 2"...]'
 }
@@ -127,6 +126,7 @@ pub fn query(input: QueryInput) -> ExternResult<Vec<TrustAtom>> {
 #[hdk_extern]
 pub fn query_mine(input: QueryMineInput) -> ExternResult<Vec<TrustAtom>> {
   trust_atom::query_mine(
+    input.target,
     input.prefix,
     input.content_full,
     input.content_starts_with,

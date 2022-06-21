@@ -21,7 +21,7 @@ pub fn create_rollup_atoms() -> ExternResult<Vec<TrustAtom>> {
   let agents = build_agent_list(my_atoms.clone())?;
 
   let rollup_silver: BTreeMap<AnyLinkableHash, BTreeMap<AnyLinkableHash, RollupData>> =
-    build_rollup_silver(&me, my_atoms, agents)?;
+    build_rollup_silver(me.clone(), my_atoms, agents)?;
   let rollup_gold: Vec<TrustAtom> = build_rollup_gold(rollup_silver, me)?;
   Ok(rollup_gold)
 }
@@ -45,7 +45,7 @@ fn build_agent_list(atoms: Vec<TrustAtom>) -> ExternResult<Vec<AnyLinkableHash>>
 
 #[allow(clippy::needless_pass_by_value)]
 fn build_rollup_silver(
-  me: &AnyLinkableHash,
+  me: AnyLinkableHash,
   atoms: Vec<TrustAtom>,
   agents: Vec<AnyLinkableHash>,
 ) -> ExternResult<BTreeMap<AnyLinkableHash, BTreeMap<AnyLinkableHash, RollupData>>> {
@@ -57,11 +57,11 @@ fn build_rollup_silver(
     .collect();
 
   for target in targets.clone() {
-    if &target != me && !agents.contains(&target) {
+    if target != me && !agents.contains(&target) {
       let links = get_links(target.clone(), None)?;
       let mut links_latest = Vec::new();
       for link in links.clone() {
-        let latest = get_latest(&target, &link.target, None)?;
+        let latest = get_latest(target.clone(), link.target, None)?;
         if let Some(latest) = latest {
           if !links_latest.contains(&latest) {
             // debug!("latest: {:?}", latest);
@@ -70,7 +70,7 @@ fn build_rollup_silver(
         }
       }
       let trust_atoms_latest =
-        convert_links_to_trust_atoms(links_latest, &LinkDirection::Reverse, target)?;
+        convert_links_to_trust_atoms(links_latest, &LinkDirection::Reverse, target.clone())?;
       let mut map: BTreeMap<AnyLinkableHash, RollupData> = BTreeMap::new();
       for ta in trust_atoms_latest.clone() {
         let source = AnyLinkableHash::from(ta.source_entry_hash);
@@ -83,7 +83,7 @@ fn build_rollup_silver(
               let chunks = [None, Some(content.clone())];
 
               let filter = create_link_tag(&LinkDirection::Forward, &chunks); // NOTE: filter by content broken if mislabeled
-              let agent_rating: Option<String> = get_rating(me, &source, Some(filter))?;
+              let agent_rating: Option<String> = get_rating(me.clone(), source.clone(), Some(filter))?;
               if let Some(rating) = agent_rating {
                 let rating_ok = match rating.parse::<f64>() {
                   Ok(r) => r,
@@ -125,7 +125,7 @@ fn build_rollup_gold(
       if let Some(rating) = rollup_data.agent_rating {
         agent_rating_phi_sum += rating.parse::<f64>().expect("Parse Error").powf(1.618);
       }
-      let link_latest = get_latest(&agent, &target, None)?;
+      let link_latest = get_latest(agent.clone(), target.clone(), None)?;
       if let Some(latest) = link_latest {
         let sourced_atom_latest =
           convert_link_to_trust_atom(latest, &LinkDirection::Forward, agent)?;
@@ -152,13 +152,13 @@ fn build_rollup_gold(
       }
     }
 
-    let my_rating: Option<String> = get_rating(&me, &target, None)?;
+    let my_rating: Option<String> = get_rating(me.clone(), target.clone(), None)?;
     let weighted_sum: f64 = accumulator.iter().sum();
     let content: Option<String> = {
       // TODO: cleanup get content method by adding TA.target_name String
-      let get_latest = get_latest(&me, &target, None)?;
+      let get_latest = get_latest(me.clone(), target.clone(), None)?;
       match get_latest {
-        Some(link) => convert_link_to_trust_atom(link, &LinkDirection::Forward, me)?.content,
+        Some(link) => convert_link_to_trust_atom(link, &LinkDirection::Forward, me.clone())?.content,
         None => None,
       }
     };
@@ -195,11 +195,11 @@ fn build_rollup_gold(
 }
 
 fn get_rating(
-  base: &AnyLinkableHash,
-  target: &AnyLinkableHash,
+  base: AnyLinkableHash,
+  target: AnyLinkableHash,
   tag_filter: Option<LinkTag>,
 ) -> ExternResult<Option<String>> {
-  let link_latest = get_latest(base, target, tag_filter)?;
+  let link_latest = get_latest(base.clone(), target, tag_filter)?;
   if let Some(latest) = link_latest {
     let trust_atom_latest = convert_link_to_trust_atom(latest, &LinkDirection::Forward, base)?;
     // debug!("latest rating: {:?}", trust_atom_latest.value);
@@ -209,13 +209,13 @@ fn get_rating(
 }
 
 fn get_latest(
-  base: &AnyLinkableHash,
-  target: &AnyLinkableHash,
+  base: AnyLinkableHash,
+  target: AnyLinkableHash,
   tag_filter: Option<LinkTag>,
 ) -> ExternResult<Option<Link>> {
   let mut links: Vec<Link> = get_links(base.clone(), tag_filter)?
     .into_iter()
-    .filter(|x| x.target == *target)
+    .filter(|x| x.target == target)
     .collect();
   // debug!("get_latest_inks: {:?}", links);
   links.sort_by(|a, b| a.timestamp.cmp(&b.timestamp)); // ignoring nanoseconds

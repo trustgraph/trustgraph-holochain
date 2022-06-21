@@ -1,7 +1,7 @@
 #![allow(clippy::module_name_repetitions)]
 
 use ::holo_hash::AnyLinkableHash;
-use ::holo_hash::AnyLinkableHashB64;
+// use ::holo_hash::AnyLinkableHashB64;
 use hdk::prelude::*;
 use rust_decimal::prelude::*;
 use std::collections::BTreeMap;
@@ -18,8 +18,8 @@ pub enum LinkDirection {
 /// We may support JSON in the future to allow for more complex data structures @TODO
 #[derive(Serialize, Deserialize, SerializedBytes, Debug, Clone, Eq, PartialEq, Hash)]
 pub struct TrustAtom {
-  pub source_entry_hash: AnyLinkableHashB64,
-  pub target_entry_hash: AnyLinkableHashB64,
+  pub source_entry_hash: AnyLinkableHash,
+  pub target_entry_hash: AnyLinkableHash,
   pub prefix: Option<String>,
   pub content: Option<String>,
   pub value: Option<String>,
@@ -102,8 +102,8 @@ pub fn create_trust_atom(
   )?;
 
   let trust_atom = TrustAtom {
-    source_entry_hash: AnyLinkableHashB64::from(agent_address),
-    target_entry_hash: AnyLinkableHashB64::from(target),
+    source_entry_hash: AnyLinkableHash::from(agent_address),
+    target_entry_hash: AnyLinkableHash::from(target),
     prefix,
     content,
     value,
@@ -446,8 +446,8 @@ pub(crate) fn convert_link_to_trust_atom(
     LinkDirection::Forward => TrustAtom {
       // source: link_base_b64.to_string(),
       // target: link_target_b64.to_string(),
-      source_entry_hash: AnyLinkableHashB64::from(link_base),
-      target_entry_hash: AnyLinkableHashB64::from(link.target),
+      source_entry_hash: AnyLinkableHash::from(link_base),
+      target_entry_hash: AnyLinkableHash::from(link.target),
       prefix,
       content,
       value,
@@ -455,8 +455,8 @@ pub(crate) fn convert_link_to_trust_atom(
     },
     LinkDirection::Reverse => {
       TrustAtom {
-        source_entry_hash: AnyLinkableHashB64::from(link.target), // flipped for Reverse direction
-        target_entry_hash: AnyLinkableHashB64::from(link_base),   // flipped for Reverse direction
+        source_entry_hash: AnyLinkableHash::from(link.target), // flipped for Reverse direction
+        target_entry_hash: AnyLinkableHash::from(link_base),   // flipped for Reverse direction
         prefix,
         content,
         value,
