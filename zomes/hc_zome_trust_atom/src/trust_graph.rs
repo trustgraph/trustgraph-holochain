@@ -1,4 +1,4 @@
-use hdk::prelude::holo_hash::EntryHashB64;
+use ::holo_hash::AnyLinkableHash;
 use hdk::prelude::*;
 
 use std::collections::BTreeMap;
@@ -83,7 +83,8 @@ fn build_rollup_silver(
               let chunks = [None, Some(content.clone())];
 
               let filter = create_link_tag(&LinkDirection::Forward, &chunks); // NOTE: filter by content broken if mislabeled
-              let agent_rating: Option<String> = get_rating(me.clone(), source.clone(), Some(filter))?;
+              let agent_rating: Option<String> =
+                get_rating(me.clone(), source.clone(), Some(filter))?;
               if let Some(rating) = agent_rating {
                 let rating_ok = match rating.parse::<f64>() {
                   Ok(r) => r,
@@ -158,7 +159,9 @@ fn build_rollup_gold(
       // TODO: cleanup get content method by adding TA.target_name String
       let get_latest = get_latest(me.clone(), target.clone(), None)?;
       match get_latest {
-        Some(link) => convert_link_to_trust_atom(link, &LinkDirection::Forward, me.clone())?.content,
+        Some(link) => {
+          convert_link_to_trust_atom(link, &LinkDirection::Forward, me.clone())?.content
+        }
         None => None,
       }
     };

@@ -38,9 +38,9 @@ pub struct TrustAtomInput {
   pub target: AnyLinkableHash,
   pub content: Option<String>,
   pub value: Option<String>,
-  pub extra: Option<BTreeMap<String, String>>, 
-                                               // for rollups key is "rolled_up_trust_atoms"
-                                               // value is json: '["header hash of atom 1","header hash of atom 2"...]'
+  pub extra: Option<BTreeMap<String, String>>,
+  // for rollups key is "rolled_up_trust_atoms"
+  // value is json: '["header hash of atom 1","header hash of atom 2"...]'
 }
 
 #[derive(Serialize, Deserialize, SerializedBytes, Debug, Clone)]
