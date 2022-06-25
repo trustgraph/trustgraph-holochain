@@ -43,19 +43,23 @@ pub struct Extra {
   pub field: BTreeMap<String, String>,
 }
 
-// pub fn create_trust_atom(
-//   source: EntryHash, //// for tests ////
-//   target: AnyLinkableHash,
-//   prefix: Option<String>,
-//   content: Option<String>,
-//   value: Option<String>,
-//   extra: Option<BTreeMap<String, String>>,
-// ) -> ExternResult<TrustAtom> {
-// set source to me
-// create_trust_atom(
-// source: me
-// ...
-// )
+pub fn create_mine_trust_atom(
+  target: AnyLinkableHash,
+  prefix: Option<String>,
+  content: Option<String>,
+  value: Option<String>,
+  extra: Option<BTreeMap<String, String>>,
+) -> ExternResult<TrustAtom> {
+  let me = AnyLinkableHash::from(agent_info()?.agent_latest_pubkey);
+  create_trust_atom(
+    me,
+    target,
+    prefix,
+    content,
+    value,
+    extra
+  )
+}
 
 pub fn create_trust_atom(
   source: AnyLinkableHash,
@@ -65,7 +69,7 @@ pub fn create_trust_atom(
   value: Option<String>,
   extra: Option<BTreeMap<String, String>>,
 ) -> ExternResult<TrustAtom> {
-  let agent_address = AnyLinkableHash::from(agent_info()?.agent_initial_pubkey);
+  let agent_address = AnyLinkableHash::from(source);
 
   let bucket = create_bucket()?;
 

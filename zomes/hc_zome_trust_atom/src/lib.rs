@@ -81,9 +81,7 @@ pub fn create_rollup_atoms(_: ()) -> ExternResult<Vec<TrustAtom>> {
 
 #[hdk_extern]
 pub fn create_trust_atom(input: TrustAtomInput) -> ExternResult<TrustAtom> {
-  let agent_address = AnyLinkableHash::from(agent_info()?.agent_initial_pubkey);
-  trust_atom::create_trust_atom(
-    agent_address,
+  trust_atom::create_mine_trust_atom(
     input.target,
     input.prefix,
     input.content,
