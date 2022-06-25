@@ -19,11 +19,7 @@ const DNA_FILEPATH: &str = "../../workdir/dna/trust_atom.dna";
 #[tokio::test]
 pub async fn test_unicode_null() {
   let unicode_nul: &str = std::str::from_utf8(&[0]).unwrap();
-  assert_eq!(
-    unicode_nul.as_bytes(),
-    &[0] // '\u{00}' // .to_string() // .replace("\u{00}", "�")
-         // .as_str()
-  );
+  assert_eq!(unicode_nul.as_bytes(), &[0]);
 }
 
 #[tokio::test(flavor = "multi_thread")]
