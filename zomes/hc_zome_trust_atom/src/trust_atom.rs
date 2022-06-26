@@ -51,14 +51,7 @@ pub fn create_mine_trust_atom(
   extra: Option<BTreeMap<String, String>>,
 ) -> ExternResult<TrustAtom> {
   let me = AnyLinkableHash::from(agent_info()?.agent_latest_pubkey);
-  create_trust_atom(
-    me,
-    target,
-    prefix,
-    content,
-    value,
-    extra
-  )
+  create_trust_atom(me, target, prefix, content, value, extra)
 }
 
 pub fn create_trust_atom(
