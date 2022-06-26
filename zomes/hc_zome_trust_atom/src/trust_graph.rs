@@ -33,7 +33,7 @@ fn build_agent_list(atoms: Vec<TrustAtom>) -> ExternResult<Vec<AnyLinkableHash>>
   let filter = create_link_tag(&LinkDirection::Forward, &chunks);
 
   for ta in atoms {
-    let entry_hash = AnyLinkableHash::from(ta.target_entry_hash);
+    let entry_hash = ta.target_entry_hash;
     let rollup_links: Vec<Link> = get_links(entry_hash.clone(), Some(filter.clone()))?; // NOTE: Agent must have done at least one rollup
     if !rollup_links.is_empty() && !agents.contains(&entry_hash) {
       // prevent duplicates
@@ -53,7 +53,7 @@ fn build_rollup_silver(
     BTreeMap::new(); // K: Target (AnyLinkableHash) V: BTreeMap<Agent, RollupData>
   let targets: Vec<AnyLinkableHash> = atoms
     .into_iter()
-    .map(|x| AnyLinkableHash::from(x.target_entry_hash))
+    .map(|x| x.target_entry_hash)
     .collect();
 
   for target in targets.clone() {
@@ -73,7 +73,7 @@ fn build_rollup_silver(
         convert_links_to_trust_atoms(links_latest, &LinkDirection::Reverse, target.clone())?;
       let mut map: BTreeMap<AnyLinkableHash, RollupData> = BTreeMap::new();
       for ta in trust_atoms_latest.clone() {
-        let source = AnyLinkableHash::from(ta.source_entry_hash);
+        let source = ta.source_entry_hash;
         if agents.contains(&source) {
           // get only Agent TAs
           if let Some(content) = ta.content {
@@ -210,13 +210,13 @@ fn get_rating(
   }
   Ok(None)
 }
-
+#[allow(clippy::needless_pass_by_value)]
 fn get_latest(
   base: AnyLinkableHash,
   target: AnyLinkableHash,
   tag_filter: Option<LinkTag>,
 ) -> ExternResult<Option<Link>> {
-  let mut links: Vec<Link> = get_links(base.clone(), tag_filter)?
+  let mut links: Vec<Link> = get_links(base, tag_filter)?
     .into_iter()
     .filter(|x| x.target == target)
     .collect();

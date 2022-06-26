@@ -62,7 +62,6 @@ pub fn create_trust_atom(
   value: Option<String>,
   extra: Option<BTreeMap<String, String>>,
 ) -> ExternResult<TrustAtom> {
-  let agent_address = AnyLinkableHash::from(source);
 
   let bucket = create_bucket()?;
 
@@ -86,21 +85,21 @@ pub fn create_trust_atom(
   // );
 
   create_link(
-    agent_address.clone(),
+    source.clone(),
     target.clone(),
     HdkLinkType::Any,
     forward_link_tag,
   )?;
   create_link(
     target.clone(),
-    agent_address.clone(),
+    SourceChainResult.clone(),
     HdkLinkType::Any,
     reverse_link_tag,
   )?;
 
   let trust_atom = TrustAtom {
-    source_entry_hash: AnyLinkableHash::from(agent_address),
-    target_entry_hash: AnyLinkableHash::from(target),
+    source_entry_hash: source,
+    target_entry_hash: target,
     prefix,
     content,
     value,
@@ -243,7 +242,7 @@ pub fn get_extra(entry_hash: &EntryHash) -> ExternResult<Extra> {
     ))),
   }
 }
-
+#[allow(clippy::needless_pass_by_value)]
 pub fn query_mine(
   target: Option<AnyLinkableHash>,
   prefix: Option<String>,
@@ -268,7 +267,7 @@ pub fn query_mine(
 /// Required: exactly one of source or target
 /// All other arguments are optional
 /// Arguments act as additive filters (AND)
-#[warn(clippy::needless_pass_by_value)]
+#[allow(clippy::needless_pass_by_value)]
 pub fn query(
   source: Option<AnyLinkableHash>,
   target: Option<AnyLinkableHash>,
@@ -363,6 +362,7 @@ pub fn query(
   Ok(trust_atoms)
 }
 
+#[allow(clippy::needless_pass_by_value)]
 pub fn convert_links_to_trust_atoms(
   links: Vec<Link>,
   link_direction: &LinkDirection,
@@ -379,7 +379,7 @@ pub fn convert_links_to_trust_atoms(
   //   Ok(trust_atoms.or_else(|_| WasmError::Guest("erro"))?)
 }
 
-// #[warn(clippy::pedantic)]
+#[allow(clippy::needless_pass_by_value)]
 pub(crate) fn convert_link_to_trust_atom(
   link: Link,
   link_direction: &LinkDirection,
@@ -398,7 +398,6 @@ pub(crate) fn convert_link_to_trust_atom(
   };
 
   let chunks: Vec<&str> = link_tag.split(UNICODE_NUL_STR).collect();
-  // debug!("chunks: {:?}", chunks);
 
   let prefix = {
     if chunks[1].is_empty() {
@@ -441,10 +440,8 @@ pub(crate) fn convert_link_to_trust_atom(
 
   let trust_atom = match link_direction {
     LinkDirection::Forward => TrustAtom {
-      // source: link_base_b64.to_string(),
-      // target: link_target_b64.to_string(),
-      source_entry_hash: AnyLinkableHash::from(link_base),
-      target_entry_hash: AnyLinkableHash::from(link.target),
+      source_entry_hash: link_base,
+      target_entry_hash: link.target,
       prefix,
       content,
       value,
@@ -452,8 +449,8 @@ pub(crate) fn convert_link_to_trust_atom(
     },
     LinkDirection::Reverse => {
       TrustAtom {
-        source_entry_hash: AnyLinkableHash::from(link.target), // flipped for Reverse direction
-        target_entry_hash: AnyLinkableHash::from(link_base),   // flipped for Reverse direction
+        source_entry_hash: link.target, // flipped for Reverse direction
+        target_entry_hash: link_base,   // flipped for Reverse direction
         prefix,
         content,
         value,
