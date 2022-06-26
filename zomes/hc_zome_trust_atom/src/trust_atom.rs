@@ -62,7 +62,6 @@ pub fn create_trust_atom(
   value: Option<String>,
   extra: Option<BTreeMap<String, String>>,
 ) -> ExternResult<TrustAtom> {
-
   let bucket = create_bucket()?;
 
   let extra_entry_hash_string = match extra.clone() {
@@ -92,7 +91,7 @@ pub fn create_trust_atom(
   )?;
   create_link(
     target.clone(),
-    SourceChainResult.clone(),
+    source.clone(),
     HdkLinkType::Any,
     reverse_link_tag,
   )?;

@@ -51,10 +51,7 @@ fn build_rollup_silver(
 ) -> ExternResult<BTreeMap<AnyLinkableHash, BTreeMap<AnyLinkableHash, RollupData>>> {
   let mut rollup_silver: BTreeMap<AnyLinkableHash, BTreeMap<AnyLinkableHash, RollupData>> =
     BTreeMap::new(); // K: Target (AnyLinkableHash) V: BTreeMap<Agent, RollupData>
-  let targets: Vec<AnyLinkableHash> = atoms
-    .into_iter()
-    .map(|x| x.target_entry_hash)
-    .collect();
+  let targets: Vec<AnyLinkableHash> = atoms.into_iter().map(|x| x.target_entry_hash).collect();
 
   for target in targets.clone() {
     if target != me && !agents.contains(&target) {
