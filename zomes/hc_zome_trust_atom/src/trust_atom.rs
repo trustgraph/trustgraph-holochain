@@ -1,7 +1,7 @@
 #![allow(clippy::module_name_repetitions)]
 
 use ::holo_hash::AnyLinkableHash;
-// use ::holo_hash::AnyLinkableHashB64;
+
 use hdk::prelude::*;
 use rust_decimal::prelude::*;
 use std::collections::BTreeMap;
@@ -31,16 +31,11 @@ const LINK_TAG_HEADER: [u8; 2] = [197, 166]; // Unicode "Ŧ" // hex bytes: [0xC5
 const LINK_TAG_ARROW_FORWARD: [u8; 3] = [226, 134, 146]; // Unicode "→" // hex bytes: [0xE2][0x86][0x92]
 const LINK_TAG_ARROW_REVERSE: [u8; 3] = [226, 134, 169]; // Unicode "↩" // hex bytes: [0xE2][0x86][0xA9]
 
-// pub enum ExtraEntryInput {
-//   Content(String),
-//   SourcedAtoms(BTreeMap<EntryHashB64, TrustAtom>),
-//   Attributes(BTreeMap<String, String>),
-// }
-
 #[hdk_entry(id = "extra", visibility = "public")]
 #[derive(Clone, PartialEq, Eq)]
 pub struct Extra {
-  pub field: BTreeMap<String, String>,
+  pub field: Option<BTreeMap<String, String>>,
+  pub full_content: Option<String>
 }
 
 pub fn create_mine_trust_atom(
@@ -64,9 +59,19 @@ pub fn create_trust_atom(
 ) -> ExternResult<TrustAtom> {
   let bucket = create_bucket()?;
 
-  let extra_entry_hash_string = match extra.clone() {
-    Some(x) => Some(create_extra(x)?),
-    None => None,
+  let overflow: bool = match content.clone() {
+    Some(c) => if c.len() > 900 {true} else {false}
+    None => false
+  };
+  let extra_entry_hash_string = match overflow {
+    true => match extra.clone() {
+      Some(x) => Some(create_extra(extra, content)?),
+      None => Some(create_extra(extra, None)?)
+  }
+    false => match extra.clone() {
+      Some(x) => Some(create_extra(extra, None)?),
+      None => None
+      }
   };
   let chunks = [
     prefix.clone(),
@@ -77,11 +82,6 @@ pub fn create_trust_atom(
   ];
   let forward_link_tag = create_link_tag(&LinkDirection::Forward, &chunks);
   let reverse_link_tag = create_link_tag(&LinkDirection::Reverse, &chunks);
-
-  // debug!(
-  //   "forward_link_tag: {:?}",
-  //   String::from_utf8_lossy(&forward_link_tag.clone().into_inner())
-  // );
 
   create_link(
     source.clone(),
@@ -123,10 +123,13 @@ fn create_bucket_string(bucket_bytes: &[u8]) -> String {
   bucket
 }
 
-pub fn create_extra(input: BTreeMap<String, String>) -> ExternResult<String> {
-  let entry = Extra { field: input };
-  create_entry(entry.clone())?;
-  let entry_hash_string = hash_entry(entry)?.to_string();
+pub fn create_extra(field: Option<BTreeMap<String,String>>, overflow: Option<String>) -> ExternResult<String> {
+  let extra = Extra { 
+    field,
+    full_content: overflow,
+  };
+  create_entry(extra.clone())?;
+  let entry_hash_string = hash_entry(extra)?.to_string();
   Ok(entry_hash_string)
 } // returns stringified EntryHash
 
@@ -171,15 +174,25 @@ pub fn create_link_tag(
   chunk_options: &[Option<String>],
 ) -> LinkTag {
   let mut chunks: Vec<String> = vec![];
+  if let Some(content) = chunk_options[0] {
+    if content.len() > 900 {
+      let mut max_content = content.clone();
+      max_content.truncate(898);  // leave 2 bytes for `…`
+      max_content.push_str("…");
+      chunks.push(max_content);
+    }
+    else {chunks.push(content);}
+}
 
-  for i in 0..chunk_options.len() {
+  for i in 1..chunk_options.len() {
     if let Some(chunk) = chunk_options[i].clone() {
       chunks.push(chunk);
-    }
-    if i < chunk_options.len() - 1 {
-      chunks.push(UNICODE_NUL_STR.to_string());
+      if i < chunk_options.len() - 1 {
+        chunks.push(UNICODE_NUL_STR.to_string());
+      }
     }
   }
+
   create_link_tag_metal(link_direction, chunks)
 }
 
