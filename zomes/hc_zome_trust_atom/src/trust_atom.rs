@@ -73,6 +73,14 @@ pub fn create_trust_atom(
       None => None
       }
   };
+  if overflow {
+    let validation = validate(extra_input);
+    match validation {
+      Ok(_) => {}
+      Err(_) => {Return Err(WasmError::Guest("Validation Error".to_string()))}
+    }
+  }
+
   let chunks = [
     prefix.clone(),
     content.clone(),
@@ -474,6 +482,11 @@ pub(crate) fn convert_link_to_trust_atom(
   Ok(trust_atom)
 }
 
+fn validate(extra: Extra) -> ExternResult<ValidateCallbackResult> {
+  if let Some(_) = extra.full_content {
+    Ok(ValidateCallbackResult::Invalid("Passed content_full extra field with bytes overflow".to_string()))
+  }
+}
 // const fn tg_link_tag_header_length() -> usize {
 //   LINK_TAG_HEADER.len() + LINK_TAG_ARROW_FORWARD.len()
 // }
