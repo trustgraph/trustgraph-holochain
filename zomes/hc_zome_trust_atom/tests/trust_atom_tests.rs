@@ -389,7 +389,8 @@ pub async fn test_get_extra() {
     .await;
 
   let mock_extra_data = Extra {
-    field: extra_map.clone(),
+    field: Some(extra_map.clone()),
+    full_content: None,
   };
   let mock_extra_entry_hash: EntryHash = conductor
     .call(

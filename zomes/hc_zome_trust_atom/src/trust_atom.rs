@@ -65,11 +65,11 @@ pub fn create_trust_atom(
   };
   let extra_entry_hash_string = match overflow {
     true => match extra.clone() {
-      Some(x) => Some(create_extra(extra, content)?),
-      None => Some(create_extra(extra, None)?)
+      Some(x) => Some(create_extra(extra.clone(), content.clone())?),
+      None => Some(create_extra(extra.clone(), None)?)
   }
     false => match extra.clone() {
-      Some(x) => Some(create_extra(extra, None)?),
+      Some(x) => Some(create_extra(extra.clone(), None)?),
       None => None
       }
   };
@@ -174,7 +174,7 @@ pub fn create_link_tag(
   chunk_options: &[Option<String>],
 ) -> LinkTag {
   let mut chunks: Vec<String> = vec![];
-  if let Some(content) = chunk_options[0] {
+  if let Some(content) = chunk_options[0].clone() {
     if content.len() > 900 {
       let mut max_content = content.clone();
       max_content.truncate(898);  // leave 2 bytes for `…`
@@ -441,7 +441,7 @@ pub(crate) fn convert_link_to_trust_atom(
     } else {
       let entry_hash = EntryHash::from_raw_39(chunks[5].to_string().into_bytes());
       if let Ok(hash) = entry_hash {
-        Some(get_extra(&hash)?.field)
+        get_extra(&hash)?.field
       } else {
         return Err(WasmError::Guest(
           "could not convert hash string".to_string(),
