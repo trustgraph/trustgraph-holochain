@@ -43,7 +43,7 @@ HDK version correspondence:
 
 ```rs
 pub struct TrustAtomInput {
-  pub target: AnyLinkableHash,
+  pub target: EntryHash,
   pub prefix: Option<String>,
   pub content: Option<String>,
   pub value: Option<String>,
@@ -60,8 +60,8 @@ pub fn create_trust_atom(input: TrustAtomInput) -> ExternResult<TrustAtom> {
 
 ```rs
 pub struct QueryInput {
-  pub source: Option<AnyLinkableHash>,
-  pub target: Option<AnyLinkableHash>,
+  pub source: Option<EntryHash>,
+  pub target: Option<EntryHash>,
   pub prefix: Option<String>,
   pub content_full: Option<String>,
   pub content_starts_with: Option<String>,
@@ -81,8 +81,10 @@ Client-facing representation of a Trust Atom (this is what is returned to client
 
 ```rs
 pub struct TrustAtom {
-  pub source_entry_hash: AnyLinkableHash,
-  pub target_entry_hash: AnyLinkableHash,
+  pub source: String,
+  pub target: String,
+  pub source_entry_hash: EntryHashB64,
+  pub target_entry_hash: EntryHashB64,
   pub prefix: Option<String>
   pub content: Option<String>,
   pub value: Option<String>,
@@ -98,28 +100,27 @@ We encode TrustAtoms as links, with the following components:
 
 1. Holochain Link `base` == TrustAtom `source` - one of:
    - creating agent (`AgentPubKeyB64`)
-   - TrustGraph (`AnyLinkableHash`)
+   - TrustGraph (`EntryHashB64`)
 1. Holochain Link `target` == TrustAtom `target` - entity being rated/reviewed/etc - one of:
-   - `AnyLinkableHash`
+   - `EntryHashB64`
    - `AgentPubKeyB64`
 1. Holochain Link `tag`\* (max 999 bytes) - formatted as UTF-8 string
+
 - TrustAtom header bytes: `[0xC5][0xA6]` (which together comprise the unicode character `Ŧ`) (required)
 - Direction byte:
   - `[0x21][0x92]` (unicode `→`) means: HC target = TA target
   - `[0x21][0xA9]` (unicode `↩`) means: HC target = TA source
-- TrustAtom `prefix` - leading bytes: label, category, etc
-- Separator: null byte `[0x00]`
 - TrustAtom `content` - semantic info (eg sushi) - max 900 bytes
 - Separator: null byte `[0x00]`
 - TrustAtom `value` - rating ( `"-0.999999999"` to `"0.999999999"`) - max 12 chars
 - Separator: null byte `[0x00]`
 - Random 9 characters for bucketing purposes
 - Separator: null byte `[0x00]`
-- Canonical data including additional attributes - `AnyLinkableHash`
+- Canonical data including additional attributes - `EntryHashB64`
   - Entry contains attributes formatted in: `BTreeMap<String, String>`
   - You will find full content here; if content exceeds link tag limts it ends with `…` as a hint
   - If value is 1.0, we use "0.999999999" in link tag, but 1.0 here
-  - Entry hash is a string version of AnyLinkableHash for debugging purposes, not raw bytes
+  - Entry hash is a sring version of EntryHashB64 for debugging purposes, not raw bytes
 
 \*This format is designed to allow us to encode trust atoms as Holochain links, and search them by their tags. Holochain can search for all links _starting_ with a given set of bytes (characters).
 
@@ -141,13 +142,12 @@ We encode TrustAtoms as links, with the following components:
 - [x] Create TrustAtoms as paired Holochain links
 - [x] Fetch TrustAtoms by content leading bytes
 - [x] Fetch TrustAtoms by content and value
-- [x] Roll up a TrustGraph by crawling TrustAtoms (2 levels deep)
+- [ ] Roll up a TrustGraph by crawling TrustAtoms (2 levels deep)
 - [ ] Integration into holochain example projects, eg [Clutter](https://github.com/artbrock/clutter)
 
-## Authors
+## Author
 
 👤 **Harlan T Wood (https://github.com/harlantwood)**
-👤 **Zeek (https://github.com/dauphin3)**
 
 - Website: https://trustgraph.net
 - Github: [@trustgraph](https://github.com/trustgraph)
