@@ -1,7 +1,5 @@
 #![allow(clippy::module_name_repetitions)]
 
-use ::holo_hash::AnyLinkableHash;
-use ::holo_hash::AnyLinkableHashB64;
 use hdk::prelude::*;
 use rust_decimal::prelude::*;
 use std::collections::BTreeMap;
@@ -16,8 +14,8 @@ enum LinkDirection {
 /// We may support JSON in the future to allow for more complex data structures @TODO
 #[derive(Serialize, Deserialize, SerializedBytes, Debug, Clone, PartialEq)]
 pub struct TrustAtom {
-  pub source_entry_hash: AnyLinkableHashB64,
-  pub target_entry_hash: AnyLinkableHashB64,
+  pub source_entry_hash: AnyLinkableHash,
+  pub target_entry_hash: AnyLinkableHash,
   pub content: Option<String>,
   pub value: Option<String>,
   pub extra: Option<BTreeMap<String, String>>,
@@ -72,8 +70,8 @@ pub fn create(
   )?;
 
   let trust_atom = TrustAtom {
-    source_entry_hash: AnyLinkableHashB64::from(agent_address),
-    target_entry_hash: AnyLinkableHashB64::from(target),
+    source_entry_hash: AnyLinkableHash::from(agent_address),
+    target_entry_hash: AnyLinkableHash::from(target),
     content,
     value,
     extra,
@@ -319,8 +317,8 @@ fn convert_link_to_trust_atom(
   let trust_atom = match link_direction {
     LinkDirection::Forward => {
       TrustAtom {
-        source_entry_hash: AnyLinkableHashB64::from(link_base),
-        target_entry_hash: AnyLinkableHashB64::from(link.target),
+        source_entry_hash: AnyLinkableHash::from(link_base),
+        target_entry_hash: AnyLinkableHash::from(link.target),
         content: Some(content),
         value: Some(value),
         extra: Some(BTreeMap::new()), // TODO
@@ -328,8 +326,8 @@ fn convert_link_to_trust_atom(
     }
     LinkDirection::Reverse => {
       TrustAtom {
-        source_entry_hash: AnyLinkableHashB64::from(link.target), // flipped for Reverse direction
-        target_entry_hash: AnyLinkableHashB64::from(link_base),   // flipped for Reverse direction
+        source_entry_hash: AnyLinkableHash::from(link.target), // flipped for Reverse direction
+        target_entry_hash: AnyLinkableHash::from(link_base),   // flipped for Reverse direction
         content: Some(content),
         value: Some(value),
         extra: Some(BTreeMap::new()), // TODO

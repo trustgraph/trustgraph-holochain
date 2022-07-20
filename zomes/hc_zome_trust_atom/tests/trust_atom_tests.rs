@@ -309,8 +309,8 @@ pub async fn test_query_mine() {
   assert_eq!(
     *trust_atom,
     TrustAtom {
-      source_entry_hash: AnyLinkableHashB64::from(AnyLinkableHash::from(agent.clone())),
-      target_entry_hash: AnyLinkableHashB64::from(AnyLinkableHash::from(target_entry_hash)),
+      source_entry_hash: AnyLinkableHash::from(agent.clone()),
+      target_entry_hash: AnyLinkableHash::from(target_entry_hash),
       content: Some("sushi".to_string()),
       value: Some(".800000000".to_string()),
       extra: Some(BTreeMap::new()),
