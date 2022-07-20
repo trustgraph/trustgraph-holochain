@@ -8,7 +8,6 @@ use hc_zome_trust_atom::*;
 use hdk::prelude::*;
 use holo_hash::AgentPubKey;
 use holo_hash::AnyLinkableHash;
-use holo_hash::AnyLinkableHashB64;
 use holochain::sweettest::{
   SweetAgents, SweetAppBatch, SweetCell, SweetConductor, SweetConductorBatch, SweetDnaFile,
 };
