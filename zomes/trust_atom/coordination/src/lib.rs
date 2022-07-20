@@ -7,23 +7,18 @@
 #![allow(clippy::missing_errors_doc)] // TODO fix and remove this
 #![allow(clippy::missing_const_for_fn)]
 #![allow(clippy::or_fun_call)]
+#![allow(clippy::use_self)]
 
 // #![warn(clippy::cargo)]
 
 use hdk::prelude::*;
 use std::collections::BTreeMap;
-
-// public for sweettest; TODO can we fix this:
-pub mod trust_atom;
-pub use crate::trust_atom::*;
+mod trust_atom;
+pub(crate) use hc_zome_trust_atom_integrity::{Extra, Test};
+pub use trust_atom::TrustAtom;
 pub mod test_helpers;
-pub use test_helpers::Test;
-
-entry_defs![
-  test_helpers::StringTarget::entry_def(),
-  Extra::entry_def(),
-  Test::entry_def()
-];
+pub use test_helpers::StringLinkTag;
+pub use test_helpers::*;
 
 // INPUT TYPES
 
@@ -101,13 +96,13 @@ pub fn create_string_target(input: String) -> ExternResult<EntryHash> {
 }
 
 #[hdk_extern]
-pub fn create_test_entry(input: Test) -> ExternResult<HeaderHash> {
+pub fn create_test_entry(input: Test) -> ExternResult<ActionHash> {
   test_helpers::create_test_entry(input)
 }
 
 #[hdk_extern]
-pub fn test_get_entry_by_header(input: HeaderHash) -> ExternResult<Test> {
-  test_helpers::get_entry_by_header(input)
+pub fn test_get_entry_by_action(input: ActionHash) -> ExternResult<Test> {
+  test_helpers::get_entry_by_action(input)
 }
 
 #[hdk_extern]

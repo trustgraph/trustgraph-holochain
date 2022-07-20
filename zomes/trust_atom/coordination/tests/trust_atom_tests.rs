@@ -1,19 +1,18 @@
 #![warn(warnings)]
 
+use futures::future;
 use std::collections::BTreeMap;
 
-use futures::future;
-
 use hc_zome_trust_atom::*;
+use hc_zome_trust_atom_integrity::{Extra, Test};
 use hdk::prelude::*;
-use holo_hash::AgentPubKey;
-use holo_hash::AnyLinkableHash;
-use holo_hash::AnyLinkableHashB64;
-use holochain::sweettest::{
-  SweetAgents, SweetAppBatch, SweetCell, SweetConductor, SweetConductorBatch, SweetDnaFile,
-};
+use holo_hash::{AgentPubKey, AnyLinkableHash};
+use holochain::sweettest::*;
+// {
+//   SweetAgents, SweetAppBatch, SweetCell, SweetConductor, SweetConductorBatch, SweetDnaFile,
+// };
 
-const DNA_FILEPATH: &str = "../../workdir/dna/trust_atom.dna";
+const DNA_FILEPATH: &str = "../../../workdir/dna/trust_atom_dna.dna";
 
 #[tokio::test]
 pub async fn test_unicode_null() {
@@ -24,13 +23,14 @@ pub async fn test_unicode_null() {
 #[tokio::test(flavor = "multi_thread")]
 pub async fn test_create_trust_atom() {
   let unicode_nul: &str = std::str::from_utf8(&[0]).unwrap();
-  let (conductor, agent, cell1) = setup_1_conductor().await;
+  let (conductor, agent, cell1): (SweetConductor, AgentPubKey, SweetCell) =
+    setup_1_conductor().await;
 
   // CREATE TARGET ENTRY
 
   let target_entry_hash: EntryHash = conductor
     .call(
-      &cell1.zome("trust_atom"),
+      &cell1.zome("hc_zome_trust_atom"),
       "create_string_target",
       "Nuka Sushi",
     )
@@ -55,7 +55,7 @@ pub async fn test_create_trust_atom() {
 
   let _result: TrustAtom = conductor
     .call(
-      &cell1.zome("trust_atom"),
+      &cell1.zome("hc_zome_trust_atom"),
       "create_trust_atom",
       trust_atom_input,
     )
@@ -67,7 +67,7 @@ pub async fn test_create_trust_atom() {
 
   let forward_links: Vec<Link> = conductor
     .call(
-      &cell1.zome("trust_atom"),
+      &cell1.zome("hc_zome_trust_atom"),
       "test_helper_list_links_for_base",
       agent_address,
     )
@@ -115,7 +115,7 @@ pub async fn test_create_trust_atom() {
 
   let backward_links: Vec<Link> = conductor
     .call(
-      &cell1.zome("trust_atom"),
+      &cell1.zome("hc_zome_trust_atom"),
       "test_helper_list_links_for_base",
       target_entry_hash.clone(),
     )
@@ -154,13 +154,14 @@ pub async fn test_create_trust_atom() {
 #[tokio::test(flavor = "multi_thread")]
 pub async fn test_create_trust_atom_with_empty_chunks() {
   let unicode_nul: &str = std::str::from_utf8(&[0]).unwrap();
-  let (conductor, agent, cell1) = setup_1_conductor().await;
+  let (conductor, agent, cell1): (SweetConductor, AgentPubKey, SweetCell) =
+    setup_1_conductor().await;
 
   // CREATE TARGET ENTRY
 
   let target_entry_hash: EntryHash = conductor
     .call(
-      &cell1.zome("trust_atom"),
+      &cell1.zome("hc_zome_trust_atom"),
       "create_string_target",
       "Nuka Sushi",
     )
@@ -177,7 +178,7 @@ pub async fn test_create_trust_atom_with_empty_chunks() {
 
   let _result: TrustAtom = conductor
     .call(
-      &cell1.zome("trust_atom"),
+      &cell1.zome("hc_zome_trust_atom"),
       "create_trust_atom",
       trust_atom_input,
     )
@@ -189,7 +190,7 @@ pub async fn test_create_trust_atom_with_empty_chunks() {
 
   let forward_links: Vec<Link> = conductor
     .call(
-      &cell1.zome("trust_atom"),
+      &cell1.zome("hc_zome_trust_atom"),
       "test_helper_list_links_for_base",
       agent_address,
     )
@@ -228,7 +229,7 @@ pub async fn test_create_trust_atom_with_empty_chunks() {
 
   let backward_links: Vec<Link> = conductor
     .call(
-      &cell1.zome("trust_atom"),
+      &cell1.zome("hc_zome_trust_atom"),
       "test_helper_list_links_for_base",
       target_entry_hash.clone(),
     )
@@ -255,13 +256,14 @@ pub async fn test_create_trust_atom_with_empty_chunks() {
 
 #[tokio::test(flavor = "multi_thread")]
 pub async fn test_query_mine() {
-  let (conductor, agent, cell1) = setup_1_conductor().await;
+  let (conductor, agent, cell1): (SweetConductor, AgentPubKey, SweetCell) =
+    setup_1_conductor().await;
 
   // CREATE TARGET ENTRY
 
   let target_entry_hash: EntryHash = conductor
     .call(
-      &cell1.zome("trust_atom"),
+      &cell1.zome("hc_zome_trust_atom"),
       "create_string_target",
       "Sushi Ran",
     )
@@ -271,7 +273,7 @@ pub async fn test_query_mine() {
 
   let _result: TrustAtom = conductor
     .call(
-      &cell1.zome("trust_atom"),
+      &cell1.zome("hc_zome_trust_atom"),
       "create_trust_atom",
       TrustAtomInput {
         target: AnyLinkableHash::from(target_entry_hash.clone()),
@@ -289,7 +291,7 @@ pub async fn test_query_mine() {
 
   let trust_atoms_from_query: Vec<TrustAtom> = conductor
     .call(
-      &cell1.zome("trust_atom"),
+      &cell1.zome("hc_zome_trust_atom"),
       "query_mine",
       QueryMineInput {
         target: None,
@@ -309,8 +311,8 @@ pub async fn test_query_mine() {
   assert_eq!(
     *trust_atom,
     TrustAtom {
-      source_entry_hash: AnyLinkableHashB64::from(AnyLinkableHash::from(agent.clone())),
-      target_entry_hash: AnyLinkableHashB64::from(AnyLinkableHash::from(target_entry_hash)),
+      source_entry_hash: AnyLinkableHash::from(agent.clone()),
+      target_entry_hash: AnyLinkableHash::from(target_entry_hash),
       content: Some("sushi".to_string()),
       value: Some(".800000000".to_string()),
       extra: Some(BTreeMap::new()),
@@ -326,7 +328,7 @@ pub async fn test_query_mine_with_content_starts_with() {
 
   let target_entry_hash: EntryHash = conductor
     .call(
-      &cell1.zome("trust_atom"),
+      &cell1.zome("hc_zome_trust_atom"),
       "create_string_target",
       "Sushi Ran",
     )
@@ -339,7 +341,7 @@ pub async fn test_query_mine_with_content_starts_with() {
   for content in contents {
     let _result: TrustAtom = conductor
       .call(
-        &cell1.zome("trust_atom"),
+        &cell1.zome("hc_zome_trust_atom"),
         "create_trust_atom",
         TrustAtomInput {
           target: AnyLinkableHash::from(target_entry_hash.clone()),
@@ -354,7 +356,7 @@ pub async fn test_query_mine_with_content_starts_with() {
 
   let trust_atoms_from_query: Vec<TrustAtom> = conductor
     .call(
-      &cell1.zome("trust_atom"),
+      &cell1.zome("hc_zome_trust_atom"),
       "query_mine",
       QueryMineInput {
         target: None,
@@ -382,13 +384,14 @@ pub async fn test_query_mine_with_content_starts_with() {
 
 #[tokio::test(flavor = "multi_thread")]
 pub async fn test_query_mine_with_content_full() {
-  let (conductor, _agent, cell1) = setup_1_conductor().await;
+  let (conductor, _agent, cell1): (SweetConductor, AgentPubKey, SweetCell) =
+    setup_1_conductor().await;
 
   // CREATE TARGET ENTRY
 
   let target_entry_hash: EntryHash = conductor
     .call(
-      &cell1.zome("trust_atom"),
+      &cell1.zome("hc_zome_trust_atom"),
       "create_string_target",
       "Sushi Ran",
     )
@@ -401,7 +404,7 @@ pub async fn test_query_mine_with_content_full() {
   for content_full in content_fulls {
     let _result: TrustAtom = conductor
       .call(
-        &cell1.zome("trust_atom"),
+        &cell1.zome("hc_zome_trust_atom"),
         "create_trust_atom",
         TrustAtomInput {
           target: AnyLinkableHash::from(target_entry_hash.clone()),
@@ -416,7 +419,7 @@ pub async fn test_query_mine_with_content_full() {
 
   let trust_atoms_from_query: Vec<TrustAtom> = conductor
     .call(
-      &cell1.zome("trust_atom"),
+      &cell1.zome("hc_zome_trust_atom"),
       "query_mine",
       QueryMineInput {
         target: None,
@@ -438,11 +441,12 @@ pub async fn test_query_mine_with_content_full() {
 
 #[tokio::test(flavor = "multi_thread")]
 pub async fn test_get_extra() {
-  let (conductor, _agent, cell1) = setup_1_conductor().await;
+  let (conductor, _agent, cell1): (SweetConductor, AgentPubKey, SweetCell) =
+    setup_1_conductor().await;
 
   let target_entry_hash = conductor
     .call(
-      &cell1.zome("trust_atom"),
+      &cell1.zome("hc_zome_trust_atom"),
       "create_string_target",
       "Nuka Sushi",
     )
@@ -466,7 +470,7 @@ pub async fn test_get_extra() {
 
   let _mock_trust_atom: TrustAtom = conductor
     .call(
-      &cell1.zome("trust_atom"),
+      &cell1.zome("hc_zome_trust_atom"),
       "create_trust_atom",
       mock_input.clone(),
     )
@@ -476,12 +480,16 @@ pub async fn test_get_extra() {
     fields: mock_input.extra.unwrap(),
   };
   let mock_extra_entry_hash: EntryHash = conductor
-    .call(&cell1.zome("trust_atom"), "calc_extra_hash", mock_entry)
+    .call(
+      &cell1.zome("hc_zome_trust_atom"),
+      "calc_extra_hash",
+      mock_entry,
+    )
     .await;
 
   let mock_extra_data: Extra = conductor
     .call(
-      &cell1.zome("trust_atom"),
+      &cell1.zome("hc_zome_trust_atom"),
       "get_extra",
       mock_extra_entry_hash,
     )
@@ -513,22 +521,27 @@ pub async fn test_get_extra() {
 }
 
 #[tokio::test(flavor = "multi_thread")]
-pub async fn test_get_entry_by_headerhash() {
-  let (conductor, _agent, cell1) = setup_1_conductor().await;
+pub async fn test_get_entry_by_actionhash() {
+  let (conductor, _agent, cell1): (SweetConductor, AgentPubKey, SweetCell) =
+    setup_1_conductor().await;
 
   let test_entry = Test {
     example_field: "test".to_string(),
   };
 
-  let header_hash: HeaderHash = conductor
-    .call(&cell1.zome("trust_atom"), "create_test_entry", test_entry)
+  let action_hash: ActionHash = conductor
+    .call(
+      &cell1.zome("hc_zome_trust_atom"),
+      "create_test_entry",
+      test_entry,
+    )
     .await;
 
   let retrieval: Test = conductor
     .call(
-      &cell1.zome("trust_atom"),
-      "test_get_entry_by_header",
-      header_hash,
+      &cell1.zome("hc_zome_trust_atom"),
+      "test_get_entry_by_action",
+      action_hash,
     )
     .await;
   assert_eq!("test".to_string(), retrieval.example_field);
@@ -536,7 +549,7 @@ pub async fn test_get_entry_by_headerhash() {
 
 // #[tokio::test(flavor = "multi_thread")]
 // pub async fn test_fetch_external() {
-//   let (conductor, agent, cell1) = setup_1_conductor().await;
+//   let (conductor, agent, cell1): (SweetConductor, AgentPubKey, SweetCell) = setup_1_conductor().await;
 
 //   //// WIP
 

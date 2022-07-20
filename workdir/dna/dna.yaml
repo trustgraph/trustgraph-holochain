@@ -1,8 +1,18 @@
 ---
 manifest_version: "1"
-name: trust_atom
-uuid: ~
-properties: ~
-zomes:
-  - name: trust_atom
-    bundled: ../../target/wasm32-unknown-unknown/release/hc_zome_trust_atom.wasm
+name: trust_atom_dna
+
+integrity:
+  uid: 00000000-0000-0000-0000-000000000001
+  properties: ~
+  origin_time: 2022-02-11T23:05:19.470323Z
+  zomes:
+    - name: hc_zome_trust_atom_integrity
+      bundled: ../../target/wasm32-unknown-unknown/release/hc_zome_trust_atom_integrity.wasm
+
+coordinator:
+  zomes:
+    - name: hc_zome_trust_atom
+      bundled: ../../target/wasm32-unknown-unknown/release/hc_zome_trust_atom.wasm
+      dependencies:
+        - name: hc_zome_trust_atom_integrity
