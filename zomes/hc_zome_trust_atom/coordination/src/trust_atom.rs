@@ -173,27 +173,27 @@ fn create_link_tag_metal(link_direction: &LinkDirection, chunks: Vec<String>) ->
 }
 
 pub fn get_extra(entry_hash: &EntryHash) -> ExternResult<Extra> {
-  let element = get_element(entry_hash, GetOptions::default())?;
-  match element.entry() {
-    element::ElementEntry::Present(entry) => {
+  let record = get_record(entry_hash, GetOptions::default())?;
+  match record.entry() {
+    record::RecordEntry::Present(entry) => {
       Extra::try_from(entry.clone()).or(Err(WasmError::Guest(format!(
-        "Couldn't convert Element entry {:?} into data type {}",
+        "Couldn't convert Record entry {:?} into data type {}",
         entry,
         std::any::type_name::<Extra>()
       ))))
     }
     _ => Err(WasmError::Guest(format!(
-      "Element {:?} does not have an entry",
-      element
+      "Record {:?} does not have an entry",
+      record
     ))),
   }
 }
 
-fn get_element(entry_hash: &EntryHash, get_options: GetOptions) -> ExternResult<Element> {
+fn get_record(entry_hash: &EntryHash, get_options: GetOptions) -> ExternResult<Record> {
   match get(entry_hash.clone(), get_options)? {
-    Some(element) => Ok(element),
+    Some(record) => Ok(record),
     None => Err(WasmError::Guest(format!(
-      "There is no element at the hash {}",
+      "There is no record at the hash {}",
       entry_hash
     ))),
   }

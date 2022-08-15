@@ -40,32 +40,32 @@ pub fn create_test_entry(input: Test) -> ExternResult<HeaderHash> {
   create_entry(input)
 }
 
-pub fn get_entry_by_header(header_hash: HeaderHash) -> ExternResult<Test> {
-  let element = get_element_by_header(header_hash, GetOptions::default())?;
-  match element.entry() {
-    element::ElementEntry::Present(entry) => {
+pub fn get_entry_by_action(action_hash: ActionHash) -> ExternResult<Test> {
+  let record = get_record_by_action(action_hash, GetOptions::default())?;
+  match record.entry() {
+    record::RecordEntry::Present(entry) => {
       Test::try_from(entry.clone()).or(Err(WasmError::Guest(format!(
-        "Couldn't convert Element entry {:?} into data type {}",
+        "Couldn't convert Record entry {:?} into data type {}",
         entry,
         std::any::type_name::<Test>()
       ))))
     }
     _ => Err(WasmError::Guest(format!(
-      "Element {:?} does not have an entry",
-      element
+      "Record {:?} does not have an entry",
+      record
     ))),
   }
 }
 #[allow(clippy::needless_pass_by_value)]
-fn get_element_by_header(
-  header_hash: HeaderHash,
+fn get_record_by_action(
+  action_hash: ActionHash,
   get_options: GetOptions,
-) -> ExternResult<Element> {
-  match get(header_hash.clone(), get_options)? {
-    Some(element) => Ok(element),
+) -> ExternResult<Record> {
+  match get(action_hash.clone(), get_options)? {
+    Some(record) => Ok(record),
     None => Err(WasmError::Guest(format!(
-      "There is no element at the hash {}",
-      header_hash
+      "There is no record at the hash {}",
+      action_hash
     ))),
   }
 }
