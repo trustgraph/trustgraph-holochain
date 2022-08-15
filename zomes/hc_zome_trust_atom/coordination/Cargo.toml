@@ -1,13 +1,11 @@
 [package]
-name = "hc_zome_trust_atom"
-description = "Holochain implementation of TrustAtom format from TrustGraph"
+name = "hc_zome_tg_coordination"
 version = "0.0.10-dev"
-authors = ["harlantwood", "code@harlantwood.net"]
 edition = "2021"
-rust-version = "1.56.0"                                                      # require rust >= 1.56, required to enable 2021 edition
+rust-version = "1.56.0"
 
 [lib]
-name = "hc_zome_trust_atom"
+name = "hc_zome_tg_coordination"
 crate-type = ["cdylib", "rlib"]
 
 [dependencies]
@@ -16,6 +14,8 @@ holo_hash = { version = "=0.0.29", features = ["encoding"] }
 rust_decimal = "1"
 serde = "1"
 derive_more = "0"
+
+hc_zome_tg_coordination = { path = "../integrity"}
 
 [dev-dependencies]
 holochain = { version = "=0.0.145", default-features = false, features = [

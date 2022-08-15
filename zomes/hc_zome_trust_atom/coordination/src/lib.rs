@@ -19,12 +19,6 @@ pub use crate::trust_atom::*;
 pub mod test_helpers;
 pub use test_helpers::Test;
 
-entry_defs![
-  test_helpers::StringTarget::entry_def(),
-  Extra::entry_def(),
-  Test::entry_def()
-];
-
 // INPUT TYPES
 
 #[derive(Serialize, Deserialize, SerializedBytes, Debug, Clone)]

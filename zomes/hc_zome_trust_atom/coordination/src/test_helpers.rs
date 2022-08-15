@@ -5,17 +5,6 @@ use hdk::prelude::*;
 #[derive(Serialize, Deserialize, Debug, SerializedBytes)]
 struct StringLinkTag(String);
 
-#[hdk_entry(id = "restaurant", visibility = "public")]
-#[derive(Clone)]
-pub struct StringTarget(String);
-
-#[hdk_entry(id = "test", visibility = "public")]
-#[derive(Clone)]
-pub struct Test {
-  pub example_field: String,
-  //another_test_field:
-}
-
 pub fn list_links_for_base(base: AnyLinkableHash) -> ExternResult<Vec<Link>> {
   let links = hdk::link::get_links(base, None)?;
 
