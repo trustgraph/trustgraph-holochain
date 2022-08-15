@@ -13,9 +13,6 @@
 use hdk::prelude::*;
 use std::collections::BTreeMap;
 
-// public for sweettest; TODO can we fix this:
-pub mod trust_atom;
-pub use crate::trust_atom::*;
 pub mod test_helpers;
 pub use test_helpers::Test;
 

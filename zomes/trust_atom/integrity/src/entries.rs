@@ -1,4 +1,3 @@
-<<<<<<< HEAD
 use hdi::prelude::*;
 
 #[hdk_entry_defs]
@@ -22,8 +21,3 @@ pub struct Extra {
 pub enum LinkTypes {
   TrustAtom 
 }
-=======
-pub mod entries;
-pub use entries::*;
-mod validation;
->>>>>>> 93984bc... update element to record
