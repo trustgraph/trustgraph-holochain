@@ -12,7 +12,7 @@
 
 use hdk::prelude::*;
 use std::collections::BTreeMap;
-
+pub use trust_atom_integrity::*;
 pub mod test_helpers;
 pub use test_helpers::Test;
 
@@ -92,13 +92,13 @@ pub fn create_string_target(input: String) -> ExternResult<EntryHash> {
 }
 
 #[hdk_extern]
-pub fn create_test_entry(input: Test) -> ExternResult<HeaderHash> {
+pub fn create_test_entry(input: Test) -> ExternResult<ActionHash> {
   test_helpers::create_test_entry(input)
 }
 
 #[hdk_extern]
-pub fn test_get_entry_by_header(input: HeaderHash) -> ExternResult<Test> {
-  test_helpers::get_entry_by_header(input)
+pub fn test_get_entry_by_action(input: ActionHash) -> ExternResult<Test> {
+  test_helpers::get_entry_by_action(input)
 }
 
 #[hdk_extern]

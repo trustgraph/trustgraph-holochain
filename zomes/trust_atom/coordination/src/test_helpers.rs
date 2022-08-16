@@ -36,7 +36,7 @@ pub fn create_string_target(input: String) -> ExternResult<EntryHash> {
   Ok(target_entry_hash)
 }
 
-pub fn create_test_entry(input: Test) -> ExternResult<HeaderHash> {
+pub fn create_test_entry(input: Test) -> ExternResult<ActionHash> {
   create_entry(input)
 }
 

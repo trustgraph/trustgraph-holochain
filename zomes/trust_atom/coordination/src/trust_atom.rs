@@ -56,13 +56,13 @@ pub fn create(
   create_link(
     agent_address.clone(),
     target.clone(),
-    HdkLinkType::Any,
+    trust_atom_integrity::LinkType::TrustAtom,
     forward_link_tag,
   )?;
   create_link(
     target.clone(),
     agent_address.clone(),
-    HdkLinkType::Any,
+    trust_atom_integrity::LinkType::TrustAtom,
     reverse_link_tag,
   )?;
 
@@ -334,7 +334,7 @@ fn convert_link_to_trust_atom(
   Ok(trust_atom)
 }
 
-const fn tg_link_tag_header_length() -> usize {
+const fn tg_link_tag_header_length() -> usize { // leaving this nomenclature for now
   LINK_TAG_HEADER.len() + LINK_TAG_ARROW_FORWARD.len()
 }
 
