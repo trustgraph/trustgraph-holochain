@@ -5,7 +5,7 @@ edition = "2021"
 rust-version = "1.56.0"
 
 [lib]
-name = "trust_atom_tests"
+path = "src/lib.rs"
 crate-type = ["cdylib", "rlib"]
 
 [dependencies]
