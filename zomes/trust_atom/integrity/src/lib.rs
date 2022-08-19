@@ -1,4 +1,4 @@
-pub mod entries;
-pub use entries::*;
+pub(super) mod entries;
+pub(super) use entries::*;
 mod validation;
 

@@ -5,7 +5,8 @@ edition = "2021"
 rust-version = "1.56.0"
 
 [lib]
-name = "hc_zome_tg_coordination"
+# name = "hc_zome_tg_coordination"
+path = "src/lib.rs"
 crate-type = ["cdylib", "rlib"]
 
 [dependencies]

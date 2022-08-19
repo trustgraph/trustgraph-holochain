@@ -1,9 +1,9 @@
 [workspace]
 resolver = "2" # 2 is the default in 2021 edition
 members = [
-  "zomes/trust_atom/hc_zome_tg_integrity",
-  "zomes/trust_atom/hc_zome_tg_coordination",
-  "zomes/trust_atom/trust_atom_tests",
+  "zomes/trust_atom/integrity",
+  "zomes/trust_atom/coordination",
+  "zomes/trust_atom/tests",
 ]
 
 [profile.dev]
