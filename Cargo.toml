@@ -1,10 +1,6 @@
 [workspace]
-resolver = "2" # 2 is the default in 2021 edition
-members = [
-  "zomes/trust_atom/integrity",
-  "zomes/trust_atom/coordination",
-  "zomes/trust_atom/tests",
-]
+resolver = "2"                                                            # 2 is the default in 2021 edition
+members = ["zomes/trust_atom/integrity", "zomes/trust_atom/coordination"]
 
 [profile.dev]
 opt-level = "z"

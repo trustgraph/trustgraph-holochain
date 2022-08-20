@@ -5456,23 +5456,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "683ba5022fe6dbd7133cad150478ccf51bdb6d861515181e5fc6b4323d4fa424"
 
 [[package]]
-name = "trust_atom_tests"
-version = "0.0.10-dev"
-dependencies = [
- "derive_more",
- "futures",
- "hc_zome_tg_coordination",
- "hc_zome_tg_integrity",
- "hdi",
- "hdk 0.0.139",
- "holo_hash 0.0.29",
- "holochain",
- "rust_decimal",
- "serde",
- "tokio",
-]
-
-[[package]]
 name = "try-lock"
 version = "0.2.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"

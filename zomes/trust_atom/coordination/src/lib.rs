@@ -10,9 +10,9 @@
 
 // #![warn(clippy::cargo)]
 
+pub use hc_zome_tg_integrity::*;
 use hdk::prelude::*;
 use std::collections::BTreeMap;
-pub use trust_atom_integrity::*;
 pub mod test_helpers;
 pub use test_helpers::Test;
 
