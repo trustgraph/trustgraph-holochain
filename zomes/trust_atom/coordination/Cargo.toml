@@ -16,8 +16,6 @@ rust_decimal = "1"
 serde = "1"
 derive_more = "0"
 
-hc_zome_tg_coordination = { path = "../integrity"}
-
 [dev-dependencies]
 holochain = { version = "=0.0.145", default-features = false, features = [
   "test_utils",
