@@ -12,7 +12,7 @@
 
 use hdk::prelude::*;
 use std::collections::BTreeMap;
-pub(super) use trust_atom_integrity::*;
+pub use trust_atom_integrity::*;
 pub mod test_helpers;
 pub use test_helpers::Test;
 

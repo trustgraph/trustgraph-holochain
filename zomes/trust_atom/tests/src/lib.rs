@@ -1,7 +1,6 @@
 pub mod trust_atom_tests;
 pub use trust_atom_tests::*;
-pub(crate) mod coordination;
-pub(crate) use coordination::*;
-pub(crate) mod integrity;
-pub(crate) use integrity::*;
-
+// pub mod hc_zome_tg_coordination;
+// pub use hc_zome_tg_coordination::*;
+// pub mod hc_zome_tg_integrity;
+// pub use hc_zome_tg_integrity::*;
