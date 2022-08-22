@@ -12,9 +12,11 @@
 
 use hdk::prelude::*;
 use std::collections::BTreeMap;
-pub(super) use trust_atom_integrity::*;
+pub(crate) use trust_atom_integrity::*;
+pub(crate) use trust_atom_integrity::{EntryTypes, LinkTypes, StringTarget, Test, Extra}
 pub mod test_helpers;
-pub use test_helpers::Test;
+pub use test_helpers::*;
+pub use test_helpers::StringLinkTag;
 
 // INPUT TYPES
 
