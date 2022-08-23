@@ -5,8 +5,8 @@ edition = "2021"
 rust-version = "1.56.0"
 
 [lib]
-# name = "hc_zome_tg_coordination"
-path = "src/lib.rs"
+name = "hc_zome_tg_coordination"
+# path = "src/lib.rs"
 crate-type = ["cdylib", "rlib"]
 
 [dependencies]
@@ -15,7 +15,7 @@ holo_hash = { version = "=0.0.29", features = ["encoding"] }
 rust_decimal = "1"
 serde = "1"
 derive_more = "0"
-trust_atom_integrity = { path = "../integrity" }
+hc_zome_tg_integrity = { path = "../integrity" }
 
 [dev-dependencies]
 holochain = { version = "=0.0.145", default-features = false, features = [

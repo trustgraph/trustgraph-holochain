@@ -1,5 +1,5 @@
 use hdi::prelude::*;
-use holochain_deterministic_integrity::prelude::*;
+use std::BTreemap;
 
 #[hdk_entry_helper]
 #[derive(Clone)]
@@ -30,6 +30,6 @@ pub enum EntryTypes {
 
 #[hdk_link_types]
 pub enum LinkTypes {
-  TrustAtom
+  TrustAtom,
   Rollup 
 }
