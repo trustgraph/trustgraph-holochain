@@ -15,7 +15,7 @@ holo_hash = { version = "=0.0.29", features = ["encoding"] }
 rust_decimal = "1"
 serde = "1"
 derive_more = "0"
-hc_zome_tg_integrity = { path = "../integrity" }
+hc_zome_tg_integrity = { path = "../../integrity" }
 
 [dev-dependencies]
 holochain = { version = "=0.0.145", default-features = false, features = [

@@ -12,8 +12,9 @@
 
 use hdk::prelude::*;
 use std::collections::BTreeMap;
-pub(crate) use trust_atom_integrity::*;
-pub(crate) use trust_atom_integrity::{EntryTypes, LinkTypes, StringTarget, Test, Extra}
+mod trust_atom;
+use trust_atom::TrustAtom;
+pub(crate) use hc_zome_tg_integrity::{Test, Extra};
 pub mod test_helpers;
 pub use test_helpers::*;
 pub use test_helpers::StringLinkTag;
