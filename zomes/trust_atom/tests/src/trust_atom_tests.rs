@@ -4,8 +4,9 @@ use std::collections::BTreeMap;
 
 use futures::future;
 
-use trust_atom_integrity::*;
-use trust_atom_coordination::*;
+use hc_zome_tg_integrity::*;
+use hc_zome_tg_coordination::*;
+use trust_atom_tests::Test;
 use hdk::prelude::*;
 use holo_hash::AgentPubKey;
 use holo_hash::AnyLinkableHash;
@@ -520,7 +521,7 @@ pub async fn test_get_entry_by_headerhash() {
     example_field: "test".to_string(),
   };
 
-  let header_hash: HeaderHash = conductor
+  let action_hash: ActionHash = conductor
     .call(&cell1.zome("trust_atom"), "create_test_entry", test_entry)
     .await;
 

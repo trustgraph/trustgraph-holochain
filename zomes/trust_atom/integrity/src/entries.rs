@@ -1,5 +1,5 @@
 use hdi::prelude::*;
-use std::BTreemap;
+use std::collections::BTreeMap;
 
 #[hdk_entry_helper]
 #[derive(Clone)]
@@ -31,5 +31,5 @@ pub enum EntryTypes {
 #[hdk_link_types]
 pub enum LinkTypes {
   TrustAtom,
-  Rollup 
+//   Rollup 
 }
