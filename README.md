@@ -36,6 +36,7 @@ HDK version correspondence:
 - TrustGraph::Holochain `v0.0.7` works with `hdk` version `0.0.125`
 - TrustGraph::Holochain `v0.0.8` (pulled)
 - TrustGraph::Holochain `v0.0.9` works with `hdk` version `0.0.131`
+- TrustGraph::Holochain `v0.1.0` works with `hdk` version `0.0.136`
 
 ## Usage
 
@@ -148,6 +149,7 @@ We encode TrustAtoms as links, with the following components:
 ## Author
 
 👤 **Harlan T Wood (https://github.com/harlantwood)**
+👤 **Zeek (https://github.com/dauphin3)**
 
 - Website: https://trustgraph.net
 - Github: [@trustgraph](https://github.com/trustgraph)
