@@ -7,8 +7,8 @@ let
 in nixpkgs.mkShell {
   inputsFrom = [ holonix.main ];
   packages = with nixpkgs; [
+    cargo-release
+    cargo-watch
     niv
-    nodejs-16_x
-    # any additional packages needed for this project, e. g. Nodejs
   ];
 }
