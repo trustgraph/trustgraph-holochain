@@ -1,13 +1,14 @@
 #![allow(clippy::module_name_repetitions)]
 
 use hdk::prelude::*;
-use hc_zome_tg_integrity::LinkTypes::TrustAtom;
+use hc_zome_tg_integrity::LinkTypes;
+use hc_zome_tg_integrity::UnitEntryTypes::{Test, StringTarget};
 
 #[derive(Serialize, Deserialize, Debug, SerializedBytes)]
 pub struct StringLinkTag(String);
 
 pub fn list_links_for_base(base: AnyLinkableHash) -> ExternResult<Vec<Link>> {
-  let links = hdk::link::get_links(base, LinkTypeRange::from(LinkType::try_from(TrustAtom)?), None)?;
+  let links = get_links(base, LinkTypes::TrustAtom, None)?;
 
   Ok(links)
 }
@@ -18,7 +19,7 @@ pub fn list_links(base: AnyLinkableHash, link_tag_text: Option<String>) -> Exter
     None => None,
   };
 
-  let links = hdk::link::get_links(base, hc_zome_trust_atom_integrity::LinkType::TrustAtom, link_tag)?;
+  let links = hdk::link::get_links(base, LinkTypes::TrustAtom, link_tag)?;
 
   Ok(links)
 }
