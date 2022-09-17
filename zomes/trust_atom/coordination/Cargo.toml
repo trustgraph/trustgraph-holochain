@@ -10,15 +10,15 @@ name = "hc_zome_tg_coordination"
 crate-type = ["cdylib", "rlib"]
 
 [dependencies]
-hdk = "=0.0.139"
-holo_hash = { version = "=0.0.29", features = ["encoding"] }
+hdk = "=0.0.152"
+holo_hash = { version = "=0.0.32", features = ["encoding"] }
 rust_decimal = "1"
 serde = "1"
 derive_more = "0"
 hc_zome_tg_integrity = { path = "../integrity" }
 
 [dev-dependencies]
-holochain = { version = "=0.0.145", default-features = false, features = [
+holochain = { version = "=0.0.162", default-features = false, features = [
   "test_utils",
 ] }
 tokio = { version = "1.3", features = ["full"] }
