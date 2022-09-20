@@ -3,7 +3,7 @@ use std::collections::BTreeMap;
 
 #[hdk_entry_helper]
 #[derive(Clone)]
-pub struct StringTarget(String);
+pub struct StringTarget(pub String);
 
 #[hdk_entry_helper]
 #[derive(Clone)]
@@ -20,9 +20,12 @@ pub struct Extra {
 #[hdk_entry_defs]
 #[unit_enum(UnitEntryTypes)]
 pub enum EntryTypes {
+    #[entry_def]
     Test(Test),
+    #[entry_def]
     StringTarget(StringTarget),
     // #[entry_def(required_validations = 5)]
+    #[entry_def]
     Extra(Extra)
     // #[entry_def(name = "hidden_msg", required_validations = 5, visibility = "private")]
     // PrivMsg(PrivMsg),

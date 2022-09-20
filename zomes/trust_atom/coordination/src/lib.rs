@@ -14,7 +14,7 @@ use hdk::prelude::*;
 use std::collections::BTreeMap;
 mod trust_atom;
 use trust_atom::TrustAtom;
-pub(crate) use hc_zome_tg_integrity::{Test, Extra};
+pub(crate) use hc_zome_tg_integrity::{Test, Extra, EntryTypes};
 pub mod test_helpers;
 pub use test_helpers::*;
 pub use test_helpers::StringLinkTag;

@@ -5,7 +5,9 @@ use ::holo_hash::AnyLinkableHashB64;
 use hdk::prelude::*;
 use rust_decimal::prelude::*;
 use std::collections::BTreeMap;
-use hc_zome_tg_integrity::LinkTypes;
+use hc_zome_tg_integrity::{Extra, Test, EntryTypes, LinkTypes};
+
+
 
 #[derive(Debug, Clone)]
 enum LinkDirection {
@@ -94,7 +96,7 @@ fn create_bucket_string(bucket_bytes: &[u8]) -> String {
 fn create_extra(input: BTreeMap<String, String>) -> ExternResult<String> {
   let entry = Extra { fields: input };
 
-  create_entry(entry.clone())?;
+  create_entry(EntryTypes::Extra(entry.clone()))?;
 
   let entry_hash_string = calc_extra_hash(entry)?.to_string();
   Ok(entry_hash_string)
@@ -119,22 +121,22 @@ fn normalize_value(value_str: Option<String>) -> ExternResult<Option<String>> {
               let value_zero_stripped = value_decimal.to_string().replace("0.", ".");
               Ok(Some(value_zero_stripped))
             } else {
-              Err(WasmError::Guest(format!(
+              Err(wasm_error!(WasmErrorInner::Guest(format!(
                 "Value must be in the range -1..1, but got: `{}`",
                 value_str
-              )))
+              ))))
             }
           }
-          None => Err(WasmError::Guest(format!(
+          None => Err(wasm_error!(WasmErrorInner::Guest(format!(
             "Value could not be processed: `{}`",
             value_str
-          ))),
+          ))),)
         }
       }
-      Err(error) => Err(WasmError::Guest(format!(
+      Err(error) => Err(wasm_error!(WasmErrorInner::Guest(format!(
         "Value could not be processed: `{}`.  Error: `{}`",
         value_str, error
-      ))),
+      ))),)
     },
     None => Ok(None),
   }
@@ -177,26 +179,26 @@ pub fn get_extra(entry_hash: &EntryHash) -> ExternResult<Extra> {
   let record = get_record(entry_hash, GetOptions::default())?;
   match record.entry() {
     record::RecordEntry::Present(entry) => {
-      Extra::try_from(entry.clone()).or(Err(WasmError::Guest(format!(
+      Extra::try_from(entry.clone()).or(Err(wasm_error!(WasmErrorInner::Guest(format!(
         "Couldn't convert Record entry {:?} into data type {}",
         entry,
-        std::any::type_name::<Extra>()
+        std::any::type_name::<Extra>())
       ))))
     }
-    _ => Err(WasmError::Guest(format!(
+    _ => Err(wasm_error!(WasmErrorInner::Guest(format!(
       "Record {:?} does not have an entry",
       record
-    ))),
+    ))),)
   }
 }
 
 fn get_record(entry_hash: &EntryHash, get_options: GetOptions) -> ExternResult<Record> {
   match get(entry_hash.clone(), get_options)? {
     Some(record) => Ok(record),
-    None => Err(WasmError::Guest(format!(
+    None => Err(wasm_error!(WasmErrorInner::Guest(format!(
       "There is no record at the hash {}",
       entry_hash
-    ))),
+    ))),)
   }
 }
 
@@ -234,33 +236,33 @@ pub fn query(
     (Some(source), None) => (LinkDirection::Forward, source),
     (None, Some(target)) => (LinkDirection::Reverse, target),
     (None, None) => {
-      return Err(WasmError::Guest(
+      return Err(wasm_error!(WasmErrorInner::Guest(
         "Either source or target must be specified".into(),
-      ))
+      )))
     }
     (Some(_source), Some(_target)) => {
-      return Err(WasmError::Guest(
+      return Err(wasm_error!(WasmErrorInner::Guest(
         "Exactly one of source or target must be specified, but not both".into(),
-      ))
+      )))
     }
   };
 
   let link_tag = match (content_full, content_starts_with, value_starts_with) {
     (Some(_content_full), Some(_content_starts_with), _) => {
-      return Err(WasmError::Guest("Only one of `content_full` or `content_starts_with` can be used".into()))
-    }
+      return Err(wasm_error!(WasmErrorInner::Guest("Only one of `content_full` or `content_starts_with` can be used".into())))
+    },
     (_, Some(_content_starts_with), Some(_value_starts_with)) => {
-      return Err(WasmError::Guest(
+      return Err(wasm_error!(WasmErrorInner::Guest(
         "Cannot use `value_starts_with` and `content_starts_with` arguments together; maybe try `content_full` instead?".into(),
-      ))
-    }
+      )))
+    },
     (Some(content_full), None, Some(value_starts_with)) => Some(create_link_tag(
       &link_direction,
       &[Some(content_full), Some(value_starts_with)],
     )),
     (Some(content_full), None, None) => {
       Some(create_link_tag_metal(&link_direction, vec![content_full, UNICODE_NUL_STR.to_string()]))
-    }
+    },
     (None, Some(content_starts_with), None) => Some(create_link_tag(
       &link_direction,
       &[Some(content_starts_with)],
@@ -268,7 +270,7 @@ pub fn query(
     (None, None, Some(value_starts_with)) => Some(create_link_tag(&link_direction, &[Some(value_starts_with)])),
     (None, None, None) => None,
   };
-  let links = get_links(link_base.clone(), LinkType::TrustAtom, link_tag)?;
+  let links = get_links(link_base.clone(), LinkTypes::TrustAtom, link_tag)?;
 
   let trust_atoms = convert_links_to_trust_atoms(links, &link_direction, link_base)?;
 
@@ -287,8 +289,8 @@ fn convert_links_to_trust_atoms(
     .collect();
   let trust_atoms = trust_atoms_result?;
   Ok(trust_atoms)
-  // .ok_or_else(|_| WasmError::Guest("Failure in converting links to trust atoms".to_string()))?;
-  //   Ok(trust_atoms.or_else(|_| WasmError::Guest("erro"))?)
+  // .ok_or_else(|_| wasm_error!(WasmErrorInner::Guest("Failure in converting links to trust atoms".to_string()))?;
+  //   Ok(trust_atoms.or_else(|_| wasm_error!(WasmErrorInner::Guest("erro"))?)
 }
 
 // #[warn(clippy::pedantic)]
@@ -301,10 +303,10 @@ fn convert_link_to_trust_atom(
   let link_tag = match String::from_utf8(link_tag_bytes) {
     Ok(link_tag) => link_tag,
     Err(_) => {
-      return Err(WasmError::Guest(format!(
+      return Err(wasm_error!(WasmErrorInner::Guest(format!(
         "Link tag is not valid UTF-8 -- found: {:?}",
         String::from_utf8_lossy(&link.tag.into_inner())
-      )))
+      ))))
     }
   };
 
