@@ -1,7 +1,7 @@
 #![allow(clippy::module_name_repetitions)]
 
+use hc_zome_tg_integrity::{EntryTypes, LinkTypes, StringTarget, Test};
 use hdk::prelude::*;
-use hc_zome_tg_integrity::{Test, StringTarget, EntryTypes, LinkTypes};
 
 #[derive(Serialize, Deserialize, Debug, SerializedBytes)]
 pub struct StringLinkTag(pub String);
@@ -24,12 +24,11 @@ pub fn list_links(base: AnyLinkableHash, link_tag_text: Option<String>) -> Exter
 }
 
 fn link_tag(tag: String) -> ExternResult<LinkTag> {
-    let serialized_bytes: SerializedBytes = StringLinkTag(tag).try_into()?;
+  let serialized_bytes: SerializedBytes = StringLinkTag(tag).try_into()?;
   Ok(LinkTag(serialized_bytes.bytes().clone()))
 }
 
 pub fn create_string_target(input: String) -> ExternResult<EntryHash> {
-
   create_entry(EntryTypes::StringTarget(StringTarget(input.clone())))?;
 
   let target_entry_hash = hash_entry(EntryTypes::StringTarget(StringTarget(input)))?;
@@ -57,10 +56,7 @@ pub fn get_entry_by_action(action_hash: ActionHash) -> ExternResult<Test> {
   }
 }
 #[allow(clippy::needless_pass_by_value)]
-fn get_record_by_action(
-  action_hash: ActionHash,
-  get_options: GetOptions,
-) -> ExternResult<Record> {
+fn get_record_by_action(action_hash: ActionHash, get_options: GetOptions) -> ExternResult<Record> {
   match get(action_hash.clone(), get_options)? {
     Some(record) => Ok(record),
     None => Err(wasm_error!(WasmErrorInner::Guest(format!(

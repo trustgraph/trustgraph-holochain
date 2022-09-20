@@ -4,15 +4,15 @@ use std::collections::BTreeMap;
 
 use futures::future;
 
-use hc_zome_tg_integrity::*;
 use hc_zome_tg_coordination::*;
-use trust_atom_tests::Test;
+use hc_zome_tg_integrity::*;
 use hdk::prelude::*;
 use holo_hash::AgentPubKey;
 use holo_hash::AnyLinkableHash;
 use holochain::sweettest::{
   SweetAgents, SweetAppBatch, SweetCell, SweetConductor, SweetConductorBatch, SweetDnaFile,
 };
+use trust_atom_tests::Test;
 
 const DNA_FILEPATH: &str = "../../workdir/dna/trust_atom.dna";
 

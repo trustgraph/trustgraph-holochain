@@ -2,12 +2,10 @@
 
 use ::holo_hash::AnyLinkableHash;
 use ::holo_hash::AnyLinkableHashB64;
+use hc_zome_tg_integrity::{EntryTypes, Extra, LinkTypes, Test};
 use hdk::prelude::*;
 use rust_decimal::prelude::*;
 use std::collections::BTreeMap;
-use hc_zome_tg_integrity::{Extra, Test, EntryTypes, LinkTypes};
-
-
 
 #[derive(Debug, Clone)]
 enum LinkDirection {
@@ -30,7 +28,6 @@ const UNICODE_NUL_STR: &str = "\u{0}"; // Unicode NUL character
 const LINK_TAG_HEADER: [u8; 2] = [197, 166]; // Unicode "Ŧ" // hex bytes: [0xC5][0xA6]
 const LINK_TAG_ARROW_FORWARD: [u8; 3] = [226, 134, 146]; // Unicode "→" // hex bytes: [0xE2][0x86][0x92]
 const LINK_TAG_ARROW_REVERSE: [u8; 3] = [226, 134, 169]; // Unicode "↩" // hex bytes: [0xE2][0x86][0xA9]
-
 
 pub fn create(
   target: AnyLinkableHash,
@@ -130,13 +127,13 @@ fn normalize_value(value_str: Option<String>) -> ExternResult<Option<String>> {
           None => Err(wasm_error!(WasmErrorInner::Guest(format!(
             "Value could not be processed: `{}`",
             value_str
-          ))),)
+          )))),
         }
       }
       Err(error) => Err(wasm_error!(WasmErrorInner::Guest(format!(
         "Value could not be processed: `{}`.  Error: `{}`",
         value_str, error
-      ))),)
+      )))),
     },
     None => Ok(None),
   }
@@ -182,13 +179,13 @@ pub fn get_extra(entry_hash: &EntryHash) -> ExternResult<Extra> {
       Extra::try_from(entry.clone()).or(Err(wasm_error!(WasmErrorInner::Guest(format!(
         "Couldn't convert Record entry {:?} into data type {}",
         entry,
-        std::any::type_name::<Extra>())
-      ))))
+        std::any::type_name::<Extra>()
+      )))))
     }
     _ => Err(wasm_error!(WasmErrorInner::Guest(format!(
       "Record {:?} does not have an entry",
       record
-    ))),)
+    )))),
   }
 }
 
@@ -198,7 +195,7 @@ fn get_record(entry_hash: &EntryHash, get_options: GetOptions) -> ExternResult<R
     None => Err(wasm_error!(WasmErrorInner::Guest(format!(
       "There is no record at the hash {}",
       entry_hash
-    ))),)
+    )))),
   }
 }
 
@@ -337,7 +334,8 @@ fn convert_link_to_trust_atom(
   Ok(trust_atom)
 }
 
-const fn tg_link_tag_header_length() -> usize { // leaving this nomenclature for now
+const fn tg_link_tag_header_length() -> usize {
+  // leaving this nomenclature for now
   LINK_TAG_HEADER.len() + LINK_TAG_ARROW_FORWARD.len()
 }
 
