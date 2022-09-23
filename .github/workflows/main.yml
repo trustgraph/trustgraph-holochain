@@ -55,8 +55,7 @@ jobs:
           name: holochain # this is our cachix cache; we can write to it as well as read
           authToken: "${{ secrets.CACHIX_AUTH_TOKEN }}"
         # with:
-        #   name: holochain-ci   # this is the official holochain-ci; not always up to date; read-only for us
-
+        #   name: holochain-ci   # this is the official holochain org cachix cache; not always up to date; read-only for us
       - name: Inspect nix.conf
         run: cat ~/.config/nix/nix.conf
 
