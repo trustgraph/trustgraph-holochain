@@ -2,9 +2,11 @@
 
 use hc_zome_tg_integrity::{EntryTypes, LinkTypes, StringTarget, Test};
 use hdk::prelude::*;
+use holochain_serialized_bytes::prelude::*;
 
-#[derive(Serialize, Deserialize, Debug, SerializedBytes)]
+#[derive(Serialize, Deserialize, Debug)]
 pub struct StringLinkTag(pub String);
+holochain_serial!(StringLinkTag);
 
 pub fn list_links_for_base(base: AnyLinkableHash) -> ExternResult<Vec<Link>> {
   let links = get_links(base, LinkTypes::TrustAtom, None)?;
@@ -24,8 +26,14 @@ pub fn list_links(base: AnyLinkableHash, link_tag_text: Option<String>) -> Exter
 }
 
 fn link_tag(tag: String) -> ExternResult<LinkTag> {
-  let serialized_bytes: SerializedBytes = StringLinkTag(tag).try_into()?;
-  Ok(LinkTag(serialized_bytes.bytes().clone()))
+  // let serialized_bytes: SerializedBytes = StringLinkTag(tag).try_into()?;
+  // Ok(LinkTag(serialized_bytes.bytes().clone()))
+
+  let serialized_bytes = SerializedBytes::try_from(StringLinkTag(tag));
+  match serialized_bytes {
+    Ok(bytes) => Ok(LinkTag(bytes.bytes().clone())),
+    Err(e) => Err(wasm_error!(WasmErrorInner::Serialize(e)))
+  }
 }
 
 pub fn create_string_target(input: String) -> ExternResult<EntryHash> {
