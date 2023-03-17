@@ -36,6 +36,7 @@ HDK version correspondence:
 - TrustGraph::Holochain `v0.0.7` works with `hdk` version `0.0.125`
 - TrustGraph::Holochain `v0.0.8` (pulled)
 - TrustGraph::Holochain `v0.0.9` works with `hdk` version `0.0.131`
+- TrustGraph::Holochain `v0.1.0` works with `hdk` version `0.1.1` and `hdi` version `0.2.1`
 
 ## Usage
 
