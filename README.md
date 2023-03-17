@@ -8,11 +8,11 @@
 
 [![license](https://img.shields.io/github/license/trustgraph/trustgraph-holochain.svg?style=flat-square)](LICENSE.md)
 [![PRs welcome](https://img.shields.io/badge/PRs-welcome-ff69b4.svg?style=flat-square)](https://github.com/trustgraph/trustgraph-holochain/issues?q=is%3Aissue+is%3Aopen+label%3A%22help+wanted%22)
-[![made with hearth by trustgraph](https://img.shields.io/badge/made%20with%20%E2%99%A5%20-cc14cc.svg?style=flat-square)](https://github.com/trustgraph)
+[![made with love](https://img.shields.io/badge/made%20with%20%E2%99%A5%20-cc14cc.svg?style=flat-square)](https://github.com/trustgraph)
 
 </div>
 
-TrustGraph::Holochain is a Rust library, intended to allow for [Hololchain](https://www.holochain.org) developers to easily use the [Trust Graph](https://github.com/trustgraph/trustgraph) protocol in their Happs.
+TrustGraph::Holochain is a Rust library, intended to allow for [Hololchain](https://www.holochain.org) developers to easily use the [Trust Graph](https://trustgraph.net/) protocol in their Happs.
 
 _TrustGraph::Holochain is a very young codebase; **expect limited functionality**, and don’t use it in production just yet -- but do come collaborate and play as we develop it!_
 
@@ -25,7 +25,7 @@ _TrustGraph::Holochain is a very young codebase; **expect limited functionality
 In your `Cargo.toml`:
 
 ```rs
-hc_zome_trust_atom = {git = "https://github.com/trustgraph/trustgraph-holochain.git", rev="v1.2.3", package = "hc_zome_trust_atom"}
+trust_atom = {git = "https://github.com/trustgraph/trustgraph-holochain.git", rev="v1.2.3", package = "trust_atom"}
 ```
 
 Replace `v1.2.3` with the tag corresponding to the version you want. See the list of [available tags](https://github.com/trustgraph/trustgraph-holochain/tags).
@@ -43,8 +43,7 @@ HDK version correspondence:
 
 ```rs
 pub struct TrustAtomInput {
-  pub target: EntryHash,
-  pub prefix: Option<String>,
+  pub target: AnyLinkableHash,
   pub content: Option<String>,
   pub value: Option<String>,
   pub extra: Option<BTreeMap<String, String>>,
@@ -60,9 +59,8 @@ pub fn create_trust_atom(input: TrustAtomInput) -> ExternResult<TrustAtom> {
 
 ```rs
 pub struct QueryInput {
-  pub source: Option<EntryHash>,
-  pub target: Option<EntryHash>,
-  pub prefix: Option<String>,
+  pub source: Option<AnyLinkableHash>,
+  pub target: Option<AnyLinkableHash>,
   pub content_full: Option<String>,
   pub content_starts_with: Option<String>,
   pub value_starts_with: Option<String>,
@@ -72,7 +70,6 @@ pub struct QueryInput {
 pub fn query(input: QueryInput) -> ExternResult<Vec<TrustAtom>> {
     // ...
 }
-
 ```
 
 ### TrustAtom
@@ -81,29 +78,22 @@ Client-facing representation of a Trust Atom (this is what is returned to client
 
 ```rs
 pub struct TrustAtom {
-  pub source: String,
-  pub target: String,
-  pub source_entry_hash: EntryHashB64,
-  pub target_entry_hash: EntryHashB64,
-  pub prefix: Option<String>
+  pub source_hash: AnyLinkableHash,
+  pub target_hash: AnyLinkableHash,
   pub content: Option<String>,
   pub value: Option<String>,
   pub extra: Option<BTreeMap<String, String>>,
 }
 ```
 
-For more detailed usage, see also the tests: https://github.com/trustgraph/trustgraph-holochain/blob/main/zomes/hc_zome_trust_atom/tests/trust_atom_tests.rs
+For more detailed usage, see also the tests: https://github.com/trustgraph/trustgraph-holochain/blob/main/zomes/trust_atom/tests/trust_atom_tests.rs
 
 ## Data format
 
 We encode TrustAtoms as links, with the following components:
 
-1. Holochain Link `base` == TrustAtom `source` - one of:
-   - creating agent (`AgentPubKeyB64`)
-   - TrustGraph (`EntryHashB64`)
-1. Holochain Link `target` == TrustAtom `target` - entity being rated/reviewed/etc - one of:
-   - `EntryHashB64`
-   - `AgentPubKeyB64`
+1. Holochain Link `base` == TrustAtom `source` - creating agent (`AgentPubKey`)
+1. Holochain Link `target` == TrustAtom `target` - entity being rated/reviewed/etc - `AnyLinkableHash`
 1. Holochain Link `tag`\* (max 999 bytes) - formatted as UTF-8 string
 
 - TrustAtom header bytes: `[0xC5][0xA6]` (which together comprise the unicode character `Ŧ`) (required)
@@ -116,25 +106,23 @@ We encode TrustAtoms as links, with the following components:
 - Separator: null byte `[0x00]`
 - Random 9 characters for bucketing purposes
 - Separator: null byte `[0x00]`
-- Canonical data including additional attributes - `EntryHashB64`
+- Optional "extra" `EntryHash` if additional metadata is needed:
   - Entry contains attributes formatted in: `BTreeMap<String, String>`
-  - You will find full content here; if content exceeds link tag limts it ends with `…` as a hint
-  - If value is 1.0, we use "0.999999999" in link tag, but 1.0 here
-  - Entry hash is a sring version of EntryHashB64 for debugging purposes, not raw bytes
+  - Entry hash is a sring version of `EntryHash` (eg `uhCEkto7…`) for debugging purposes, not raw bytes
 
 \*This format is designed to allow us to encode trust atoms as Holochain links, and search them by their tags. Holochain can search for all links _starting_ with a given set of bytes (characters).
 
 ### Full Example Link Tags
 
 ```
-Ŧ→[0x00]prefix[0x00]sushi[0x00]0.999999999[0x00]892412523[0x00]uhCEk…UFnFF
-Ŧ↩[0x00]prefix[0x00]sushi[0x00]0.999999999[0x00]892412523[0x00]uhCEk…UFnFF
+Ŧ→[0x00]sushi[0x00]0.999999999[0x00]892412523[0x00]uhCEk…UFnFF
+Ŧ↩[0x00]sushi[0x00]0.999999999[0x00]892412523[0x00]uhCEk…UFnFF
 
-Ŧ→[0x00]rollup[0x00]content[0x00]0.800000000[0x00]087423432[0x00]uhCEk…qS5wc
-Ŧ↩[0x00]rollup[0x00]content[0x00]0.800000000[0x00]087423432[0x00]uhCEk…qS5wc
+Ŧ→[0x00]content[0x00]0.800000000[0x00]087423432[0x00]uhCEk…qS5wc
+Ŧ↩[0x00]content[0x00]0.800000000[0x00]087423432[0x00]uhCEk…qS5wc
 
-Ŧ→[0x00]entry[0x00]spam[0x00]-0.999999999[0x00]328425615[0x00]uhCEk…VaaDd
-Ŧ→[0x00]agent[0x00]block[0x00]-0.999999999[0x00]837592944[0x00]uhCEk…VaaDd
+Ŧ→[0x00]spam[0x00]-0.999999999[0x00]328425615[0x00]uhCEk…VaaDd
+Ŧ→[0x00]block[0x00]-0.999999999[0x00]837592944[0x00]uhCEk…VaaDd
 ```
 
 ## Roadmap
@@ -142,12 +130,13 @@ We encode TrustAtoms as links, with the following components:
 - [x] Create TrustAtoms as paired Holochain links
 - [x] Fetch TrustAtoms by content leading bytes
 - [x] Fetch TrustAtoms by content and value
-- [ ] Roll up a TrustGraph by crawling TrustAtoms (2 levels deep)
 - [ ] Integration into holochain example projects, eg [Clutter](https://github.com/artbrock/clutter)
+- [ ] Roll up a TrustGraph by crawling TrustAtoms (2 levels deep)
 
-## Author
+## Authors
 
 👤 **Harlan T Wood (https://github.com/harlantwood)**
+👤 **Zeek (https://github.com/dauphin3)**
 
 - Website: https://trustgraph.net
 - Github: [@trustgraph](https://github.com/trustgraph)
@@ -168,10 +157,10 @@ Give a ⭐️ if you like the project!
 
 ## Dev
 
-If you're new to holochain dev, start here: <https://developer.holochain.org/install>. Then, from a terminal in the root of this repo:
+If you're new to holochain dev, start here: <https://developer.holochain.org/quick-start>. Then, from a terminal in the root of this repo:
 
 ```
-nix-shell
+nix develop
 ```
 
 Then within nix shell:

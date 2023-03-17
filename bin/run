@@ -50,7 +50,7 @@ in_test_env () {
 # targets to be passed in as command line args:
 
 checks () {
-  time bin/run test clippy
+  time bin/run test build clippy
 }
 
 test_watch () {
@@ -87,6 +87,7 @@ build_happ () {
 }
 
 build_dna () {
+  shell "git clean -Xfd workdir"
   run build_zome
   shell "hc dna pack workdir/dna"
 }

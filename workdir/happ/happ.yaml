@@ -3,13 +3,16 @@ manifest_version: "1"
 name: trust_atom_happ
 description: ~
 roles:
-  - id: sample-slot
+  - name: trust_atom_happ
     provisioning:
       strategy: create
       deferred: false
     dna:
-      bundled: "../dna/trust_atom.dna"
-      properties: ~
-      uuid: ~
+      bundled: "../dna/trust_atom_dna.dna"
+      modifiers:
+        network_seed: ~
+        properties: ~
+        origin_time: ~
+        quantum_time: ~
       version: ~
       clone_limit: 0
