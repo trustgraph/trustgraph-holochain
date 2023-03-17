@@ -6107,7 +6107,7 @@ dependencies = [
 
 [[package]]
 name = "trust_atom_integrity"
-version = "0.0.10-dev"
+version = "0.1.0"
 dependencies = [
  "hdi",
  "rust_decimal",
