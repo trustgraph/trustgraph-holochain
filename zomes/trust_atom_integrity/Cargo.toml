@@ -1,0 +1,15 @@
+[package]
+name = "trust_atom_integrity"
+version = "0.0.10-dev"
+authors = ["harlantwood", "code@harlantwood.net"]
+edition = "2021"
+rust-version = "1.56.0" # require rust >= 1.56, required to enable 2021 edition
+
+[lib]
+name = "trust_atom_integrity"
+crate-type = ["cdylib", "rlib"]
+
+[dependencies]
+hdi = "0.2.1"
+rust_decimal = "1"
+serde = "1"
