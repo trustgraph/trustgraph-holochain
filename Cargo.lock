@@ -6103,6 +6103,7 @@ dependencies = [
  "serde",
  "tokio",
  "trust_atom_integrity",
+ "trust_atom_types",
 ]
 
 [[package]]
@@ -6111,6 +6112,14 @@ version = "0.1.1-dev"
 dependencies = [
  "hdi",
  "rust_decimal",
+ "serde",
+]
+
+[[package]]
+name = "trust_atom_types"
+version = "0.1.1-dev"
+dependencies = [
+ "hdk",
  "serde",
 ]
 

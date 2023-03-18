@@ -1,0 +1,15 @@
+[package]
+name = "trust_atom_types"
+description = "Holochain implementation of TrustAtom format from TrustGraph"
+version = "0.1.1-dev"
+authors = ["harlantwood", "code@harlantwood.net"]
+edition = "2021"
+rust-version = "1.56.0" # require rust >= 1.56, required to enable 2021 edition
+
+[lib]
+name = "trust_atom_types"
+crate-type = ["cdylib", "rlib"]
+
+[dependencies]
+hdk = "=0.1.1"
+serde = "1"
