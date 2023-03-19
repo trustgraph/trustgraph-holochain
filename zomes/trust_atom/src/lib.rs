@@ -11,38 +11,11 @@
 // #![warn(clippy::cargo)]
 
 use hdk::prelude::*;
-use std::collections::BTreeMap;
 mod trust_atom;
 pub use crate::trust_atom::TrustAtom;
 pub(crate) use trust_atom_integrity::{Example, Extra};
+pub(crate) use trust_atom_types::{QueryInput, QueryMineInput, TrustAtomInput};
 pub(crate) mod test_helpers;
-
-// INPUT TYPES
-
-#[derive(Serialize, Deserialize, SerializedBytes, Debug, Clone)]
-pub struct TrustAtomInput {
-  pub target: AnyLinkableHash,
-  pub content: Option<String>,
-  pub value: Option<String>,
-  pub extra: Option<BTreeMap<String, String>>,
-}
-
-#[derive(Serialize, Deserialize, SerializedBytes, Debug, Clone)]
-pub struct QueryInput {
-  pub source: Option<AnyLinkableHash>,
-  pub target: Option<AnyLinkableHash>,
-  pub content_full: Option<String>,
-  pub content_starts_with: Option<String>,
-  pub value_starts_with: Option<String>,
-}
-
-#[derive(Serialize, Deserialize, SerializedBytes, Debug, Clone)]
-pub struct QueryMineInput {
-  pub target: Option<AnyLinkableHash>,
-  pub content_full: Option<String>,
-  pub content_starts_with: Option<String>,
-  pub value_starts_with: Option<String>,
-}
 
 // ZOME API FUNCTIONS
 

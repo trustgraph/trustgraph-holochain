@@ -43,7 +43,7 @@ pub async fn test_create_trust_atom() {
       .into(),
   )]);
 
-  let trust_atom_input = trust_atom::TrustAtomInput {
+  let trust_atom_input = trust_atom_types::TrustAtomInput {
     target: AnyLinkableHash::from(target_hash.clone()),
     content: Some(content.clone()),
     value: Some(value.clone()),
@@ -163,7 +163,7 @@ pub async fn test_create_trust_atom_with_empty_chunks() {
 
   // CREATE TRUST ATOM
 
-  let trust_atom_input = trust_atom::TrustAtomInput {
+  let trust_atom_input = trust_atom_types::TrustAtomInput {
     target: AnyLinkableHash::from(target_hash.clone()),
     content: None,
     value: None,
@@ -266,7 +266,7 @@ pub async fn test_query_mine() {
     .call(
       &cell1.zome("trust_atom"),
       "create_trust_atom",
-      trust_atom::TrustAtomInput {
+      trust_atom_types::TrustAtomInput {
         target: AnyLinkableHash::from(target_hash.clone()),
         content: Some("sushi".to_string()),
         value: Some("0.8".to_string()),
@@ -284,7 +284,7 @@ pub async fn test_query_mine() {
     .call(
       &cell1.zome("trust_atom"),
       "query_mine",
-      trust_atom::QueryMineInput {
+      trust_atom_types::QueryMineInput {
         target: None,
         content_starts_with: None,
         content_full: None,
@@ -334,7 +334,7 @@ pub async fn test_query_mine_with_content_starts_with() {
       .call(
         &cell1.zome("trust_atom"),
         "create_trust_atom",
-        trust_atom::TrustAtomInput {
+        trust_atom_types::TrustAtomInput {
           target: AnyLinkableHash::from(target_hash.clone()),
           content: Some(content.into()),
           value: Some("0.8".into()),
@@ -349,7 +349,7 @@ pub async fn test_query_mine_with_content_starts_with() {
     .call(
       &cell1.zome("trust_atom"),
       "query_mine",
-      trust_atom::QueryMineInput {
+      trust_atom_types::QueryMineInput {
         target: None,
         content_full: None,
         content_starts_with: Some("sushi".into()),
@@ -397,7 +397,7 @@ pub async fn test_query_mine_with_content_full() {
       .call(
         &cell1.zome("trust_atom"),
         "create_trust_atom",
-        trust_atom::TrustAtomInput {
+        trust_atom_types::TrustAtomInput {
           target: AnyLinkableHash::from(target_hash.clone()),
           content: Some(content_full.into()),
           value: Some("0.8".into()),
@@ -412,7 +412,7 @@ pub async fn test_query_mine_with_content_full() {
     .call(
       &cell1.zome("trust_atom"),
       "query_mine",
-      trust_atom::QueryMineInput {
+      trust_atom_types::QueryMineInput {
         target: None,
         content_full: Some("sushi".into()),
         content_starts_with: None,
@@ -443,7 +443,7 @@ pub async fn test_get_extra() {
     )
     .await;
 
-  let mock_input = trust_atom::TrustAtomInput {
+  let mock_input = trust_atom_types::TrustAtomInput {
     target: target_hash,
     content: Some("sushi".to_string()),
     value: Some("0.9871".to_string()),
