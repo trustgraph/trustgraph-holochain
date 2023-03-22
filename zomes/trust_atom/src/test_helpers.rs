@@ -8,7 +8,7 @@ pub struct StringLinkTag(pub String);
 holochain_serial!(StringLinkTag);
 
 pub fn list_links_for_base(base: AnyLinkableHash) -> ExternResult<Vec<Link>> {
-  let links = get_links(base, LinkTypes::TrustAtom, None)?;
+  let links = get_links(base, LinkTypes::All, None)?;
 
   Ok(links)
 }
@@ -19,7 +19,7 @@ pub fn list_links(base: AnyLinkableHash, link_tag_text: Option<String>) -> Exter
     None => None,
   };
 
-  let links = hdk::link::get_links(base, LinkTypes::TrustAtom, link_tag)?;
+  let links = hdk::link::get_links(base, LinkTypes::All, link_tag)?;
 
   Ok(links)
 }

@@ -1,6 +1,7 @@
 use hdi::prelude::*;
 use std::collections::BTreeMap;
 
+
 #[hdk_entry_helper]
 #[derive(Clone)]
 pub struct StringTarget(pub String);
@@ -30,5 +31,7 @@ pub enum EntryTypes {
 
 #[hdk_link_types]
 pub enum LinkTypes {
-  TrustAtom,
+  All,
+  Forward,
+  Reverse
 }

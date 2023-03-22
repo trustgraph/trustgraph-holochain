@@ -54,13 +54,13 @@ pub fn create(
   create_link(
     agent_address.clone(),
     target.clone(),
-    LinkTypes::TrustAtom,
+    LinkTypes::Forward,
     forward_link_tag,
   )?;
   create_link(
     target.clone(),
     agent_address.clone(),
-    LinkTypes::TrustAtom,
+    LinkTypes::Reverse,
     reverse_link_tag,
   )?;
 
@@ -251,7 +251,7 @@ pub fn query(
     (None, None, Some(value_starts_with)) => Some(create_link_tag(&link_direction, &[Some(value_starts_with)])),
     (None, None, None) => None,
   };
-  let links = get_links(link_base.clone(), LinkTypes::TrustAtom, link_tag)?;
+  let links = get_links(link_base.clone(), LinkTypes::All, link_tag)?;
 
   let trust_atoms = convert_links_to_trust_atoms(links, &link_direction, link_base)?;
 
