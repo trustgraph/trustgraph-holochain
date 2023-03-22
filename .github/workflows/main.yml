@@ -5,7 +5,7 @@ on:
 
 jobs:
   checks:
-    timeout-minutes: 90
+    timeout-minutes: 300
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
