@@ -5,7 +5,6 @@ on:
 
 jobs:
   checks:
-    timeout-minutes: 300
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
@@ -17,6 +16,7 @@ jobs:
         uses: actions/checkout@v3
 
       - uses: actions/cache@v3
+        if: always()  # build artifacts are correct even if job fails
         with:
           path: |
             ~/.cargo/bin/
@@ -53,6 +53,7 @@ jobs:
         run: cat ~/.config/nix/nix.conf || true
 
       - name: Cache nix with Cachix
+        if: always()  # build artifacts are correct even if job fails
         uses: cachix/cachix-action@v12
         with:
           name: holochain # this is our cachix cache; we can write to it as well as read
