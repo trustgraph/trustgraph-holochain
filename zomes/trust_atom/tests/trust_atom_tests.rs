@@ -50,7 +50,7 @@ pub async fn test_create_trust_atom() {
     extra: Some(extra.clone()),
   };
 
-  let _result: trust_atom::TrustAtom = conductor
+  let _result: trust_atom_types::TrustAtom = conductor
     .call(
       &cell1.zome("trust_atom"),
       "create_trust_atom",
@@ -170,7 +170,7 @@ pub async fn test_create_trust_atom_with_empty_chunks() {
     extra: None,
   };
 
-  let _result: trust_atom::TrustAtom = conductor
+  let _result: trust_atom_types::TrustAtom = conductor
     .call(
       &cell1.zome("trust_atom"),
       "create_trust_atom",
@@ -262,7 +262,7 @@ pub async fn test_query_mine() {
 
   // CREATE TRUST ATOMS
 
-  let _result: trust_atom::TrustAtom = conductor
+  let _result: trust_atom_types::TrustAtom = conductor
     .call(
       &cell1.zome("trust_atom"),
       "create_trust_atom",
@@ -280,7 +280,7 @@ pub async fn test_query_mine() {
 
   // QUERY MY TRUST ATOMS
 
-  let trust_atoms_from_query: Vec<trust_atom::TrustAtom> = conductor
+  let trust_atoms_from_query: Vec<trust_atom_types::TrustAtom> = conductor
     .call(
       &cell1.zome("trust_atom"),
       "query_mine",
@@ -301,7 +301,7 @@ pub async fn test_query_mine() {
 
   assert_eq!(
     *trust_atom,
-    trust_atom::TrustAtom {
+    trust_atom_types::TrustAtom {
       source_hash: AnyLinkableHash::from(agent.clone()),
       target_hash: AnyLinkableHash::from(target_hash),
       content: Some("sushi".to_string()),
@@ -330,7 +330,7 @@ pub async fn test_query_mine_with_content_starts_with() {
   let contents = vec!["sushi", "sushi joint", "sush"];
 
   for content in contents {
-    let _result: trust_atom::TrustAtom = conductor
+    let _result: trust_atom_types::TrustAtom = conductor
       .call(
         &cell1.zome("trust_atom"),
         "create_trust_atom",
@@ -345,7 +345,7 @@ pub async fn test_query_mine_with_content_starts_with() {
   }
   // QUERY MY TRUST ATOMS
 
-  let trust_atoms_from_query: Vec<trust_atom::TrustAtom> = conductor
+  let trust_atoms_from_query: Vec<trust_atom_types::TrustAtom> = conductor
     .call(
       &cell1.zome("trust_atom"),
       "query_mine",
@@ -393,7 +393,7 @@ pub async fn test_query_mine_with_content_full() {
   let content_fulls = vec!["sushi", "sushi joint", "sush"];
 
   for content_full in content_fulls {
-    let _result: trust_atom::TrustAtom = conductor
+    let _result: trust_atom_types::TrustAtom = conductor
       .call(
         &cell1.zome("trust_atom"),
         "create_trust_atom",
@@ -408,7 +408,7 @@ pub async fn test_query_mine_with_content_full() {
   }
   // QUERY MY TRUST ATOMS
 
-  let trust_atoms_from_query: Vec<trust_atom::TrustAtom> = conductor
+  let trust_atoms_from_query: Vec<trust_atom_types::TrustAtom> = conductor
     .call(
       &cell1.zome("trust_atom"),
       "query_mine",
@@ -459,7 +459,7 @@ pub async fn test_get_extra() {
     ])),
   };
 
-  let _mock_trust_atom: trust_atom::TrustAtom = conductor
+  let _mock_trust_atom: trust_atom_types::TrustAtom = conductor
     .call(
       &cell1.zome("trust_atom"),
       "create_trust_atom",

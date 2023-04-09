@@ -12,9 +12,8 @@
 
 use hdk::prelude::*;
 mod trust_atom;
-pub use crate::trust_atom::TrustAtom;
 pub(crate) use trust_atom_integrity::{Example, Extra};
-pub(crate) use trust_atom_types::{QueryInput, QueryMineInput, TrustAtomInput};
+pub(crate) use trust_atom_types::{QueryInput, QueryMineInput, TrustAtom, TrustAtomInput};
 pub(crate) mod test_helpers;
 
 // ZOME API FUNCTIONS
