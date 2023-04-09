@@ -1,33 +1,28 @@
 {
-  description = "Flake for Holochain app development";
-
   inputs = {
-    nixpkgs.follows = "holochain-dev/nixpkgs";
+    holonix.url = "github:holochain/holochain";
 
-    holochain-dev = {
-      url = "github:holochain/holochain";
-      inputs.versions.url = "github:holochain/holochain?dir=versions/0_1";
-      inputs.versions.inputs.holochain.url = "github:holochain/holochain/holochain-0.1.3";  # last token in git tag/branch
-    };
+    holonix.inputs.versions.url = "github:holochain/holochain?dir=versions/0_1";
+    # to lock to a specific holonix version -- git hash from holochain/holochain repo -- eg:
+    # holonix.inputs.versions.url = "github:holochain/holochain/c83ba02658a5577f99c0960e8dbf925a57466192?dir=versions/0_1";
+
+    nixpkgs.follows = "holonix/nixpkgs";
   };
 
-  outputs = inputs @ { ... }:
-    inputs.holochain-dev.inputs.flake-parts.lib.mkFlake
-      {
-        inherit inputs;
-      }
-      {
-        systems = builtins.attrNames inputs.holochain-dev.devShells;
-        perSystem =
-          { config
-          , pkgs
-          , system
-          , ...
-          }: {
-            devShells.default = pkgs.mkShell {
-              inputsFrom = [ inputs.holochain-dev.devShells.${system}.holonix ];
-              packages = [ pkgs.nodejs-18_x ];
-            };
+  outputs = inputs@{ holonix, ... }:
+    holonix.inputs.flake-parts.lib.mkFlake { inherit inputs; } {
+      # provide a dev shell for all systems that the holonix flake supports
+      systems = builtins.attrNames holonix.devShells;
+
+      perSystem = { config, system, pkgs, ... }:
+        {
+          devShells.default = pkgs.mkShell {
+            inputsFrom = [ holonix.devShells.${system}.holonix ];
+            packages = with pkgs; [
+              # add further packages from nixpkgs
+              # nodejs
+            ];
           };
-      };
+        };
+    };
 }
