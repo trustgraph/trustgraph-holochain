@@ -39,3 +39,14 @@ pub struct QueryMineInput {
   pub content_starts_with: Option<String>,
   pub value_starts_with: Option<String>,
 }
+
+/// Client-facing representation of a Trust Atom
+/// We may support JSON in the future to allow for more complex data structures @TODO
+#[derive(Serialize, Deserialize, SerializedBytes, Debug, Clone, PartialEq, Eq)]
+pub struct TrustAtom {
+  pub source_hash: AnyLinkableHash,
+  pub target_hash: AnyLinkableHash,
+  pub content: Option<String>,
+  pub value: Option<String>,
+  pub extra: Option<BTreeMap<String, String>>,
+}

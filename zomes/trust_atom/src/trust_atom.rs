@@ -4,22 +4,12 @@ use hdk::prelude::*;
 use rust_decimal::prelude::*;
 use std::collections::BTreeMap;
 use trust_atom_integrity::{EntryTypes, Extra, LinkTypes};
+use trust_atom_types::TrustAtom;
 
 #[derive(Debug, Clone)]
 enum LinkDirection {
   Forward,
   Reverse,
-}
-
-/// Client-facing representation of a Trust Atom
-/// We may support JSON in the future to allow for more complex data structures @TODO
-#[derive(Serialize, Deserialize, SerializedBytes, Debug, Clone, PartialEq, Eq)]
-pub struct TrustAtom {
-  pub source_hash: AnyLinkableHash,
-  pub target_hash: AnyLinkableHash,
-  pub content: Option<String>,
-  pub value: Option<String>,
-  pub extra: Option<BTreeMap<String, String>>,
 }
 
 const UNICODE_NUL_STR: &str = "\u{0}"; // Unicode NUL character
