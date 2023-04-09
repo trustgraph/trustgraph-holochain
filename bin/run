@@ -32,18 +32,12 @@ shell () {
     exit 1
   fi
 
-  if [[ -n ${2:-} ]]; then
-    echo "Error: \`shell\` called with more than one argument: $*"
-    exit 1
-  fi
-
-  command=$(echo $1 | tr '\n' ' ' | tr -s ' ') # remove newlines, collapse spaces
-  echo -e "${COLOR_HIGHLIGHT}----> ${command} ${NO_COLOR}"
-  eval "$command"
+  echo -e "${COLOR_HIGHLIGHT}----> $@${NO_COLOR}"
+  "$@"
 }
 
 in_test_env () {
-  # shell "CARGO_TARGET_DIR=target/subdir"
+  # shell CARGO_TARGET_DIR=target/subdir
   run_targets $*
 }
 
@@ -54,11 +48,11 @@ checks () {
 }
 
 test_watch () {
-  shell "cargo watch -- bin/run test"
+  shell cargo watch -- bin/run test
 }
 
 test_watch_clear () {
-  shell "cargo watch --clear -- bin/run test"
+  shell cargo watch --clear -- bin/run test
 }
 
 test () {
@@ -66,15 +60,15 @@ test () {
 }
 
 test_metal () {
-  shell "time cargo test -- --nocapture"
+  shell time cargo test -- --nocapture
 }
 
 build_watch () {
-  shell "cargo watch -- bin/run build"
+  shell cargo watch -- bin/run build
 }
 
 build_watch_clear () {
-  shell "cargo watch --clear -- bin/run build"
+  shell cargo watch --clear -- bin/run build
 }
 
 build () {
@@ -83,69 +77,67 @@ build () {
 
 build_happ () {
   run build_dna
-  shell "hc app pack workdir/happ"
+  shell hc app pack workdir/happ
 }
 
 build_dna () {
-  shell "git clean -Xfd workdir"
+  shell git clean -Xfd workdir
   run build_zome
-  shell "hc dna pack workdir/dna"
+  shell hc dna pack workdir/dna
 }
 
 build_zome () {
-  shell "cargo build --release --target wasm32-unknown-unknown"
+  shell cargo build --release --target wasm32-unknown-unknown
 }
 
 clippy () {
-  shell "cargo clippy --all-targets --all-features -- -D warnings"
+  shell cargo clippy --all-targets --all-features -- -D warnings
 }
 
 clippy_watch () {
-  shell "cargo watch --clear -- bin/run clippy"
+  shell cargo watch --clear -- bin/run clippy
 }
 
 format () {
-  shell "cargo fmt"
+  shell cargo fmt
 }
 
 # you may need to:
 # cargo install cargo-release
 release_patch_dry () {
-  shell "
-    cargo release
-      --dev-version
-      --dev-version-ext 'dev'
-      --no-publish
-      --no-push
-      --tag-prefix ''
+  shell \
+    cargo release \
+      --dev-version \
+      --dev-version-ext 'dev' \
+      --no-publish \
+      --no-push \
+      --tag-prefix '' \
       patch
-  "
 }
 
 release_patch () {
-  shell "
-    cargo release
-      --dev-version
-      --dev-version-ext 'dev'
-      --no-publish
-      --no-push
-      --tag-prefix ''
-      --execute
+  shell \
+    cargo release \
+      --dev-version \
+      --dev-version-ext 'dev' \
+      --no-publish \
+      --no-push \
+      --tag-prefix '' \
+      --execute \
       patch
-  "
 }
 
 clean () {
-  shell "rm -rf .cargo target || true"
-  shell "git clean -Xfd"
-  shell "cargo clean"
+  shell rm -rf .cargo target || true
+  shell git clean -Xfd
+  shell cargo clean
 }
 
 shipit () {
   run format
   if [[ -z $(git status --porcelain) ]]; then
     run checks
-    shell "git push --tags --set-upstream origin HEAD"
+    shell git push --tags --set-upstream origin HEAD
   else
     echo "Error: git status not clean (after formatting):"
     set -x
