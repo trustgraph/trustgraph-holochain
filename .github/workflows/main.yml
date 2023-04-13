@@ -1,7 +1,14 @@
 name: Checks
 
 on:
+  pull_request:
   push:
+    branches:
+      - "main"
+
+concurrency:
+  group: ${{ github.ref_name }}
+  cancel-in-progress: true
 
 jobs:
   checks:
@@ -31,16 +38,6 @@ jobs:
           key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
           restore-keys: |
             ${{ runner.os }}-cargo-
-
-      - name: Setup Xcode version
-        if: ${{ runner.os == 'macOS' }}
-        uses: maxim-lobanov/setup-xcode@v1.2.3
-        with:
-          xcode-version: latest-stable
-
-      - name: Check macOS version
-        if: ${{ runner.os == 'macOS' }}
-        run: sw_vers
 
       - name: Set up nix
         uses: cachix/install-nix-action@v20
