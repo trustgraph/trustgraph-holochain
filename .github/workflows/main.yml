@@ -71,6 +71,8 @@ jobs:
       - name: Prepare Nix environment
         run: nix develop --command bash -c "echo Completed"
 
+      - run: nix develop --command bash -c "cargo watch -- pwd"
+
       - run: nix develop --command bash -c "bin/run build"
       - run: nix develop --command bash -c "bin/run test"
       - run: nix develop --command bash -c "bin/run clippy"
