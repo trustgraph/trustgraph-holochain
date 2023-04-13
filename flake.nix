@@ -21,6 +21,7 @@
             packages = with pkgs; [
               # add further packages from nixpkgs
               # nodejs
+              cargo-watch
             ];
           };
         };
