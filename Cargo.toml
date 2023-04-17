@@ -2,6 +2,7 @@
 resolver = "2" # 2 is the default in 2021 edition
 members = [
   "zomes/trust_atom",
+  "zomes/trust_atom_types",
   "zomes/trust_atom_integrity",
 ]
 
