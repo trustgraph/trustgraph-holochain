@@ -8,7 +8,9 @@ pub struct StringLinkTag(pub String);
 holochain_serial!(StringLinkTag);
 
 pub fn list_links_for_base(base: AnyLinkableHash) -> ExternResult<Vec<Link>> {
-  let links = get_links(base, LinkTypes::TrustAtom, None)?;
+  let mut links = get_links(base.clone(), LinkTypes::Forward, None)?;
+  let mut reverse_links = get_links(base, LinkTypes::Reverse, None)?;
+  links.append(&mut reverse_links);
 
   Ok(links)
 }
@@ -19,7 +21,9 @@ pub fn list_links(base: AnyLinkableHash, link_tag_text: Option<String>) -> Exter
     None => None,
   };
 
-  let links = hdk::link::get_links(base, LinkTypes::TrustAtom, link_tag)?;
+  let mut links = hdk::link::get_links(base.clone(), LinkTypes::Forward, link_tag.clone())?;
+  let mut reverse_links = hdk::link::get_links(base, LinkTypes::Reverse, link_tag)?;
+  links.append(&mut reverse_links);
 
   Ok(links)
 }
