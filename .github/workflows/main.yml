@@ -39,6 +39,19 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-cargo-
 
+      - run: |
+          set -x
+          ls -laFG /home/runner/work/trustgraph-holochain/trustgraph-holochain/target/debug/build/libm-59a282eaafb456f0/build-script-build || true
+          ls -laFG /home/runner/work/trustgraph-holochain/trustgraph-holochain/target/debug/build/libm-59a282eaafb456f0 || true
+          ls -laFG /home/runner/work/trustgraph-holochain/trustgraph-holochain/target/debug/build || true
+          ls -laFG /home/runner/work/trustgraph-holochain/trustgraph-holochain/target/debug || true
+          chown -R $(whoami) /home/runner/work/trustgraph-holochain/trustgraph-holochain/target || true
+          sudo chown -R $(whoami) /home/runner/work/trustgraph-holochain/trustgraph-holochain/target || true
+          ls -laFG /home/runner/work/trustgraph-holochain/trustgraph-holochain/target/debug/build/libm-59a282eaafb456f0/build-script-build || true
+          ls -laFG /home/runner/work/trustgraph-holochain/trustgraph-holochain/target/debug/build/libm-59a282eaafb456f0 || true
+          ls -laFG /home/runner/work/trustgraph-holochain/trustgraph-holochain/target/debug/build || true
+          ls -laFG /home/runner/work/trustgraph-holochain/trustgraph-holochain/target/debug || true
+
       - name: Set up nix
         uses: cachix/install-nix-action@v20
         with:
