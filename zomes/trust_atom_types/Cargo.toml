@@ -11,5 +11,5 @@ name = "trust_atom_types"
 crate-type = ["cdylib", "rlib"]
 
 [dependencies]
-hdk = "=0.1.1"
+hdk = "=0.1.2"
 serde = "1"
