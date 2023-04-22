@@ -25,7 +25,9 @@
             devShells.default = pkgs.mkShell {
               inputsFrom = [ inputs.holochain.devShells.${system}.holonix ];
               packages = [
-                pkgs.cargo-nextest pkgs.sqlite # temporary workaround, should be fixed in holochain-0.1.5
+                pkgs.cargo-watch
+                pkgs.cargo-nextest
+                pkgs.sqlite # temporary workaround, should be fixed in holochain-0.1.5
               ];
 
               shellHook = ''
