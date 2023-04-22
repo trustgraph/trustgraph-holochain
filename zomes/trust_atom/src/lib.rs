@@ -12,7 +12,7 @@
 
 use hdk::prelude::*;
 mod trust_atom;
-pub(crate) use trust_atom_integrity::{Example, Extra};
+pub(crate) use trust_atom_integrity::{Example, Extra, LinkTypes};
 pub(crate) use trust_atom_types::{QueryInput, QueryMineInput, TrustAtom, TrustAtomInput};
 pub(crate) mod test_helpers;
 
@@ -22,6 +22,19 @@ pub(crate) mod test_helpers;
 pub fn create_trust_atom(input: TrustAtomInput) -> ExternResult<TrustAtom> {
   let trust_atom = trust_atom::create(input.target, input.content, input.value, input.extra)?;
   Ok(trust_atom)
+}
+
+#[hdk_extern]
+pub fn delete_trust_atoms(target: AnyLinkableHash) -> ExternResult<usize> {
+  let links = get_links(target, LinkTypes::TrustAtom, None)?;
+  let create_link_hashes: Vec<ActionHash> = links
+    .into_iter()
+    .map(|link| link.create_link_hash)
+    .collect();
+  for create_link_hash in create_link_hashes.clone() {
+    delete_link(create_link_hash)?;
+  }
+  Ok(create_link_hashes.len())
 }
 
 #[hdk_extern]
