@@ -1,6 +1,8 @@
 #![warn(warnings)]
 
 use std::collections::BTreeMap;
+use std::thread;
+use std::time::Duration;
 
 use futures::future;
 
@@ -8,6 +10,7 @@ use hdk::prelude::*;
 use holochain::sweettest::{
   SweetAgents, SweetAppBatch, SweetCell, SweetConductor, SweetConductorBatch, SweetDnaFile,
 };
+use holochain::test_utils::consistency_10s;
 
 const DNA_FILEPATH: &str = "../../workdir/dna/trust_atom_dna.dna";
 
@@ -243,6 +246,137 @@ pub async fn test_create_trust_atom_with_empty_chunks() {
   assert_eq!(chunks[0], "Ŧ↩");
   assert_eq!(chunks[1], "");
   assert_eq!(chunks[2], bucket);
+}
+
+#[tokio::test(flavor = "multi_thread")]
+pub async fn test_delete_trust_atom() {
+  let (conductor, agent, cell1): (SweetConductor, AgentPubKey, SweetCell) =
+    setup_1_conductor().await;
+
+  let target_hash: EntryHash = conductor
+    .call(
+      &cell1.zome("trust_atom"),
+      "create_string_target",
+      "Nuka Sushi",
+    )
+    .await;
+
+  // CREATE TRUST ATOM
+
+  let content: String = "sushi".into();
+  let value: String = ".8".into();
+  let extra: BTreeMap<String, String> = BTreeMap::new();
+
+  let target = AnyLinkableHash::from(target_hash.clone());
+
+  let trust_atom_input = trust_atom_types::TrustAtomInput {
+    target: target.clone(),
+    content: Some(content.clone()),
+    value: Some(value.clone()),
+    extra: Some(extra.clone()),
+  };
+
+  // CREATE 2 TRUST ATOMS
+
+  let _result: trust_atom_types::TrustAtom = conductor
+    .call(
+      &cell1.zome("trust_atom"),
+      "create_trust_atom",
+      trust_atom_input.clone(),
+    )
+    .await;
+
+  let _result: trust_atom_types::TrustAtom = conductor
+    .call(
+      &cell1.zome("trust_atom"),
+      "create_trust_atom",
+      trust_atom_input,
+    )
+    .await;
+
+  // SANITY CHECK: 2 "FORWARD" TRUST ATOMS EXIST
+
+  let trust_atom_links: Vec<trust_atom_types::TrustAtom> = conductor
+    .call(
+      &cell1.zome("trust_atom"),
+      "query",
+      trust_atom_types::QueryInput {
+        source: None,
+        target: Some(target.clone()),
+        content_full: None,
+        content_starts_with: None,
+        value_starts_with: None,
+      },
+    )
+    .await;
+
+  assert_eq!(trust_atom_links.len(), 2);
+
+  // SANITY CHECK: 2 "BACKWARD" TRUST ATOMS EXIST
+
+  let trust_atom_links: Vec<trust_atom_types::TrustAtom> = conductor
+    .call(
+      &cell1.zome("trust_atom"),
+      "query",
+      trust_atom_types::QueryInput {
+        source: Some(target.clone()),
+        target: None,
+        content_full: None,
+        content_starts_with: None,
+        value_starts_with: None,
+      },
+    )
+    .await;
+
+  assert_eq!(trust_atom_links.len(), 2);
+
+  // DELETE TRUST ATOM
+
+  let num_deleted: usize = conductor
+    .call(
+      &cell1.zome("trust_atom"),
+      "delete_trust_atoms",
+      target.clone(),
+    )
+    .await;
+
+  assert_eq!(num_deleted, 2);
+
+  // SHOULD BE ZERO "FORWARD" TRUST ATOMS
+
+  let trust_atom_links: Vec<trust_atom_types::TrustAtom> = conductor
+    .call(
+      &cell1.zome("trust_atom"),
+      "query",
+      trust_atom_types::QueryInput {
+        source: None,
+        target: Some(target.clone()),
+        content_full: None,
+        content_starts_with: None,
+        value_starts_with: None,
+      },
+    )
+    .await;
+
+  assert_eq!(trust_atom_links.len(), 0);
+
+  // SHOULD BE ZERO "BACKWARD" TRUST ATOMS
+
+  let trust_atom_links: Vec<trust_atom_types::TrustAtom> = conductor
+    .call(
+      &cell1.zome("trust_atom"),
+      "query",
+      trust_atom_types::QueryInput {
+        source: Some(target.clone()),
+        target: None,
+        content_full: None,
+        content_starts_with: None,
+        value_starts_with: None,
+      },
+    )
+    .await;
+
+  assert_eq!(trust_atom_links.len(), 0);
 }
 
 #[tokio::test(flavor = "multi_thread")]
