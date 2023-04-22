@@ -1,0 +1,9 @@
+# Please adjust to your needs (see https://www.gitpod.io/docs/introduction/learn-gitpod/gitpod-yaml)
+# Learn more from ready-to-use templates: https://www.gitpod.io/docs/introduction/getting-started/quickstart
+
+tasks:
+  - init: |
+      nix develop -c $SHELL -c "echo Nix packages installed"
+      nix develop -c $SHELL -c "npm i"
+      nix develop -c $SHELL -c "npm run build:happ"
+      nix develop -c $SHELL -c "npm run test:sweet"
