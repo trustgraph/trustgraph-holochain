@@ -1,7 +1,7 @@
 #![allow(clippy::module_name_repetitions)]
 
 use hdk::prelude::*;
-use rust_decimal::prelude::*;
+
 use std::collections::BTreeMap;
 use trust_atom_integrity::entries::{EntryTypes, Extra};
 use trust_atom_integrity::headers::{
@@ -89,39 +89,6 @@ fn create_extra(input: BTreeMap<String, String>) -> ExternResult<String> {
 pub fn calc_extra_hash(input: Extra) -> ExternResult<EntryHash> {
   let hash = hash_entry(input)?;
   Ok(hash)
-}
-
-fn normalize_value(value_str: Option<String>) -> ExternResult<Option<String>> {
-  match value_str {
-    Some(value_str) => match Decimal::from_str(value_str.as_str()) {
-      Ok(value_decimal) => {
-        match value_decimal.round_sf_with_strategy(9, RoundingStrategy::MidpointAwayFromZero) {
-          Some(value_decimal) => {
-            if value_decimal == Decimal::ONE {
-              Ok(Some(".999999999".to_string()))
-            } else if value_decimal == Decimal::NEGATIVE_ONE {
-              Ok(Some("-.999999999".to_string()))
-            } else if value_decimal > Decimal::NEGATIVE_ONE && value_decimal < Decimal::ONE {
-              let value_zero_stripped = value_decimal.to_string().replace("0.", ".");
-              Ok(Some(value_zero_stripped))
-            } else {
-              Err(wasm_error!(
-                "Value must be in the range -1..1, but got: `{}`",
-                value_str
-              ))
-            }
-          }
-          None => Err(wasm_error!("Value could not be processed: `{}`", value_str)),
-        }
-      }
-      Err(error) => Err(wasm_error!(
-        "Value could not be processed: `{}`.  Error: `{}`",
-        value_str,
-        error
-      )),
-    },
-    None => Ok(None),
-  }
 }
 
 fn create_link_tag(link_direction: &LinkDirection, chunk_options: &[Option<String>]) -> LinkTag {
