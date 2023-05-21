@@ -6111,6 +6111,7 @@ name = "trust_atom_integrity"
 version = "0.1.1-dev"
 dependencies = [
  "hdi",
+ "hdk",
  "rust_decimal",
  "serde",
 ]

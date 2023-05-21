@@ -1,8 +1,12 @@
 #![allow(clippy::module_name_repetitions)]
 
 use hdk::prelude::*;
-use rust_decimal::prelude::*;
+
 use std::collections::BTreeMap;
+use trust_atom_integrity::validation::*;
+use trust_atom_integrity::validation::{
+  LINK_TAG_ARROW_FORWARD, LINK_TAG_ARROW_REVERSE, LINK_TAG_HEADER, UNICODE_NUL_STR,
+};
 use trust_atom_integrity::{EntryTypes, Extra, LinkTypes};
 use trust_atom_types::TrustAtom;
 
@@ -11,11 +15,6 @@ enum LinkDirection {
   Forward,
   Reverse,
 }
-
-const UNICODE_NUL_STR: &str = "\u{0}"; // Unicode NUL character
-const LINK_TAG_HEADER: [u8; 2] = [197, 166]; // Unicode "Ŧ" // hex bytes: [0xC5][0xA6]
-const LINK_TAG_ARROW_FORWARD: [u8; 3] = [226, 134, 146]; // Unicode "→" // hex bytes: [0xE2][0x86][0x92]
-const LINK_TAG_ARROW_REVERSE: [u8; 3] = [226, 134, 169]; // Unicode "↩" // hex bytes: [0xE2][0x86][0xA9]
 
 pub fn create(
   target: AnyLinkableHash,
@@ -90,39 +89,6 @@ fn create_extra(input: BTreeMap<String, String>) -> ExternResult<String> {
 pub fn calc_extra_hash(input: Extra) -> ExternResult<EntryHash> {
   let hash = hash_entry(input)?;
   Ok(hash)
-}
-
-fn normalize_value(value_str: Option<String>) -> ExternResult<Option<String>> {
-  match value_str {
-    Some(value_str) => match Decimal::from_str(value_str.as_str()) {
-      Ok(value_decimal) => {
-        match value_decimal.round_sf_with_strategy(9, RoundingStrategy::MidpointAwayFromZero) {
-          Some(value_decimal) => {
-            if value_decimal == Decimal::ONE {
-              Ok(Some(".999999999".to_string()))
-            } else if value_decimal == Decimal::NEGATIVE_ONE {
-              Ok(Some("-.999999999".to_string()))
-            } else if value_decimal > Decimal::NEGATIVE_ONE && value_decimal < Decimal::ONE {
-              let value_zero_stripped = value_decimal.to_string().replace("0.", ".");
-              Ok(Some(value_zero_stripped))
-            } else {
-              Err(wasm_error!(
-                "Value must be in the range -1..1, but got: `{}`",
-                value_str
-              ))
-            }
-          }
-          None => Err(wasm_error!("Value could not be processed: `{}`", value_str)),
-        }
-      }
-      Err(error) => Err(wasm_error!(
-        "Value could not be processed: `{}`.  Error: `{}`",
-        value_str,
-        error
-      )),
-    },
-    None => Ok(None),
-  }
 }
 
 fn create_link_tag(link_direction: &LinkDirection, chunk_options: &[Option<String>]) -> LinkTag {
