@@ -6113,6 +6113,7 @@ dependencies = [
  "hdi",
  "rust_decimal",
  "serde",
+ "trust_atom_types",
 ]
 
 [[package]]

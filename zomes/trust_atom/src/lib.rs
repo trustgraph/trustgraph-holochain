@@ -12,7 +12,11 @@
 
 use hdk::prelude::*;
 mod trust_atom;
-pub(crate) use trust_atom_integrity::{Example, Extra, LinkTypes};
+pub(crate) use trust_atom_integrity::entries::{Example, Extra};
+use trust_atom_integrity::headers::build_forward_header;
+pub(crate) use trust_atom_integrity::headers::build_reverse_header;
+use trust_atom_types::DeleteReport;
+pub(crate) use trust_atom_types::LinkTypes;
 pub(crate) use trust_atom_types::{QueryInput, QueryMineInput, TrustAtom, TrustAtomInput};
 pub(crate) mod test_helpers;
 
@@ -25,16 +29,41 @@ pub fn create_trust_atom(input: TrustAtomInput) -> ExternResult<TrustAtom> {
 }
 
 #[hdk_extern]
-pub fn delete_trust_atoms(target: AnyLinkableHash) -> ExternResult<usize> {
-  let links = get_links(target, LinkTypes::TrustAtom, None)?;
-  let create_link_hashes: Vec<ActionHash> = links
-    .into_iter()
-    .map(|link| link.create_link_hash)
-    .collect();
-  for create_link_hash in create_link_hashes.clone() {
-    delete_link(create_link_hash)?;
+pub fn delete_trust_atoms(target: AnyLinkableHash) -> ExternResult<DeleteReport> {
+  let agent_pubkey = agent_info()?.agent_initial_pubkey;
+
+  // Forward Links
+  let forward_links = get_links(agent_pubkey.clone(), LinkTypes::TrustAtom, None)?;
+  for link in forward_links.clone() {
+    if link.target == target && link.tag.into_inner()[0..5] == build_forward_header() {
+      delete_link(link.create_link_hash)?;
+    }
   }
-  Ok(create_link_hashes.len())
+
+  // Reverse Links
+  let reverse_links = get_links(target, LinkTypes::TrustAtom, None)?;
+  for link in reverse_links.clone() {
+    if link.target == AnyLinkableHash::from(agent_pubkey.clone())
+      && link.tag.into_inner()[0..5] == build_reverse_header()
+    {
+      delete_link(link.create_link_hash)?;
+    }
+  }
+
+  if forward_links.len() == reverse_links.len() {
+    let trust_atoms_deleted = forward_links.len();
+    Ok(DeleteReport {
+      forward_links_deleted: forward_links.len(),
+      backward_links_deleted: reverse_links.len(),
+      trust_atoms_deleted,
+    })
+  } else {
+    Err(wasm_error!(
+      "Number of deleted forward links ({}) does not match number of deleted reverse links ({})",
+      forward_links.len(),
+      reverse_links.len()
+    ))
+  }
 }
 
 #[hdk_extern]

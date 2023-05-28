@@ -3,7 +3,11 @@
 use hdk::prelude::*;
 use rust_decimal::prelude::*;
 use std::collections::BTreeMap;
-use trust_atom_integrity::{EntryTypes, Extra, LinkTypes};
+use trust_atom_integrity::entries::{EntryTypes, Extra};
+use trust_atom_integrity::headers::{
+  LINK_TAG_ARROW_FORWARD, LINK_TAG_ARROW_REVERSE, LINK_TAG_HEADER, UNICODE_NUL_STR,
+};
+use trust_atom_types::LinkTypes;
 use trust_atom_types::TrustAtom;
 
 #[derive(Debug, Clone)]
@@ -11,11 +15,6 @@ enum LinkDirection {
   Forward,
   Reverse,
 }
-
-const UNICODE_NUL_STR: &str = "\u{0}"; // Unicode NUL character
-const LINK_TAG_HEADER: [u8; 2] = [197, 166]; // Unicode "Ŧ" // hex bytes: [0xC5][0xA6]
-const LINK_TAG_ARROW_FORWARD: [u8; 3] = [226, 134, 146]; // Unicode "→" // hex bytes: [0xE2][0x86][0x92]
-const LINK_TAG_ARROW_REVERSE: [u8; 3] = [226, 134, 169]; // Unicode "↩" // hex bytes: [0xE2][0x86][0xA9]
 
 pub fn create(
   target: AnyLinkableHash,

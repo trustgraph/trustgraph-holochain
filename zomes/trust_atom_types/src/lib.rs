@@ -13,7 +13,11 @@
 use hdk::prelude::*;
 use std::collections::BTreeMap;
 
-// INPUT TYPES
+#[derive(Serialize, Deserialize)]
+#[hdk_link_types]
+pub enum LinkTypes {
+  TrustAtom,
+}
 
 #[derive(Serialize, Deserialize, SerializedBytes, Debug, Clone)]
 pub struct TrustAtomInput {
@@ -38,6 +42,13 @@ pub struct QueryMineInput {
   pub content_full: Option<String>,
   pub content_starts_with: Option<String>,
   pub value_starts_with: Option<String>,
+}
+
+#[derive(Serialize, Deserialize, SerializedBytes, Debug, Clone)]
+pub struct DeleteReport {
+  pub trust_atoms_deleted: usize,
+  pub forward_links_deleted: usize,
+  pub backward_links_deleted: usize,
 }
 
 /// Client-facing representation of a Trust Atom
