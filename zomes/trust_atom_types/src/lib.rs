@@ -13,12 +13,6 @@
 use hdk::prelude::*;
 use std::collections::BTreeMap;
 
-#[derive(Serialize, Deserialize)]
-#[hdk_link_types]
-pub enum LinkTypes {
-  TrustAtom,
-}
-
 #[derive(Serialize, Deserialize, SerializedBytes, Debug, Clone)]
 pub struct TrustAtomInput {
   pub target: AnyLinkableHash,

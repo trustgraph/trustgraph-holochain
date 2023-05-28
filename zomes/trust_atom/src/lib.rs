@@ -15,8 +15,8 @@ mod trust_atom;
 pub(crate) use trust_atom_integrity::entries::{Example, Extra};
 use trust_atom_integrity::headers::build_forward_header;
 pub(crate) use trust_atom_integrity::headers::build_reverse_header;
+pub(crate) use trust_atom_integrity::LinkTypes;
 use trust_atom_types::DeleteReport;
-pub(crate) use trust_atom_types::LinkTypes;
 pub(crate) use trust_atom_types::{QueryInput, QueryMineInput, TrustAtom, TrustAtomInput};
 pub(crate) mod test_helpers;
 

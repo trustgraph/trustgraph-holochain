@@ -7,7 +7,7 @@ use trust_atom_integrity::entries::{EntryTypes, Extra};
 use trust_atom_integrity::headers::{
   LINK_TAG_ARROW_FORWARD, LINK_TAG_ARROW_REVERSE, LINK_TAG_HEADER, UNICODE_NUL_STR,
 };
-use trust_atom_types::LinkTypes;
+use trust_atom_integrity::LinkTypes;
 use trust_atom_types::TrustAtom;
 
 #[derive(Debug, Clone)]
