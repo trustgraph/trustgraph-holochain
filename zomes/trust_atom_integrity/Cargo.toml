@@ -13,3 +13,4 @@ crate-type = ["cdylib", "rlib"]
 hdi = "0.2.2"
 rust_decimal = "1"
 serde = "1"
+trust_atom_types = { path = "../trust_atom_types" }

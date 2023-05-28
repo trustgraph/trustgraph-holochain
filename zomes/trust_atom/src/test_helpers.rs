@@ -1,7 +1,8 @@
 #![allow(clippy::module_name_repetitions)]
 
 use hdk::prelude::*;
-use trust_atom_integrity::{EntryTypes, Example, LinkTypes, StringTarget};
+use trust_atom_integrity::entries::{EntryTypes, Example, StringTarget};
+use trust_atom_types::LinkTypes;
 
 #[derive(Serialize, Deserialize, Debug)]
 pub struct StringLinkTag(pub String);

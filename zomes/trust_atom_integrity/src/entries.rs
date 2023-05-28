@@ -1,5 +1,6 @@
 use hdi::prelude::*;
 use std::collections::BTreeMap;
+pub use trust_atom_types::LinkTypes;
 
 #[hdk_entry_helper]
 #[derive(Clone)]
@@ -26,9 +27,4 @@ pub enum EntryTypes {
   StringTarget(StringTarget),
   #[entry_def]
   Extra(Extra),
-}
-
-#[hdk_link_types]
-pub enum LinkTypes {
-  TrustAtom,
 }
