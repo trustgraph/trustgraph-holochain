@@ -302,6 +302,7 @@ pub async fn test_delete_trust_atom() {
         target: Some(target.clone()),
         content_full: None,
         content_starts_with: None,
+        content_not_starts_with: None,
         value_starts_with: None,
       },
     )
@@ -320,6 +321,7 @@ pub async fn test_delete_trust_atom() {
         target: None,
         content_full: None,
         content_starts_with: None,
+        content_not_starts_with: None,
         value_starts_with: None,
       },
     )
@@ -352,6 +354,7 @@ pub async fn test_delete_trust_atom() {
         target: Some(target.clone()),
         content_full: None,
         content_starts_with: None,
+        content_not_starts_with: None,
         value_starts_with: None,
       },
     )
@@ -370,6 +373,7 @@ pub async fn test_delete_trust_atom() {
         target: None,
         content_full: None,
         content_starts_with: None,
+        content_not_starts_with: None,
         value_starts_with: None,
       },
     )
@@ -420,6 +424,7 @@ pub async fn test_query_mine() {
       trust_atom_types::QueryMineInput {
         target: None,
         content_starts_with: None,
+        content_not_starts_with: None,
         content_full: None,
         value_starts_with: None,
       },
@@ -486,6 +491,7 @@ pub async fn test_query_mine_with_content_starts_with() {
         target: None,
         content_full: None,
         content_starts_with: Some("sushi".into()),
+        content_not_starts_with: None,
         value_starts_with: None,
         // value_starts_with: Some("0.0".into()),
       },
@@ -503,6 +509,82 @@ pub async fn test_query_mine_with_content_starts_with() {
   assert_eq!(
     actual,
     [Some("sushi".to_string()), Some("sushi joint".to_string())]
+  );
+}
+
+#[tokio::test(flavor = "multi_thread")]
+pub async fn test_query_mine_with_content_not_starts_with() {
+  let (conductor, _agent, cell1) = setup_1_conductor().await;
+
+  // CREATE TARGET ENTRY
+
+  let target_hash: EntryHash = conductor
+    .call(
+      &cell1.zome("trust_atom"),
+      "create_string_target",
+      "Sushi Ran",
+    )
+    .await;
+
+  // CREATE TRUST ATOMS
+
+  let contents = vec![
+    "sushi",
+    "sushi joint",
+    "sush",
+    "not_example",
+    "not starts",
+    "reg_example",
+  ];
+
+  for content in contents {
+    let _result: trust_atom_types::TrustAtom = conductor
+      .call(
+        &cell1.zome("trust_atom"),
+        "create_trust_atom",
+        trust_atom_types::TrustAtomInput {
+          target: AnyLinkableHash::from(target_hash.clone()),
+          content: Some(content.into()),
+          value: Some("0.8".into()),
+          extra: Some(BTreeMap::new()),
+        },
+      )
+      .await;
+  }
+  // QUERY MY TRUST ATOMS
+
+  let trust_atoms_from_query: Vec<trust_atom_types::TrustAtom> = conductor
+    .call(
+      &cell1.zome("trust_atom"),
+      "query_mine",
+      trust_atom_types::QueryMineInput {
+        target: None,
+        content_full: None,
+        content_starts_with: None,
+        content_not_starts_with: Some("not".into()),
+        value_starts_with: None,
+      },
+    )
+    .await;
+
+  assert_eq!(trust_atoms_from_query.len(), 4);
+
+  let mut actual = [
+    trust_atoms_from_query[0].clone().content,
+    trust_atoms_from_query[1].clone().content,
+    trust_atoms_from_query[2].clone().content,
+    trust_atoms_from_query[3].clone().content,
+  ];
+  actual.sort();
+
+  assert_eq!(
+    actual,
+    [
+      Some("reg_example".to_string()),
+      Some("sush".to_string()),
+      Some("sushi".to_string()),
+      Some("sushi joint".to_string()),
+    ]
   );
 }
 
@@ -539,6 +621,19 @@ pub async fn test_query_mine_with_content_full() {
       )
       .await;
   }
+
+  let links: Vec<Link> = conductor
+    .call(
+      &cell1.zome("trust_atom"),
+      "test_helper_list_links_for_base",
+      target_hash,
+    )
+    .await;
+
+  // for link in links {
+  //   println!("{:#?}", String::from_utf8(link.tag.into_inner()));
+  // }
+
   // QUERY MY TRUST ATOMS
 
   let trust_atoms_from_query: Vec<trust_atom_types::TrustAtom> = conductor
@@ -549,6 +644,7 @@ pub async fn test_query_mine_with_content_full() {
         target: None,
         content_full: Some("sushi".into()),
         content_starts_with: None,
+        content_not_starts_with: None,
         value_starts_with: None,
         // value_starts_with: Some("0.0".into()),
       },
@@ -562,6 +658,97 @@ pub async fn test_query_mine_with_content_full() {
     Some("sushi".to_string())
   );
 }
+
+// #[tokio::test(flavor = "multi_thread")]
+// pub async fn test_query_mine_with_value_starts_with() {
+//   let (conductor, _agent, cell1) = setup_1_conductor().await;
+
+//   // CREATE TARGET ENTRY
+
+//   let target_hash: EntryHash = conductor
+//     .call(
+//       &cell1.zome("trust_atom"),
+//       "create_string_target",
+//       "Sushi Ran",
+//     )
+//     .await;
+
+//   // CREATE TRUST ATOMS
+
+//   let _trust_atom_1: trust_atom_types::TrustAtom = conductor
+//     .call(
+//       &cell1.zome("trust_atom"),
+//       "create_trust_atom",
+//       trust_atom_types::TrustAtomInput {
+//         target: AnyLinkableHash::from(target_hash.clone()),
+//         content: None,
+//         value: Some("0.88".into()),
+//         extra: Some(BTreeMap::new()),
+//       },
+//     )
+//     .await;
+
+//   let _trust_atom_2: trust_atom_types::TrustAtom = conductor
+//     .call(
+//       &cell1.zome("trust_atom"),
+//       "create_trust_atom",
+//       trust_atom_types::TrustAtomInput {
+//         target: AnyLinkableHash::from(target_hash.clone()),
+//         content: None,
+//         value: Some("0.81".into()),
+//         extra: Some(BTreeMap::new()),
+//       },
+//     )
+//     .await;
+
+//   let _trust_atom_3: trust_atom_types::TrustAtom = conductor
+//     .call(
+//       &cell1.zome("trust_atom"),
+//       "create_trust_atom",
+//       trust_atom_types::TrustAtomInput {
+//         target: AnyLinkableHash::from(target_hash.clone()),
+//         content: None,
+//         value: Some("0.7".into()),
+//         extra: Some(BTreeMap::new()),
+//       },
+//     )
+//     .await;
+
+//   let links: Vec<Link> = conductor
+//     .call(
+//       &cell1.zome("trust_atom"),
+//       "test_helper_list_links_for_base",
+//       target_hash,
+//     )
+//     .await;
+
+//   for link in links {
+//     println!("{:#?}", String::from_utf8(link.tag.into_inner()));
+//   }
+
+//   // QUERY MY TRUST ATOMS
+
+//   let trust_atoms_from_query: Vec<trust_atom_types::TrustAtom> = conductor
+//     .call(
+//       &cell1.zome("trust_atom"),
+//       "query_mine",
+//       trust_atom_types::QueryMineInput {
+//         target: None,
+//         content_full: None,
+//         content_starts_with: None,
+//         content_not_starts_with: None,
+//         value_starts_with: Some(".88".into()),
+//       },
+//     )
+//     .await;
+
+//   assert_eq!(trust_atoms_from_query.len(), 1);
+
+//   let mut actual = [trust_atoms_from_query[0].clone().value];
+//   actual.sort();
+
+//   assert_eq!(actual, [Some(".88".to_string()),]);
+// }
 
 #[tokio::test(flavor = "multi_thread")]
 pub async fn test_get_extra() {
