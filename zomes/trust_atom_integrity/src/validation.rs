@@ -18,7 +18,6 @@ pub fn validate(op: Op) -> ExternResult<ValidateCallbackResult> {
       tag,
       link_type,
       action,
-      // TODO: how to handle forward vs reverse base
     } => {
       if base_address != agent_info()?.agent_initial_pubkey.into() {
         return Ok(ValidateCallbackResult::Invalid(
@@ -61,22 +60,22 @@ pub fn validate(op: Op) -> ExternResult<ValidateCallbackResult> {
           chunks[0]
         ));
       }
-      // TODO: Let's make sure there is a test with 900 bytes and 901 bytes
-      // if chunks[1].as_bytes().len() > 900 && chunks[4] == "" {
-      //   return Err(wasm_error!(
-      //     "LinkTag format error - content > 900 bytes must have extra entry hash"
-      //   ));
-      // }
-      // TODO: pass chunk through normalize_value()
+
       if chunks[2].chars().count() > 12 {
         return Err(wasm_error!(
           "LinkTag format error - rating must be <= 12 chars"
         ));
       }
-      // TODO: check that chars are numbers only
-      if chunks[3].chars().count() != 9 {
+
+      let mut bucket_iter = chunks[3].chars();
+      if bucket_iter.clone().count() != 9 {
         return Err(wasm_error!(
           "LinkTag format error - must have 9 char bucket"
+        ));
+      }
+      if !bucket_iter.all(|c| c.is_ascii_digit()) {
+        return Err(wasm_error!(
+          "LinkTag format error - all char must be digit 0-9"
         ));
       } else {
         return Ok(ValidateCallbackResult::Valid);
