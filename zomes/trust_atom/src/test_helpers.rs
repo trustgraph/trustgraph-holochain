@@ -50,7 +50,7 @@ pub fn create_test_entry(input: Example) -> ExternResult<ActionHash> {
 pub fn get_entry_by_action(action_hash: ActionHash) -> ExternResult<Example> {
   let record = get_record_by_action(action_hash, GetOptions::default())?;
   match record.entry() {
-    record::RecordEntry::Present(entry) => Example::try_from(entry.clone()).or(Err(wasm_error!(
+    RecordEntry::Present(entry) => Example::try_from(entry.clone()).or(Err(wasm_error!(
       "Couldn't convert Record entry {:?} into data type {}",
       entry,
       std::any::type_name::<Example>()
