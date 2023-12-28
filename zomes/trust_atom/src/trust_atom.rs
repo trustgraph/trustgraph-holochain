@@ -160,7 +160,7 @@ fn create_link_tag_metal(link_direction: &LinkDirection, chunks: Vec<String>) ->
 pub fn get_extra(entry_hash: &EntryHash) -> ExternResult<Extra> {
   let record = get_record(entry_hash, GetOptions::default())?;
   match record.entry() {
-    record::RecordEntry::Present(entry) => Extra::try_from(entry.clone()).or(Err(wasm_error!(
+    RecordEntry::Present(entry) => Extra::try_from(entry.clone()).or(Err(wasm_error!(
       "Couldn't convert Record entry {:?} into data type {}",
       entry,
       std::any::type_name::<Extra>()
