@@ -40,7 +40,7 @@ jobs:
             ${{ runner.os }}-cargo-v2-
 
       - name: Set up nix
-        uses: cachix/install-nix-action@v20
+        uses: cachix/install-nix-action@v22
         with:
           extra_nix_config: |
             substituters = https://cache.nixos.org https://holochain.cachix.org https://holochain-ci.cachix.org

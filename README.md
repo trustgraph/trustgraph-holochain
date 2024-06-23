@@ -12,7 +12,7 @@
 
 </div>
 
-TrustGraph::Holochain is a Rust library, intended to allow for [Hololchain](https://www.holochain.org) developers to easily use the [Trust Graph](https://trustgraph.net/) protocol in their Happs.
+TrustGraph::Holochain is a Rust library, intended to allow for [Holochain](https://www.holochain.org) developers to easily use the [Trust Graph](https://trustgraph.net/) protocol in their Happs.
 
 _TrustGraph::Holochain is a very young codebase; **expect limited functionality**, and don’t use it in production just yet -- but do come collaborate and play as we develop it!_
 
