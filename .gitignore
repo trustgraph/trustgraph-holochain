@@ -5,3 +5,4 @@
 *.happ
 /tmp/
 target/
+node_modules
