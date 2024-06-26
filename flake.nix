@@ -1,6 +1,6 @@
 {
   inputs = {
-    versions.url = "github:holochain/holochain?dir=versions/0_1";
+    versions.url = "github:holochain/holochain?dir=versions/0_2";
     holonix.url = "github:holochain/holochain";
     holonix.inputs.versions.follows = "versions";
 
@@ -21,7 +21,6 @@
               cargo-watch
               cargo-nextest
               nodejs
-              sqlite # temporary workaround, should be fixed in holochain-0.1.5
             ];
             shellHook = ''
               unset CARGO_TARGET_DIR
