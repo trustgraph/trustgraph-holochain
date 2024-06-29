@@ -180,6 +180,7 @@ pub fn query_mine(
   target: Option<AnyLinkableHash>,
   content_full: Option<String>,
   content_starts_with: Option<String>,
+  content_not_starts_with: Option<String>,
   value_starts_with: Option<String>,
 ) -> ExternResult<Vec<TrustAtom>> {
   let agent_address = AnyLinkableHash::from(agent_info()?.agent_initial_pubkey);
@@ -189,6 +190,7 @@ pub fn query_mine(
     target,
     content_full,
     content_starts_with,
+    content_not_starts_with,
     value_starts_with,
   )?;
 
@@ -204,6 +206,7 @@ pub fn query(
   target: Option<AnyLinkableHash>,
   content_full: Option<String>,
   content_starts_with: Option<String>,
+  content_not_starts_with: Option<String>,
   value_starts_with: Option<String>,
 ) -> ExternResult<Vec<TrustAtom>> {
   let (link_direction, link_base) = match (source, target) {
@@ -217,27 +220,56 @@ pub fn query(
     }
   };
 
+  if let Some(content_not_starts_with_string) = content_not_starts_with {
+    if content_full.is_some() || content_starts_with.is_some() || value_starts_with.is_some() {
+      return Err(wasm_error!(
+        "Passing content_not_starts_with means content_full, content_starts_with, and value_starts_with must all be None"
+      ));
+    }
+    let links = get_links(link_base.clone(), LinkTypes::TrustAtom, None)?;
+    let trust_atoms = convert_links_to_trust_atoms(links, &link_direction, link_base)?;
+    let filtered_trust_atoms = trust_atoms
+      .into_iter()
+      .filter(|trust_atom| {
+        let content_option = trust_atom.content.clone();
+        if let Some(content) = content_option {
+          if content.starts_with(content_not_starts_with_string.as_str()) {
+            return false;
+          }
+        }
+        true
+      })
+      .collect();
+    return Ok(filtered_trust_atoms);
+  }
+
   let link_tag = match (content_full, content_starts_with, value_starts_with) {
     (Some(_content_full), Some(_content_starts_with), _) => {
-      return Err(wasm_error!("Only one of `content_full` or `content_starts_with` can be used"))
-    },
+      return Err(wasm_error!(
+        "Only one of `content_full` or `content_starts_with` can be used"
+      ))
+    }
     (_, Some(_content_starts_with), Some(_value_starts_with)) => {
       return Err(wasm_error!(
         "Cannot use `value_starts_with` and `content_starts_with` arguments together; maybe try `content_full` instead?",
-      ))
-    },
+      ));
+    }
     (Some(content_full), None, Some(value_starts_with)) => Some(create_link_tag(
       &link_direction,
       &[Some(content_full), Some(value_starts_with)],
     )),
-    (Some(content_full), None, None) => {
-      Some(create_link_tag_metal(&link_direction, vec![content_full, UNICODE_NUL_STR.to_string()]))
-    },
+    (Some(content_full), None, None) => Some(create_link_tag_metal(
+      &link_direction,
+      vec![content_full, UNICODE_NUL_STR.to_string()],
+    )),
     (None, Some(content_starts_with), None) => Some(create_link_tag(
       &link_direction,
       &[Some(content_starts_with)],
     )),
-    (None, None, Some(value_starts_with)) => Some(create_link_tag(&link_direction, &[Some(value_starts_with)])),
+    (None, None, Some(value_starts_with)) => Some(create_link_tag(
+      &link_direction,
+      &[None, Some(value_starts_with)],
+    )),
     (None, None, None) => None,
   };
   let links = get_links(link_base.clone(), LinkTypes::TrustAtom, link_tag)?;
