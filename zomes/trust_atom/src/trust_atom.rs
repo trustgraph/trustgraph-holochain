@@ -266,9 +266,10 @@ pub fn query(
       &link_direction,
       &[Some(content_starts_with)],
     )),
-    (None, None, Some(value_starts_with)) => {
-      Some(create_link_tag(&link_direction, &[Some(value_starts_with)]))
-    }
+    (None, None, Some(value_starts_with)) => Some(create_link_tag(
+      &link_direction,
+      &[None, Some(value_starts_with)],
+    )),
     (None, None, None) => None,
   };
   let links = get_links(link_base.clone(), LinkTypes::TrustAtom, link_tag)?;

@@ -622,7 +622,7 @@ pub async fn test_query_mine_with_content_full() {
       .await;
   }
 
-  let links: Vec<Link> = conductor
+  let _links: Vec<Link> = conductor
     .call(
       &cell1.zome("trust_atom"),
       "test_helper_list_links_for_base",
@@ -659,96 +659,196 @@ pub async fn test_query_mine_with_content_full() {
   );
 }
 
-// #[tokio::test(flavor = "multi_thread")]
-// pub async fn test_query_mine_with_value_starts_with() {
-//   let (conductor, _agent, cell1) = setup_1_conductor().await;
+#[tokio::test(flavor = "multi_thread")]
+pub async fn test_query_mine_with_content_full_and_value_starts_with() {
+  let (conductor, _agent, cell1) = setup_1_conductor().await;
 
-//   // CREATE TARGET ENTRY
+  // CREATE TARGET ENTRY
 
-//   let target_hash: EntryHash = conductor
-//     .call(
-//       &cell1.zome("trust_atom"),
-//       "create_string_target",
-//       "Sushi Ran",
-//     )
-//     .await;
+  let target_hash: EntryHash = conductor
+    .call(
+      &cell1.zome("trust_atom"),
+      "create_string_target",
+      "Sushi Ran",
+    )
+    .await;
 
-//   // CREATE TRUST ATOMS
+  // CREATE TRUST ATOMS
 
-//   let _trust_atom_1: trust_atom_types::TrustAtom = conductor
-//     .call(
-//       &cell1.zome("trust_atom"),
-//       "create_trust_atom",
-//       trust_atom_types::TrustAtomInput {
-//         target: AnyLinkableHash::from(target_hash.clone()),
-//         content: None,
-//         value: Some("0.88".into()),
-//         extra: Some(BTreeMap::new()),
-//       },
-//     )
-//     .await;
+  let _trust_atom_1: trust_atom_types::TrustAtom = conductor
+    .call(
+      &cell1.zome("trust_atom"),
+      "create_trust_atom",
+      trust_atom_types::TrustAtomInput {
+        target: AnyLinkableHash::from(target_hash.clone()),
+        content: None,
+        value: Some("0.88".into()),
+        extra: Some(BTreeMap::new()),
+      },
+    )
+    .await;
 
-//   let _trust_atom_2: trust_atom_types::TrustAtom = conductor
-//     .call(
-//       &cell1.zome("trust_atom"),
-//       "create_trust_atom",
-//       trust_atom_types::TrustAtomInput {
-//         target: AnyLinkableHash::from(target_hash.clone()),
-//         content: None,
-//         value: Some("0.81".into()),
-//         extra: Some(BTreeMap::new()),
-//       },
-//     )
-//     .await;
+  let _trust_atom_2: trust_atom_types::TrustAtom = conductor
+    .call(
+      &cell1.zome("trust_atom"),
+      "create_trust_atom",
+      trust_atom_types::TrustAtomInput {
+        target: AnyLinkableHash::from(target_hash.clone()),
+        content: Some("sushi".into()),
+        value: Some("0.81".into()),
+        extra: Some(BTreeMap::new()),
+      },
+    )
+    .await;
 
-//   let _trust_atom_3: trust_atom_types::TrustAtom = conductor
-//     .call(
-//       &cell1.zome("trust_atom"),
-//       "create_trust_atom",
-//       trust_atom_types::TrustAtomInput {
-//         target: AnyLinkableHash::from(target_hash.clone()),
-//         content: None,
-//         value: Some("0.7".into()),
-//         extra: Some(BTreeMap::new()),
-//       },
-//     )
-//     .await;
+  let _trust_atom_3: trust_atom_types::TrustAtom = conductor
+    .call(
+      &cell1.zome("trust_atom"),
+      "create_trust_atom",
+      trust_atom_types::TrustAtomInput {
+        target: AnyLinkableHash::from(target_hash.clone()),
+        content: Some("sushi".into()),
+        value: Some("0.7".into()),
+        extra: Some(BTreeMap::new()),
+      },
+    )
+    .await;
 
-//   let links: Vec<Link> = conductor
-//     .call(
-//       &cell1.zome("trust_atom"),
-//       "test_helper_list_links_for_base",
-//       target_hash,
-//     )
-//     .await;
+  let _links: Vec<Link> = conductor
+    .call(
+      &cell1.zome("trust_atom"),
+      "test_helper_list_links_for_base",
+      target_hash,
+    )
+    .await;
 
-//   for link in links {
-//     println!("{:#?}", String::from_utf8(link.tag.into_inner()));
-//   }
+  // for link in links {
+  //   println!("{:#?}", String::from_utf8(link.tag.into_inner()));
+  // }
 
-//   // QUERY MY TRUST ATOMS
+  // QUERY MY TRUST ATOMS
 
-//   let trust_atoms_from_query: Vec<trust_atom_types::TrustAtom> = conductor
-//     .call(
-//       &cell1.zome("trust_atom"),
-//       "query_mine",
-//       trust_atom_types::QueryMineInput {
-//         target: None,
-//         content_full: None,
-//         content_starts_with: None,
-//         content_not_starts_with: None,
-//         value_starts_with: Some(".88".into()),
-//       },
-//     )
-//     .await;
+  let trust_atoms_from_query: Vec<trust_atom_types::TrustAtom> = conductor
+    .call(
+      &cell1.zome("trust_atom"),
+      "query_mine",
+      trust_atom_types::QueryMineInput {
+        target: None,
+        content_full: Some("sushi".into()),
+        content_starts_with: None,
+        content_not_starts_with: None,
+        value_starts_with: Some(".7".into()),
+      },
+    )
+    .await;
 
-//   assert_eq!(trust_atoms_from_query.len(), 1);
+  assert_eq!(trust_atoms_from_query.len(), 1);
 
-//   let mut actual = [trust_atoms_from_query[0].clone().value];
-//   actual.sort();
+  let mut actual = [trust_atoms_from_query[0].clone().value];
+  actual.sort();
 
-//   assert_eq!(actual, [Some(".88".to_string()),]);
-// }
+  assert_eq!(actual, [Some(".700000000".to_string())]);
+}
+
+#[tokio::test(flavor = "multi_thread")]
+pub async fn test_query_mine_with_value_starts_with() {
+  let (conductor, _agent, cell1) = setup_1_conductor().await;
+
+  // CREATE TARGET ENTRY
+
+  let target_hash: EntryHash = conductor
+    .call(
+      &cell1.zome("trust_atom"),
+      "create_string_target",
+      "Sushi Ran",
+    )
+    .await;
+
+  // CREATE TRUST ATOMS
+
+  let _trust_atom_1: trust_atom_types::TrustAtom = conductor
+    .call(
+      &cell1.zome("trust_atom"),
+      "create_trust_atom",
+      trust_atom_types::TrustAtomInput {
+        target: AnyLinkableHash::from(target_hash.clone()),
+        content: None,
+        value: Some("0.88".into()),
+        extra: Some(BTreeMap::new()),
+      },
+    )
+    .await;
+
+  let _trust_atom_2: trust_atom_types::TrustAtom = conductor
+    .call(
+      &cell1.zome("trust_atom"),
+      "create_trust_atom",
+      trust_atom_types::TrustAtomInput {
+        target: AnyLinkableHash::from(target_hash.clone()),
+        content: None,
+        value: Some("0.81".into()),
+        extra: Some(BTreeMap::new()),
+      },
+    )
+    .await;
+
+  let _trust_atom_3: trust_atom_types::TrustAtom = conductor
+    .call(
+      &cell1.zome("trust_atom"),
+      "create_trust_atom",
+      trust_atom_types::TrustAtomInput {
+        target: AnyLinkableHash::from(target_hash.clone()),
+        content: None,
+        value: Some("0.7".into()),
+        extra: Some(BTreeMap::new()),
+      },
+    )
+    .await;
+
+  let _links: Vec<Link> = conductor
+    .call(
+      &cell1.zome("trust_atom"),
+      "test_helper_list_links_for_base",
+      target_hash,
+    )
+    .await;
+
+  // for link in links {
+  //   println!("{:#?}", String::from_utf8(link.tag.into_inner()));
+  // }
+
+  // QUERY MY TRUST ATOMS
+
+  let trust_atoms_from_query: Vec<trust_atom_types::TrustAtom> = conductor
+    .call(
+      &cell1.zome("trust_atom"),
+      "query_mine",
+      trust_atom_types::QueryMineInput {
+        target: None,
+        content_full: None,
+        content_starts_with: None,
+        content_not_starts_with: None,
+        value_starts_with: Some(".8".into()),
+      },
+    )
+    .await;
+
+  assert_eq!(trust_atoms_from_query.len(), 2);
+
+  let mut actual = [
+    trust_atoms_from_query[0].clone().value,
+    trust_atoms_from_query[1].clone().value,
+  ];
+  actual.sort();
+
+  assert_eq!(
+    actual,
+    [
+      Some(".810000000".to_string()),
+      Some(".880000000".to_string())
+    ]
+  );
+}
 
 #[tokio::test(flavor = "multi_thread")]
 pub async fn test_get_extra() {
