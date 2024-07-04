@@ -6949,7 +6949,7 @@ checksum = "683ba5022fe6dbd7133cad150478ccf51bdb6d861515181e5fc6b4323d4fa424"
 
 [[package]]
 name = "trust_atom"
-version = "0.1.2-dev"
+version = "0.1.2"
 dependencies = [
  "futures",
  "hdk",
