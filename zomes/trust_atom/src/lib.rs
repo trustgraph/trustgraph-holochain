@@ -86,6 +86,7 @@ pub fn query(input: QueryInput) -> ExternResult<Vec<TrustAtom>> {
     input.target,
     input.content_full,
     input.content_starts_with,
+    input.content_not_starts_with,
     input.value_starts_with,
   )
 }
@@ -96,6 +97,7 @@ pub fn query_mine(input: QueryMineInput) -> ExternResult<Vec<TrustAtom>> {
     input.target,
     input.content_full,
     input.content_starts_with,
+    input.content_not_starts_with,
     input.value_starts_with,
   )
 }
