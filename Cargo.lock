@@ -6973,7 +6973,7 @@ dependencies = [
 
 [[package]]
 name = "trust_atom_types"
-version = "0.1.2"
+version = "0.1.3-dev"
 dependencies = [
  "hdk",
  "serde",
