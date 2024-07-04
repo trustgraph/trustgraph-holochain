@@ -1,4 +1,4 @@
-use crate::{EntryTypes, LinkTypes};
+use crate::LinkTypes;
 use hdi::prelude::*;
 use hdk::prelude::agent_info;
 use rust_decimal::prelude::*;

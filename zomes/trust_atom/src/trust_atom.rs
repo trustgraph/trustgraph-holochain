@@ -1,6 +1,7 @@
 #![allow(clippy::module_name_repetitions)]
 
 use hdk::prelude::*;
+use trust_atom_integrity::validation::normalize_value;
 
 use std::collections::BTreeMap;
 use trust_atom_integrity::entries::{EntryTypes, Extra};
