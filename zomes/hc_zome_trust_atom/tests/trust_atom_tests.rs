@@ -413,7 +413,8 @@ pub async fn test_get_extra() {
     .await;
 
   let mock_entry = Extra {
-    fields: mock_input.extra.unwrap(),
+    content_overflow: None,
+    extra_fields: mock_input.extra
   };
   let mock_extra_entry_hash: EntryHash = conductor
     .call(&cell1.zome("trust_atom"), "calc_extra_hash", mock_entry)
@@ -428,11 +429,11 @@ pub async fn test_get_extra() {
     .await;
 
   let field1 = mock_extra_data
-    .fields
+    .extra_fields
     .get_key_value(&"extra_stuff".to_string())
     .unwrap();
   let field2 = mock_extra_data
-    .fields
+    .extra_fields
     .get_key_value(&"another_thing".to_string())
     .unwrap();
 

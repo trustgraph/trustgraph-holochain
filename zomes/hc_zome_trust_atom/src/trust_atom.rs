@@ -32,7 +32,8 @@ const LINK_TAG_ARROW_REVERSE: [u8; 3] = [226, 134, 169]; // Unicode "↩" // hex
 #[hdk_entry(id = "extra", visibility = "public")]
 #[derive(Clone)]
 pub struct Extra {
-  pub fields: BTreeMap<String, String>, // extra content
+  pub content_overflow: Option<String>,
+  pub extra_fields: Option<BTreeMap<String, String>>, // extra content
 }
 
 pub fn create(
@@ -45,19 +46,31 @@ pub fn create(
 
   let bucket = create_bucket()?;
 
-  let extra_entry_hash_string = match extra.clone() {
-    Some(x) => Some(create_extra(x)?),
-    None => None,
+  let overflow: bool = match content.clone() {
+    Some(c) => if c.len() > 900 {true} else {false}
+    None => false
   };
 
-  let chunks = [
+  let extra_entry_hash_string = match overflow {
+    true => match extra.clone() {
+      Some(x) => Some(create_extra(content, Some(x))?),
+      None => Some(create_extra(content, None)?)
+  }
+    false => match extra.clone() {
+      Some(x) => Some(create_extra(None, Some(x))?),
+      None => None
+}
+  };
+
+  let chunks = vec![
     content.clone(),
     normalize_value(value.clone())?,
     Some(bucket),
     extra_entry_hash_string,
   ];
-  let forward_link_tag = create_link_tag(&LinkDirection::Forward, &chunks);
-  let reverse_link_tag = create_link_tag(&LinkDirection::Reverse, &chunks);
+
+  let forward_link_tag = create_link_tag(&LinkDirection::Forward, chunks);
+  let reverse_link_tag = create_link_tag(&LinkDirection::Reverse, chunks);
 
   create_link(agent_address.clone(), target.clone(), forward_link_tag)?;
   create_link(target.clone(), agent_address.clone(), reverse_link_tag)?;
@@ -78,10 +91,10 @@ pub fn create(
 
 fn create_bucket() -> ExternResult<String> {
   let bucket_bytes = random_bytes(9)?.into_vec();
-  Ok(create_bucket_string(&bucket_bytes))
+  Ok(create_bucket_string(bucket_bytes))
 }
 
-fn create_bucket_string(bucket_bytes: &[u8]) -> String {
+fn create_bucket_string(bucket_bytes: Vec<u8>) -> String {
   let mut bucket = String::new();
   for chunk in bucket_bytes {
     let val = chunk;
@@ -90,8 +103,8 @@ fn create_bucket_string(bucket_bytes: &[u8]) -> String {
   bucket
 }
 
-fn create_extra(input: BTreeMap<String, String>) -> ExternResult<String> {
-  let entry = Extra { fields: input };
+fn create_extra(content_overflow: Option<String>, extra_fields: Option<BTreeMap<String, String>>) -> ExternResult<String> {
+  let entry = Extra { content_overflow, extra_fields };
 
   create_entry(entry.clone())?;
 
@@ -139,10 +152,19 @@ fn normalize_value(value_str: Option<String>) -> ExternResult<Option<String>> {
   }
 }
 
-fn create_link_tag(link_direction: &LinkDirection, chunk_options: &[Option<String>]) -> LinkTag {
+fn create_link_tag(link_direction: &LinkDirection, chunk_options: Vec<Option<String>>) -> LinkTag {
   let mut chunks: Vec<String> = vec![];
+  if let Some(content) = chunk_options[0] {
+    if content.len() > 900 {
+      let mut max_content = content.clone();
+      max_content.truncate(898);  // leave 2 bytes for `…`
+      max_content.push_str("…");
+      chunks.push(max_content);
+    }
+    else {chunks.push(content);}
+}
 
-  for i in 0..chunk_options.len() {
+  for i in 1..chunk_options.len() {
     if let Some(chunk) = chunk_options[i].clone() {
       chunks.push(chunk);
       if i < chunk_options.len() - 1 {
@@ -255,16 +277,16 @@ pub fn query(
     }
     (Some(content_full), None, Some(value_starts_with)) => Some(create_link_tag(
       &link_direction,
-      &[Some(content_full), Some(value_starts_with)],
+      Some(content_full), Some(value_starts_with),
     )),
     (Some(content_full), None, None) => {
       Some(create_link_tag_metal(&link_direction, vec![content_full, UNICODE_NUL_STR.to_string()]))
     }
     (None, Some(content_starts_with), None) => Some(create_link_tag(
       &link_direction,
-      &[Some(content_starts_with)],
+      Some(content_starts_with),
     )),
-    (None, None, Some(value_starts_with)) => Some(create_link_tag(&link_direction, &[Some(value_starts_with)])),
+    (None, None, Some(value_starts_with)) => Some(create_link_tag(&link_direction, Some(value_starts_with))),
     (None, None, None) => None,
   };
   let links = get_links(link_base.clone(), link_tag)?;
