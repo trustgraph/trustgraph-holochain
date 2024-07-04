@@ -48,11 +48,11 @@ checks () {
 }
 
 test_watch () {
-  shell cargo watch -- bin/run test
+  shell cargo watch --ignore target --ignore .cargo -- bin/run test
 }
 
 test_watch_clear () {
-  shell cargo watch --clear -- bin/run test
+  shell cargo watch --ignore target --ignore .cargo --clear -- bin/run test
 }
 
 test () {
@@ -64,11 +64,11 @@ test_metal () {
 }
 
 build_watch () {
-  shell cargo watch -- bin/run build
+  shell cargo watch --ignore target --ignore .cargo -- bin/run build
 }
 
 build_watch_clear () {
-  shell cargo watch --clear -- bin/run build
+  shell cargo watch --ignore target --ignore .cargo --clear -- bin/run build
 }
 
 build () {
@@ -95,7 +95,7 @@ clippy () {
 }
 
 clippy_watch () {
-  shell cargo watch --clear -- bin/run clippy
+  shell cargo watch --ignore target --ignore .cargo --clear -- bin/run clippy
 }
 
 format () {
