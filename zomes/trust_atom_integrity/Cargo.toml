@@ -1,6 +1,6 @@
 [package]
 name = "trust_atom_integrity"
-version = "0.1.2-dev"
+version = "0.1.2"
 authors = ["harlantwood", "code@harlantwood.net"]
 edition = "2021"
 rust-version = "1.56.0" # require rust >= 1.56, required to enable 2021 edition
