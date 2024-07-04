@@ -27,6 +27,7 @@ pub struct QueryInput {
   pub target: Option<AnyLinkableHash>,
   pub content_full: Option<String>,
   pub content_starts_with: Option<String>,
+  pub content_not_starts_with: Option<String>,
   pub value_starts_with: Option<String>,
 }
 
@@ -35,6 +36,7 @@ pub struct QueryMineInput {
   pub target: Option<AnyLinkableHash>,
   pub content_full: Option<String>,
   pub content_starts_with: Option<String>,
+  pub content_not_starts_with: Option<String>,
   pub value_starts_with: Option<String>,
 }
 
