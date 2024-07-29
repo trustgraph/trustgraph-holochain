@@ -33,7 +33,8 @@ pub fn delete_trust_atoms(target: AnyLinkableHash) -> ExternResult<DeleteReport>
   let agent_pubkey = agent_info()?.agent_initial_pubkey;
 
   // Forward Links
-  let forward_links = get_links(agent_pubkey.clone(), LinkTypes::TrustAtom, None)?;
+  let forward_links =
+    get_links(GetLinksInputBuilder::try_new(agent_pubkey.clone(), LinkTypes::TrustAtom)?.build())?;
   for link in forward_links.clone() {
     if link.target == target && link.tag.into_inner()[0..5] == build_forward_header() {
       delete_link(link.create_link_hash)?;
@@ -41,7 +42,8 @@ pub fn delete_trust_atoms(target: AnyLinkableHash) -> ExternResult<DeleteReport>
   }
 
   // Reverse Links
-  let reverse_links = get_links(target, LinkTypes::TrustAtom, None)?;
+  let reverse_links =
+    get_links(GetLinksInputBuilder::try_new(target, LinkTypes::TrustAtom)?.build())?;
   for link in reverse_links.clone() {
     if link.target == AnyLinkableHash::from(agent_pubkey.clone())
       && link.tag.into_inner()[0..5] == build_reverse_header()

@@ -40,7 +40,7 @@ jobs:
             ${{ runner.os }}-cargo-v2-
 
       - name: Set up nix
-        uses: cachix/install-nix-action@v22
+        uses: cachix/install-nix-action@v27
         with:
           extra_nix_config: |
             substituters = https://cache.nixos.org https://holochain.cachix.org https://holochain-ci.cachix.org
@@ -51,7 +51,7 @@ jobs:
 
       - name: Cache nix with Cachix
         if: always()  # build artifacts are correct even if job fails
-        uses: cachix/cachix-action@v12
+        uses: cachix/cachix-action@v15
         with:
           name: holochain # this is our cachix cache; we can write to it as well as read
           authToken: "${{ secrets.CACHIX_AUTH_TOKEN }}"

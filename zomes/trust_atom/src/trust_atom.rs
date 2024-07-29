@@ -226,7 +226,8 @@ pub fn query(
         "Passing content_not_starts_with means content_full, content_starts_with, and value_starts_with must all be None"
       ));
     }
-    let links = get_links(link_base.clone(), LinkTypes::TrustAtom, None)?;
+    let links =
+      get_links(GetLinksInputBuilder::try_new(link_base.clone(), LinkTypes::TrustAtom)?.build())?;
     let trust_atoms = convert_links_to_trust_atoms(links, &link_direction, link_base)?;
     let filtered_trust_atoms = trust_atoms
       .into_iter()
@@ -272,8 +273,19 @@ pub fn query(
     )),
     (None, None, None) => None,
   };
-  let links = get_links(link_base.clone(), LinkTypes::TrustAtom, link_tag)?;
+  if let Some(link_tag) = link_tag {
+    let links = get_links(
+      GetLinksInputBuilder::try_new(link_base.clone(), LinkTypes::TrustAtom)?
+        .tag_prefix(link_tag)
+        .build(),
+    )?;
 
+    let trust_atoms = convert_links_to_trust_atoms(links, &link_direction, link_base)?;
+
+    return Ok(trust_atoms);
+  }
+  let links =
+    get_links(GetLinksInputBuilder::try_new(link_base.clone(), LinkTypes::TrustAtom)?.build())?;
   let trust_atoms = convert_links_to_trust_atoms(links, &link_direction, link_base)?;
 
   Ok(trust_atoms)
