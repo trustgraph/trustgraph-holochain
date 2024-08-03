@@ -17,13 +17,10 @@ pub struct Extra {
   pub fields: BTreeMap<String, String>,
 }
 
-#[hdk_entry_defs]
+#[hdk_entry_types]
 #[unit_enum(UnitEntryTypes)]
 pub enum EntryTypes {
-  #[entry_def]
   Example(Example),
-  #[entry_def]
   StringTarget(StringTarget),
-  #[entry_def]
   Extra(Extra),
 }

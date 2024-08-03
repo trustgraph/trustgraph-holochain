@@ -10,7 +10,7 @@ name = "trust_atom_integrity"
 crate-type = ["cdylib", "rlib"]
 
 [dependencies]
-hdi = "0.3.8"
+hdi = "0.4.1"
 rust_decimal = "1"
 serde = "1"
 trust_atom_types = { path = "../trust_atom_types" }

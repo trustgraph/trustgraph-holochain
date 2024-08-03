@@ -9,18 +9,24 @@ pub struct StringLinkTag(pub String);
 holochain_serial!(StringLinkTag);
 
 pub fn list_links_for_base(base: AnyLinkableHash) -> ExternResult<Vec<Link>> {
-  let links = get_links(base, LinkTypes::TrustAtom, None)?;
+  let links = get_links(GetLinksInputBuilder::try_new(base, LinkTypes::TrustAtom)?.build())?;
 
   Ok(links)
 }
 
 pub fn list_links(base: AnyLinkableHash, link_tag_text: Option<String>) -> ExternResult<Vec<Link>> {
-  let link_tag = match link_tag_text {
-    Some(link_tag_text) => Some(link_tag(link_tag_text)?),
-    None => None,
-  };
+  if let Some(link_tag_text) = link_tag_text {
+    let wrapped_link_tag: LinkTag = link_tag(link_tag_text)?;
 
-  let links = hdk::link::get_links(base, LinkTypes::TrustAtom, link_tag)?;
+    let links = get_links(
+      GetLinksInputBuilder::try_new(base, LinkTypes::TrustAtom)?
+        .tag_prefix(wrapped_link_tag)
+        .build(),
+    )?;
+
+    return Ok(links);
+  }
+  let links = get_links(GetLinksInputBuilder::try_new(base, LinkTypes::TrustAtom)?.build())?;
 
   Ok(links)
 }
