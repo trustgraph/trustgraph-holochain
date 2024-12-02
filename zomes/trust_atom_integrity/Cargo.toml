@@ -11,6 +11,7 @@ crate-type = ["cdylib", "rlib"]
 
 [dependencies]
 hdi = "0.3.8"
+hdk = "0.2.8"
 rust_decimal = "1"
 serde = "1"
 trust_atom_types = { path = "../trust_atom_types" }
